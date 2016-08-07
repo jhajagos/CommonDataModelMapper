@@ -4,6 +4,8 @@
 Mapping class
 """
 
+import json
+import csv
 
 class InputClass(object):
     """Superclass representing the abstract input source"""
@@ -29,7 +31,20 @@ class InputClassRealization(object):
 
 class InputClassCSVRealization(InputClassRealization):
     """Class for representing a CSV source to be read from"""
-    pass
+    def __init__(self, csv_file_name, InputClassObj):
+        self.csv_file_name = csv_file_name
+
+        self.input_class_obj = InputClassObj
+
+        f = open(csv_file_name, "rb")
+        self.csv_dict = csv.DictReader(f)
+
+    def next(self):
+        return self.csv_dict.next()
+
+    def __iter__(self):
+        return self
+
 
 
 class MapperClass(object):
@@ -48,8 +63,19 @@ class CoderMapperStaticClass(CodeMapperClass):
 
 class CoderMapperJSONClass(CodeMapperClass):
     """A code mapper that reads code from a JSON dict of dicts"""
-    pass
-# A mapper will need to be translated into another format
+
+    def __init__(self, json_file_name):
+        with open(json_file_name, "r") as f:
+            self.mapper_dict = json.load(f)
+
+    def map(self, input_dict):
+        key = input_dict.keys()[0]
+        value = input_dict[key]
+
+        if value in self.mapper_dict:
+            return self.mapper_dict[value]
+        else:
+            return None
 
 
 class RuntimeMapper(MapperClass):
@@ -66,8 +92,8 @@ class IdentityMapper(MapperClass):
     def __init__(self):
         pass
 
-    def map(self, dict):
-        return dict
+    def map(self, input_dict):
+        return input_dict
 
 
 class TransformMapper(MapperClass):
@@ -76,10 +102,10 @@ class TransformMapper(MapperClass):
     def __init__(self, func):
         self.func = func
 
-    def map(self, dict):
+    def map(self, input_dict):
         mapped_dict = {}
-        for key in dict:
-            mapped_dict[key] = self.func(dict[key])
+        for key in input_dict:
+            mapped_dict[key] = self.func(input_dict[key])
 
         return mapped_dict
 

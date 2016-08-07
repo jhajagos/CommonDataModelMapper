@@ -5,6 +5,9 @@ import os
 
 from mapping_classes import *
 
+class Object1(InputClass):
+    pass
+
 
 class TestMappers(unittest.TestCase):
 
@@ -20,12 +23,28 @@ class TestMappers(unittest.TestCase):
 
 class TestTranslators(unittest.TestCase):
 
-    def test_test_translator(self):
+    def test_translator(self):
 
         kt_obj = KeyTranslator({"a": "f", "b": "x", "c": "z"})
         trans_dict = kt_obj.translate({"a": 1, "b": 2, "h": 3})
 
         self.assertEquals({"f": 1, "x": 2, "h": None}, trans_dict)
+
+    def test_translator_json(self):
+
+        cdx_obj = CoderMapperJSONClass("./test/code_mapper.json")
+        mapped_code = cdx_obj.map({"code": "101"})
+
+        self.assertEquals({"code_id": 702}, mapped_code)
+
+class TestInputSourceRealizations(unittest.TestCase):
+
+    def test_read_csv(self):
+
+        in_obj = InputClassCSVRealization("./test/input_object1.csv", Object1())
+
+        in_dict = list(in_obj)
+        self.assertEquals({"id": '234', "object_name": "ab", "object_code": '102'}, in_dict[0])
 
 if __name__ == '__main__':
     unittest.main()
