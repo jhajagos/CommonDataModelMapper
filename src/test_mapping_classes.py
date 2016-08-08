@@ -5,9 +5,15 @@ import os
 
 from mapping_classes import *
 
-class Object1(InputClass):
-    pass
 
+class Object1(InputClass):
+    def fields(self):
+        return ["id","object_name","object_code"]
+
+
+class Object1Output(OutputClass):
+    def fields(self):
+        return ["id", "object_name", "object_code"]
 
 class TestMappers(unittest.TestCase):
 
@@ -37,6 +43,7 @@ class TestTranslators(unittest.TestCase):
 
         self.assertEquals({"code_id": 702}, mapped_code)
 
+
 class TestInputSourceRealizations(unittest.TestCase):
 
     def test_read_csv(self):
@@ -44,7 +51,11 @@ class TestInputSourceRealizations(unittest.TestCase):
         in_obj = InputClassCSVRealization("./test/input_object1.csv", Object1())
 
         in_dict = list(in_obj)
-        self.assertEquals({"id": '234', "object_name": "ab", "object_code": '102'}, in_dict[0])
+        self.assertEquals({":row_id": 1, "id": '234', "object_name": "ab", "object_code": '102'}, in_dict[0])
+
+
+class TestBuildInputOutMapper(unittest.TestCase):
+    pass
 
 if __name__ == '__main__':
     unittest.main()

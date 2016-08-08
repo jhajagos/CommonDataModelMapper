@@ -7,19 +7,22 @@ Mapping class
 import json
 import csv
 
+
 class InputClass(object):
     """Superclass representing the abstract input source"""
-    pass
+    def fields(self):
+        return []
 
 
 class OutputClass(object):
     """Superclass representing the abstract source that the input source will be transformed into"""
-    pass
-
+    def fields(self):
+        return []
 
 class NoOutputClass(OutputClass):
-    """Class representing when a row cannot be transformaed"""
-    pass
+    """Class representing when a row cannot be transformed"""
+    def fields(self):
+        return None
 
 
 class InputClassRealization(object):
@@ -34,17 +37,47 @@ class InputClassCSVRealization(InputClassRealization):
     def __init__(self, csv_file_name, InputClassObj):
         self.csv_file_name = csv_file_name
 
-        self.input_class_obj = InputClassObj
+        self.input_class = InputClassObj
 
         f = open(csv_file_name, "rb")
         self.csv_dict = csv.DictReader(f)
 
+        self.i = 1
+
     def next(self):
-        return self.csv_dict.next()
+        row_dict = self.csv_dict.next()
+        row_dict[":row_id"] = self.i
+        self.i += 1
+        return row_dict
 
     def __iter__(self):
         return self
 
+
+class OutputClassRealization(object):
+    pass
+
+
+class OutputClassCSVRealization(OutputClassRealization):
+    """Write output to CSV file"""
+    def __init__(self, csv_file_name, output_class_obj, field_list):
+        self.fw = open(csv_file_name, "wb")
+        self.output_class = output_class_obj
+        self.field_list = field_list
+        self.csv_writer = csv.writer(self.fw)
+        self.csv_writer.writerow(field_list)
+
+        self.i = 1
+
+    def write(self, row_dict):
+        row_to_write = []
+        for field in self.field_list:
+            if field in row_dict:
+                row_to_write += [row_dict[field]]
+            else:
+                row_to_write += [""]
+        csv.write(row_dict)
+        self.i += 1
 
 
 class MapperClass(object):
@@ -127,6 +160,133 @@ class KeyTranslator(object):
         return translated_dict
 
 
+def single_key_translator(map_field_from, map_field_to):
+    return KeyTranslator({map_field_from, map_field_to})
+
+
+class IdentityTranslator(KeyTranslator):
+    def __init__(self):
+        pass
+    def translate(self, dict_to_map):
+        return dict_to_map
+
+
 class RunMapper(object):
     """Executes the map"""
     pass
+
+
+class InputOutputMapperInstance(object):
+    def __init__(self, map_function=IdentityMapper, key_translator=IdentityTranslator):
+        self.map_function = map_function
+        self.key_translator = key_translator
+
+    def map(self, input_dict):
+        return self.key_translator.map(self.map_function.translate(input_dict))
+
+
+class InputOutputMapper(object):
+    def __init__(self, field_mapper_instances):
+        self.field_mapper_instances = field_mapper_instances
+
+    def map(self, input_dict):
+        mapped_dict = {}
+
+        for field_mapper_instance in self.field_mapper_instances:
+            field, mapper_instance = field_mapper_instance
+            field_dict = {}
+            if field.__class__ == tuple:
+                pass
+            else:
+                field = (field, )
+
+            for single_field in field:
+                single_field_value = input_dict[single_field]
+                field_dict[single_field] = single_field_value
+
+            mapped_dict_instance = mapper_instance.map(field_dict)
+            for key in mapped_dict_instance:
+                mapped_dict[key] = mapped_dict_instance[key]
+
+        return mapped_dict
+
+
+def build_input_output_mapper(mapped_field_pairs):
+    """Build an input output mapper based on the following patterns
+        [e1, e2, ... , en] where e1 is of type
+             1)  str -> Identity Map, Identity Field Translate
+             2) (str1, str2) -> Identity Map, Translate(str1 -> str2)
+             3) (str1, MapperClassInstance, str2)
+             4) (str1, MapperClassInstance, Dict)
+             5) (str1, MapperClass, TranslatorClassInstance)
+             6) ((str1, str2), MapperClassInstance)
+             7) ((str1, str2), MapperClassInstance, Dict)
+             8) ((str1, str2), MapperClassInstance, TranslatorClassInstance)
+    """
+
+    input_output_mapper_instance_list = []
+    for mapped_field in mapped_field_pairs:
+
+        if mapped_field.__type__ in ("".__class__, u"".__class__): # Case 1: Identity Field Map
+            input_output_mapper_instance_list += [mapped_field, InputOutputMapperInstance()]
+        else:
+            if mapped_field.__class__ == tuple:
+                if len(mapped_field) == 2:
+                    pass
+            else:
+                pass
+
+    #    input_output_mapper_instance_list += [(mapped_field[0],
+    #                                           InputOutputMapperInstance(key_translator=single_key_translator(*mapped_field)))]
+    #
+    # if field_func_translator_triplets is not None:
+    #     for field_func_translator_triplet in field_func_translator_triplets:
+    #         field, func, translator = field_func_translator_triplet
+    #         input_output_mapper_instance_list += [field, InputOutputMapperInstance(func, translator)]
+
+
+class DirectoryClass(object):
+
+    """Provides lookup between input_class_name and output_class_name"""
+
+    def __init__(self):
+        self.directory_dict = {}
+
+    def __getitem__(self, item):
+        return self.directory_dict[item]
+
+
+class InputOutputMapperDirectory(DirectoryClass):
+    def register(self, input_class_name, output_class_name, mapper_class_obj):
+        self.directory_dict[(input_class_name, output_class_name)] = mapper_class_obj
+
+
+class OutputClassDirectory(object):
+    def register(self, output_class_name, output_class_realization_obj):
+        self.directory_dict[output_class_name] = output_class_realization_obj
+
+
+class RunMapperAgainstSingleInputRealization(object):
+    def __init__(self, input_class_realization_obj, input_output_directory_obj, output_directory_obj, output_class_func):
+        self.input_class_realization_obj = input_class_realization_obj
+        self.input_output_directory_obj =  input_class_realization_obj
+        self.output_directory_obj = input_class_realization_obj
+        self.output_class_func = output_class_func
+
+    def run(self):
+
+        input_class_name = self.input_class_realization_obj.input_class.__class__.__name___
+
+        for row_dict in self.input_class_realization_obj:
+            output_class = self.output_class_func(row_dict)
+
+            #TODO Add No NoOutputClass Logic
+            output_class_name = output_class.__class__.__name__
+
+            output_class_instance = self.output_directory_obj[output_class_name]
+            mapper_obj = self.input_output_directory_obj[(input_class_name, output_class_name)]
+            mapped_row_dict = mapper_obj.map(row_dict)
+            output_class_instance.write(mapped_row_dict)
+
+
+            #TODO: will need to add a call back function
