@@ -226,7 +226,7 @@ def build_input_output_mapper(mapped_field_pairs):
              2) (str1, str2) -> Identity Map, Translate(str1 -> str2)
              3) (str1, MapperClassInstance, str2)
              4) (str1, MapperClassInstance, Dict)
-             5) (str1, MapperClass, TranslatorClassInstance)
+             5) (str1, MapperClassInstance, TranslatorClassInstance)
              6) ((str1, str2), MapperClassInstance)
              7) ((str1, str2), MapperClassInstance, Dict)
              8) ((str1, str2), MapperClassInstance, TranslatorClassInstance)
@@ -238,22 +238,21 @@ def build_input_output_mapper(mapped_field_pairs):
         if mapped_field.__class__ in ("".__class__, u"".__class__): # Case 1: Identity Field Map
             input_output_mapper_instance_list += [(mapped_field, InputOutputMapperInstance())]
         else:
-            if mapped_field.__class__ == tuple:
-                if len(mapped_field) == 2:
-                    if mapped_field[0].__class__ in ("".__class__, u"".__class__) and \
-                        mapped_field[1].__class__ in ("".__class__, u"".__class__):
-                        input_output_mapper_instance_list += [(mapped_field[0],
-                                                               InputOutputMapperInstance(key_translator=single_key_translator(*mapped_field)))]
-            else:
-                pass
+            if len(mapped_field) == 2: # Case 2
+                if mapped_field[0].__class__ in ("".__class__, u"".__class__) and mapped_field[1].__class__ in ("".__class__, u"".__class__):
+                    input_output_mapper_instance_list += [(mapped_field[0],
+                                                           InputOutputMapperInstance(key_translator=single_key_translator(*mapped_field)))]
+                else:
+                    input_output_mapper_instance_list += [(mapped_field[0], InputOutputMapperInstance(map_function=mapped_field[1]))]
 
-    #    input_output_mapper_instance_list += [(mapped_field[0],
-    #                                           InputOutputMapperInstance(key_translator=single_key_translator(*mapped_field)))]
-    #
-    # if field_func_translator_triplets is not None:
-    #     for field_func_translator_triplet in field_func_translator_triplets:
-    #         field, func, translator = field_func_translator_triplet
-    #         input_output_mapper_instance_list += [field, InputOutputMapperInstance(func, translator)]
+            elif len(mapped_field) == 3:
+                mapper_class_obj = mapped_field[1]
+                if mapped_field[2].__class__ == dict:
+                    key_translator_obj = KeyTranslator(mapped_field[2])
+                else:
+                    key_translator_obj = mapped_field[2]
+
+                input_output_mapper_instance_list += [(mapped_field, InputOutputMapperInstance(mapper_class_obj, key_translator_obj))]
 
     return input_output_mapper_instance_list
 
@@ -294,7 +293,7 @@ class RunMapperAgainstSingleInputRealization(object):
             output_class_obj = self.output_class_func(row_dict)
             output_class = output_class_obj.__class__
 
-            #TODO Add No NoOutputClass Logic
+            #TODO Add NoOutputClass Logic
 
             output_class_instance = self.output_directory_obj[output_class]
             mapper_obj = self.input_output_directory_obj[(input_class, output_class)]

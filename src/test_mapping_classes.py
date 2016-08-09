@@ -15,6 +15,7 @@ class Object1Output(OutputClass):
     def fields(self):
         return ["id", "object_name", "object_code"]
 
+
 class Object1OutputCaps(OutputClass):
     def fields(self):
         return ["ID", "OBJECT_NAME", "OBJECT_CODE"]
@@ -95,7 +96,6 @@ class TestRunMapper(unittest.TestCase):
         if os.path.exists("./test/output_obj1.csv"):
             os.remove("./test/output_obj1.csv")
 
-
     def test_run_identity_mapper(self):
         rules = ["id", "object_name", "object_code"]
         mapper_rules = build_input_output_mapper(rules)
@@ -142,8 +142,9 @@ class TestRunMapper(unittest.TestCase):
         map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj,
                                                                 test_output_caps_func)
         map_runner_obj.run()
-
         output_realization.close()
+
+        #TODO add tests
 
 
 
