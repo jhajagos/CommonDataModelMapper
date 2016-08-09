@@ -98,8 +98,7 @@ class TestRunMapper(unittest.TestCase):
 
     def test_run_identity_mapper(self):
         rules = ["id", "object_name", "object_code"]
-        mapper_rules = build_input_output_mapper(rules)
-        mapper_rules_class = InputOutputMapper(mapper_rules)
+        mapper_rules_class = build_input_output_mapper(rules)
 
         in_out_map_obj = InputOutputMapperDirectory()
         in_out_map_obj.register(Object1(), Object1Output(), mapper_rules_class)
@@ -126,8 +125,7 @@ class TestRunMapper(unittest.TestCase):
 
     def test_identity_mapper_with_translate(self):
         rules = [("id", "ID"), ("object_name", "OBJECT_NAME"), ("object_code", "OBJECT_CODE")]
-        mapper_rules = build_input_output_mapper(rules)
-        mapper_rules_class = InputOutputMapper(mapper_rules)
+        mapper_rules_class = build_input_output_mapper(rules)
 
         in_out_map_obj = InputOutputMapperDirectory()
         in_out_map_obj.register(Object1(), Object1OutputCaps(), mapper_rules_class)
@@ -145,8 +143,6 @@ class TestRunMapper(unittest.TestCase):
         output_realization.close()
 
         #TODO add tests
-
-
 
 
 if __name__ == '__main__':

@@ -218,6 +218,9 @@ class InputOutputMapper(object):
 
         return mapped_dict
 
+    def __len__(self):
+        return len(self.field_mapper_instances)
+
 
 def build_input_output_mapper(mapped_field_pairs):
     """Build an input output mapper based on the following patterns
@@ -254,7 +257,7 @@ def build_input_output_mapper(mapped_field_pairs):
 
                 input_output_mapper_instance_list += [(mapped_field, InputOutputMapperInstance(mapper_class_obj, key_translator_obj))]
 
-    return input_output_mapper_instance_list
+    return InputOutputMapper(input_output_mapper_instance_list)
 
 
 class DirectoryClass(object):
