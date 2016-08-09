@@ -21,6 +21,11 @@ class Object1OutputCaps(OutputClass):
         return ["ID", "OBJECT_NAME", "OBJECT_CODE"]
 
 
+class Object1Mapped(OutputClass):
+    def fields(self):
+        return ["ID", "sequence_id", "OBJECT_NAME", "object_code", "mapped_code_id", "additional_field"]
+
+
 class TestMappers(unittest.TestCase):
 
     def test_identity(self):
@@ -83,18 +88,27 @@ class TestBuildInputOutMapper(unittest.TestCase):
         self.assertEquals(3, len(output_obj))
 
 
+# Function which return the output
 def test_output_func(void_dict):
     return Object1Output()
+
 
 def test_output_caps_func(void_dict):
     return Object1OutputCaps()
 
 
+def test_output_mapped_func(void_dict):
+    return Object1Mapped()
+
+
 class TestRunMapper(unittest.TestCase):
 
     def setUp(self):
-        if os.path.exists("./test/output_obj1.csv"):
-            os.remove("./test/output_obj1.csv")
+
+        files_to_clean = ["./test/output_obj1.csv", "./test/output_obj1_caps.csv", "./test/output_obj1_map.csv"]
+        for file_name in files_to_clean:
+            if os.path.exists(file_name):
+                os.remove(file_name)
 
     def test_run_identity_mapper(self):
         rules = ["id", "object_name", "object_code"]
@@ -142,7 +156,50 @@ class TestRunMapper(unittest.TestCase):
         map_runner_obj.run()
         output_realization.close()
 
-        #TODO add tests
+        with open("./test/input_object1.csv", "rb") as f:
+            t1 = f.read()
+
+        with open("./test/output_obj1_caps.csv", "rb") as f:
+            t2 = f.read()
+
+        t1_split = t1.split("\n")
+        t2_split = t2.split("\n")
+
+        self.assertEquals(t1_split[1:], t2_split[1:])
+
+        header_1 = t1_split[0]
+        header_2 = t2_split[0]
+
+        self.assertNotEqual(header_1, header_2)
+
+        header_1_caps = header_1.upper()
+        self.assertEquals(header_1_caps, header_2)
+
+    def test_mapping_functions_with_translate(self):
+        ucase_mapper = TransformMapper(lambda x: x.upper())
+        code_mapper = CoderMapperJSONClass("./test/code_mapper.json")
+
+        rules = [("id", "ID"), (":row_id", "sequence_id"), ("object_name", ucase_mapper, "OBJECT_NAME"),
+                 "object_code", ("object_code", code_mapper, {"code_id": "mapped_code_id"})]
+
+        mapper_rules_class = build_input_output_mapper(rules)
+
+        in_out_map_obj = InputOutputMapperDirectory()
+        in_out_map_obj.register(Object1(), Object1Mapped(), mapper_rules_class)
+
+        in_obj_1 = InputClassCSVRealization("./test/input_object1.csv", Object1())
+
+        output_directory_obj = OutputClassDirectory()
+        output_realization = OutputClassCSVRealization("./test/output_obj1_map.csv", Object1Mapped())
+
+        output_directory_obj.register(Object1Mapped(), output_realization)
+
+        map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj,
+                                                                test_output_mapped_func)
+        map_runner_obj.run()
+        output_realization.close()
+
+        #TODO Add tests to test the results of applying rules
 
 
 if __name__ == '__main__':

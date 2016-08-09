@@ -56,6 +56,7 @@ class InputClassCSVRealization(InputClassRealization):
 
 
 class OutputClassRealization(object):
+    """Super Class for an output source"""
     pass
 
 
@@ -110,21 +111,14 @@ class CoderMapperJSONClass(CodeMapperClass):
             self.mapper_dict = json.load(f)
 
     def map(self, input_dict):
+
         key = input_dict.keys()[0]
         value = input_dict[key]
 
         if value in self.mapper_dict:
             return self.mapper_dict[value]
         else:
-            return None
-
-
-class RuntimeMapper(MapperClass):
-    pass
-
-
-class RuntimeDictMapper(MapperClass):
-    pass
+            return {}
 
 
 class IdentityMapper(MapperClass):
@@ -144,6 +138,7 @@ class TransformMapper(MapperClass):
         self.func = func
 
     def map(self, input_dict):
+
         mapped_dict = {}
         for key in input_dict:
             mapped_dict[key] = self.func(input_dict[key])
@@ -169,22 +164,20 @@ class KeyTranslator(object):
 
 
 def single_key_translator(map_field_from, map_field_to):
+    """Create a simple key translator mapping a single key to a second key"""
     return KeyTranslator({map_field_from: map_field_to})
 
 
 class IdentityTranslator(KeyTranslator):
     def __init__(self):
         pass
+
     def translate(self, dict_to_map):
         return dict_to_map
 
 
-class RunMapper(object):
-    """Executes the map"""
-    pass
-
-
 class InputOutputMapperInstance(object):
+    """A single mapping rule"""
     def __init__(self, map_function=IdentityMapper(), key_translator=IdentityTranslator()):
         self.map_function = map_function
         self.key_translator = key_translator
@@ -194,6 +187,7 @@ class InputOutputMapperInstance(object):
 
 
 class InputOutputMapper(object):
+    """Basic class that applies a map and a key translation"""
     def __init__(self, field_mapper_instances):
         self.field_mapper_instances = field_mapper_instances
 
@@ -235,6 +229,7 @@ def build_input_output_mapper(mapped_field_pairs):
              8) ((str1, str2), MapperClassInstance, TranslatorClassInstance)
     """
 
+    string_types = ("".__class__, u"".__class__)
     input_output_mapper_instance_list = []
     for mapped_field in mapped_field_pairs:
 
@@ -242,7 +237,7 @@ def build_input_output_mapper(mapped_field_pairs):
             input_output_mapper_instance_list += [(mapped_field, InputOutputMapperInstance())]
         else:
             if len(mapped_field) == 2: # Case 2
-                if mapped_field[0].__class__ in ("".__class__, u"".__class__) and mapped_field[1].__class__ in ("".__class__, u"".__class__):
+                if mapped_field[0].__class__ in  string_types and mapped_field[1].__class__ in string_types:
                     input_output_mapper_instance_list += [(mapped_field[0],
                                                            InputOutputMapperInstance(key_translator=single_key_translator(*mapped_field)))]
                 else:
@@ -252,16 +247,18 @@ def build_input_output_mapper(mapped_field_pairs):
                 mapper_class_obj = mapped_field[1]
                 if mapped_field[2].__class__ == dict:
                     key_translator_obj = KeyTranslator(mapped_field[2])
+                elif mapped_field[2].__class__ in string_types:
+                    key_translator_obj = single_key_translator(mapped_field[0], mapped_field[2])
+
                 else:
                     key_translator_obj = mapped_field[2]
 
-                input_output_mapper_instance_list += [(mapped_field, InputOutputMapperInstance(mapper_class_obj, key_translator_obj))]
+                input_output_mapper_instance_list += [(mapped_field[0], InputOutputMapperInstance(mapper_class_obj, key_translator_obj))]
 
     return InputOutputMapper(input_output_mapper_instance_list)
 
 
 class DirectoryClass(object):
-
     """Provides lookup between input_class_name and output_class_name"""
 
     def __init__(self):
@@ -281,7 +278,12 @@ class OutputClassDirectory(DirectoryClass):
         self.directory_dict[output_class_obj.__class__] = output_class_realization_obj
 
 
-class RunMapperAgainstSingleInputRealization(object):
+class RunMapper(object):
+    """Executes the map"""
+    pass
+
+
+class RunMapperAgainstSingleInputRealization(RunMapper):
     def __init__(self, input_class_realization_obj, input_output_directory_obj, output_directory_obj, output_class_func):
         self.input_class_realization_obj = input_class_realization_obj
         self.input_output_directory_obj = input_output_directory_obj
