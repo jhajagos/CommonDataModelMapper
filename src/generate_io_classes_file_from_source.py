@@ -48,7 +48,5 @@ def generate_sql_from_connection_string(connection_string, parent_class_name="Ou
         class_libaray_py += input_output_class_generate_string(table_class_name, parent_class_name, field_names)
         class_libaray_py += "\n\n"
 
-    print(class_libaray_py)
-    raise
     return class_libaray_py
 
