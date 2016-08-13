@@ -1,6 +1,5 @@
 import unittest
 import os
-
 from mapping_classes import *
 
 
@@ -34,6 +33,14 @@ class TestMappers(unittest.TestCase):
         ucase_mapper = TransformMapper(lambda x : x.upper())
         tm = ucase_mapper.map({"a": "abcd", "b": "ABcd"})
         self.assertEquals({"a": "ABCD", "b": "ABCD"}, tm)
+
+    def test_chain_mapper(self):
+
+        gender_mapper = ChainMapper(TransformMapper(lambda x : x.upper()), ReplacementMapper({"F": "Female", "M": "Male"}))
+        mapper_result = gender_mapper.map({"g": "f", "x": "m", "1": "2"})
+
+        self.assertEquals("Female", mapper_result["g"])
+        self.assertEquals("2", mapper_result["1"])
 
 
 class TestTranslators(unittest.TestCase):

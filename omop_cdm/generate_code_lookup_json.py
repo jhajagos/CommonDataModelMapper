@@ -6,10 +6,10 @@
 import csv
 import json
 import os
-import pprint
+
 
 def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"):
-
+    """Build files for needed vocabulary"""
     if output_json_directory is None:
         output_json_directory = source_vocabulary_directory
 
@@ -38,6 +38,51 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     concept_relationship_json = os.path.join(output_json_directory, "concept_relationship.json")
     csv_file_name_to_keyed_json(concept_relationship_csv, concept_relationship_json, "CONCEPT_ID_1", ("RELATIONSHIP_ID", "Maps to"))
 
+    with open(concept_csv, "rb") as f:
+        dict_reader = csv.DictReader(f, delimiter=delimiter)
+        concept_dict_vocabulary = {}
+        for row_dict in dict_reader:
+            concept_dict_vocabulary[row_dict["CONCEPT_ID"]] = row_dict["VOCABULARY_ID"]
+
+        global_concept_json = os.path.join(output_json_directory, "global_concept_vocabulary.json")
+        print("Writing '%s" % global_concept_json)
+        with open(global_concept_json, "w") as fw:
+            json.dump(concept_dict_vocabulary, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
+    vocabularies_with_maps = ["ICD9CM"]
+    for vocabulary_id in vocabularies_with_maps:
+
+        vocabulary_json = os.path.join(output_json_directory, "CONCEPT_CODE_" + vocabulary_id + ".json")
+        with open(vocabulary_json, "r") as f:
+            vocabulary_dict = json.load(f)
+
+        with open(concept_relationship_json, "r") as f:
+            concept_rel_dict = json.load(f)
+
+        for concept_code in vocabulary_dict:
+            concept_dict = vocabulary_dict[concept_code]
+            concept_id = concept_dict["CONCEPT_ID"]
+            if concept_id in concept_rel_dict:
+                try:
+                    mapped_concept_id = concept_rel_dict[concept_id]["CONCEPT_ID_2"]
+                except TypeError:
+                    multiple_concepts = concept_rel_dict[concept_id]
+                    multiple_concepts.sort(key=lambda x: x["VALID_END_DATE"], reverse=True)
+                    mapped_concept_id = multiple_concepts[0]["CONCEPT_ID_2"]
+
+                concept_dict["MAPPED_CONCEPT_ID"] = mapped_concept_id
+                if mapped_concept_id in concept_dict_vocabulary:
+                    concept_dict["MAPPED_CONCEPT_VOCAB"] = concept_dict_vocabulary[mapped_concept_id]
+                else:
+                    concept_dict["MAPPED_CONCEPT_VOCAB"] = None
+
+            else:
+                concept_dict["MAPPED_CONCEPT_ID"] = None
+
+        concept_with_parent_json = os.path.join(output_json_directory, vocabulary_id + "_with_parent.json")
+        with open(concept_with_parent_json, "w") as fw:
+            json.dump(vocabulary_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
 
 def csv_file_name_to_keyed_json(csv_file_name, json_file_name, field_to_key_on, filter_pair=None, delimiter="\t"):
     """Create a keyed JSON file"""
@@ -46,6 +91,9 @@ def csv_file_name_to_keyed_json(csv_file_name, json_file_name, field_to_key_on, 
         result_dict = {}
 
         include_row = True
+        filter_value = None
+        field = None
+
         if filter_pair is not None:
             field, filter_value = filter_pair
             include_row = False

@@ -146,6 +146,44 @@ class TransformMapper(MapperClass):
         return mapped_dict
 
 
+class ChainMapper(MapperClass):
+    """Chain together separate mappers"""
+    def __init__(self, *mapper_classes):
+        self.mapper_classes = mapper_classes
+
+    def map(self, input_dict):
+        result_dict = {}
+        i = 0
+        for mapper_class in self.mapper_classes:
+            if i == 0:
+                result_dict = mapper_class.map(input_dict)
+            else:
+                result_dict = mapper_class.map(result_dict)
+
+            i += 1
+
+        return result_dict
+
+
+class ReplacementMapper(MapperClass):
+    """Translate a string"""
+
+    def __init__(self, mapping_dict):
+        self.mapping_dict = mapping_dict
+
+    def map(self, dict_to_translate):
+        translated_dict = {}
+        for key in dict_to_translate:
+            value_str = dict_to_translate[key]
+            if value_str in self.mapping_dict:
+                replacement_str = self.mapping_dict[value_str]
+                translated_dict[key] = replacement_str
+            else:
+                translated_dict[key] = value_str
+
+        return translated_dict
+
+
 class KeyTranslator(object):
     """Translate keys in a dict"""
 
@@ -269,6 +307,7 @@ class DirectoryClass(object):
 
 
 class InputOutputMapperDirectory(DirectoryClass):
+    """"""
     def register(self, input_class_obj, output_class_obj, mapper_class_obj):
         self.directory_dict[(input_class_obj.__class__, output_class_obj.__class__)] = mapper_class_obj
 
