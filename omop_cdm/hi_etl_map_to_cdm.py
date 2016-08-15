@@ -2,9 +2,7 @@
 from omop_cdm_functions import *
 from omop_cdm_classes import *
 from hi_classes import *
-import json
 import os
-import sys
 from mapping_classes import *
 
 
@@ -14,23 +12,7 @@ def person_router_obj(input_dict):
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
 
-    # Person classes
-    # gender_concept_id
-    # gender_concept_id
-    # year_of_birth
-    # month_of_birth
-    # day_of_birth
-    # time_of_birth
-    # race_concept_id
-    # ethnicity_concept_id
-    # location_id
-    # provider_id
-    # care_site_id
-    # person_source_value
-    # gender_source_value
-    # gender_source_concept_id
-
-    # Person input mapper
+    # Location
 
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
@@ -44,6 +26,18 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
     cdm_person_csv_obj = OutputClassCSVRealization(output_person_csv, PersonObject())
+
+    # time_of_birth
+    # race_concept_id
+    # ethnicity_concept_id
+    # location_id
+    # provider_id
+    # care_site_id
+    # person_source_value
+    # gender_source_value
+    # gender_source_concept_id
+
+    # Person input mapper
 
     patient_rules = [(":row_id", "person_id"), ("empi_id", "person_source_value"),
                      ("birth_date", DateSplit(),
