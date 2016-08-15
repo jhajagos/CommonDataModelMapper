@@ -56,7 +56,26 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     map_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_csv_obj, in_out_map_obj, output_directory_obj,
                                                             person_router_obj)
+
     map_runner_obj.run()
+
+    #TODO: Implement the following mappings
+    # death
+    #deceased	deceased_dt_tm	deceased_date_id	deceased_source_type	deceased_source_id	deceased_source_version	deceased_source_description	deceased_reference_id
+
+    # measurement
+
+    # visit_occurrence
+
+    # condition
+
+    # procedure
+
+    # observation
+
+    # drug_exposure
+
+
 
 
 if __name__ == "__main__":
