@@ -20,6 +20,8 @@ def death_router_obj(input_dict):
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
 
+    # Provider
+
     # Location
 
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
@@ -41,9 +43,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # location_id
     # provider_id
     # care_site_id
-    # person_source_value
-    # gender_source_value
-    # gender_source_concept_id
 
     # Person input mapper
 
@@ -73,7 +72,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                          CoderMapperJSONClass(os.path.join(json_map_directory,
                                                                                            "CONCEPT_NAME_Death_Type.json")))
 
-    input_person_death_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
     hi_person_death_csv_obj = InputClassCSVRealization(input_person_csv, PHDPersonObject())
 
     death_rules = [("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -93,19 +91,21 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     death_runner_obj.run()
 
+    # visit_occurrence
+
+    # ["visit_occurrence_id", "person_id", "visit_concept_id", "visit_start_date", "visit_start_time", "visit_end_date", "visit_end_time", "visit_type_concept_id", "provider_id", "care_site_id", "visit_source_value", "visit_source_concept_id"]
+
     # measurement
 
-    # visit_occurrence
+    # ["measurement_id", "person_id", "measurement_concept_id", "measurement_date", "measurement_time", "measurement_type_concept_id", "operator_concept_id", "value_as_number", "value_as_concept_id", "unit_concept_id", "range_low", "range_high", "provider_id", "visit_occurrence_id", "measurement_source_value", "measurement_source_concept_id", "unit_source_value", "value_source_value"]
 
     # condition
 
     # procedure
 
-    # observation
+    # observation - DRGs
 
     # drug_exposure
-
-
 
 
 if __name__ == "__main__":
