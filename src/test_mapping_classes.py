@@ -204,7 +204,47 @@ class TestRunMapper(unittest.TestCase):
         map_runner_obj.run()
         output_realization.close()
 
-        #TODO Add tests to test the results of applying rules
+        with open("./test/output_obj1_map.csv", "r") as f:
+            list_dict = list(csv.DictReader(f))
+
+        self.assertEquals(3, len(list_dict))
+
+
+    def test_no_output_class_handling(self):
+
+        def mapper_with_no_class(row_dict):
+            if row_dict["object_code"] == "500":
+                return NoOutputClass()
+            else:
+                return Object1Mapped()
+
+        ucase_mapper = TransformMapper(lambda x: x.upper())
+        code_mapper = CoderMapperJSONClass("./test/code_mapper.json")
+
+        rules = [("id", "ID"), (":row_id", "sequence_id"), ("object_name", ucase_mapper, "OBJECT_NAME"),
+                 "object_code", ("object_code", code_mapper, {"code_id": "mapped_code_id"})]
+
+        mapper_rules_class = build_input_output_mapper(rules)
+
+        in_out_map_obj = InputOutputMapperDirectory()
+        in_out_map_obj.register(Object1(), Object1Mapped(), mapper_rules_class)
+
+        in_obj_1 = InputClassCSVRealization("./test/input_object1.csv", Object1())
+
+        output_directory_obj = OutputClassDirectory()
+        output_realization = OutputClassCSVRealization("./test/output_obj1_map_noc.csv", Object1Mapped())
+
+        output_directory_obj.register(Object1Mapped(), output_realization)
+
+        map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj,
+                                                                mapper_with_no_class)
+        map_runner_obj.run()
+        output_realization.close()
+
+        with open("./test/output_obj1_map_noc.csv", "r") as f:
+            list_dict = list(csv.DictReader(f))
+
+        self.assertEquals(2, len(list_dict))
 
 
 if __name__ == '__main__':

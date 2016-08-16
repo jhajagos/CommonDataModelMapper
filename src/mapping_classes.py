@@ -7,6 +7,8 @@ Mapping class
 import json
 import csv
 
+def logger(obj):
+    print(obj)
 
 class InputClass(object):
     """Superclass representing the abstract input source"""
@@ -337,11 +339,12 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
             output_class_obj = self.output_class_func(row_dict)
             output_class = output_class_obj.__class__
 
-            #TODO Add NoOutputClass Logic
+            if output_class == NoOutputClass().__class__:
+                pass#logger("Row not mapped" + str(row_dict))
+            else:
+                output_class_instance = self.output_directory_obj[output_class]
+                mapper_obj = self.input_output_directory_obj[(input_class, output_class)]
+                mapped_row_dict = mapper_obj.map(row_dict)
+                output_class_instance.write(mapped_row_dict)
 
-            output_class_instance = self.output_directory_obj[output_class]
-            mapper_obj = self.input_output_directory_obj[(input_class, output_class)]
-            mapped_row_dict = mapper_obj.map(row_dict)
-            output_class_instance.write(mapped_row_dict)
-
-            #TODO: will need to add a call back function
+                #TODO: will need to add a call back function

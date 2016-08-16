@@ -10,6 +10,14 @@ def person_router_obj(input_dict):
     return PersonObject()
 
 
+def death_router_obj(input_dict):
+    "Determines if a row_dict codes a death"
+    if input_dict["deceased"] == "true":
+        return DeathObject()
+    else:
+        return NoOutputClass()
+
+
 def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # Location
@@ -54,14 +62,36 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_directory_obj = OutputClassDirectory()
     output_directory_obj.register(PersonObject(), cdm_person_csv_obj)
 
-    map_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_csv_obj, in_out_map_obj, output_directory_obj,
+    person_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_csv_obj, in_out_map_obj, output_directory_obj,
                                                             person_router_obj)
+    person_runner_obj.run()
 
-    map_runner_obj.run()
+    person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id")
+    empi_id_mapper = CoderMapperJSONClass(person_json_file_name)
 
-    #TODO: Implement the following mappings
-    # death
-    #deceased	deceased_dt_tm	deceased_date_id	deceased_source_type	deceased_source_id	deceased_source_version	deceased_source_description	deceased_reference_id
+    death_concept_mapper = ChainMapper(ReplacementMapper({"true": 'EHR record patient status "Deceased"'}),
+                                                         CoderMapperJSONClass(os.path.join(json_map_directory,
+                                                                                           "CONCEPT_NAME_Death_Type.json")))
+
+    input_person_death_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
+    hi_person_death_csv_obj = InputClassCSVRealization(input_person_csv, PHDPersonObject())
+
+    death_rules = [("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                   ("deceased", death_concept_mapper, {"CONCEPT_ID":  "death_type_concept_id"}),
+                   ("deceased_dt_tm", SplitDateTimeWithTZ(), {"date": "death_date"})]
+
+    output_death_csv = os.path.join(output_csv_directory, "death_cdm.csv")
+    cdm_death_csv_obj = OutputClassCSVRealization(output_death_csv, DeathObject())
+
+    death_mapper_rules_class = build_input_output_mapper(death_rules)
+
+    in_out_map_obj.register(PHDPersonObject(), DeathObject(), death_mapper_rules_class)
+    output_directory_obj.register(DeathObject(), cdm_death_csv_obj)
+
+    death_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_death_csv_obj, in_out_map_obj, output_directory_obj,
+                                                              death_router_obj)
+
+    death_runner_obj.run()
 
     # measurement
 
