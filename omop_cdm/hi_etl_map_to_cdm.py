@@ -21,7 +21,7 @@ def visit_router_obj(input_dict):
     return VisitOccurrenceObject()
 
 def measurement_router_obj(input_dict):
-
+    "Determine if the result is a LOINC code"
     if "-" in input_dict["result_code"]:
         return MeasurementObject()
     else:
@@ -186,8 +186,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     measurement_runner_obj.run()
 
     # condition
-
-
 
     # procedure
 
