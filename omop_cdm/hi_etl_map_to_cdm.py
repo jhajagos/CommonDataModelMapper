@@ -17,6 +17,16 @@ def death_router_obj(input_dict):
     else:
         return NoOutputClass()
 
+def visit_router_obj(input_dict):
+    return VisitOccurrenceObject()
+
+def measurement_router_obj(input_dict):
+
+    if "-" in input_dict["result_code"]:
+        return MeasurementObject()
+    else:
+        return NoOutputClass()
+
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
 
@@ -45,7 +55,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # care_site_id
 
     # Person input mapper
-
     patient_rules = [(":row_id", "person_id"), ("empi_id", "person_source_value"),
                      ("birth_date", DateSplit(),
                         {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
@@ -93,13 +102,92 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # visit_occurrence
 
-    # ["visit_occurrence_id", "person_id", "visit_concept_id", "visit_start_date", "visit_start_time", "visit_end_date", "visit_end_time", "visit_type_concept_id", "provider_id", "care_site_id", "visit_source_value", "visit_source_concept_id"]
+    # ["visit_occurrence_id", "person_id", "visit_concept_id", "visit_start_date", "visit_start_time", "visit_end_date",
+    # "visit_end_time", "visit_type_concept_id", "provider_id", "care_site_id", "visit_source_value", "visit_source_concept_id"]
+
+    visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
+    visit_concept_mapper = ChainMapper(
+        ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit"}),
+        CoderMapperJSONClass(visit_concept_json))
+
+    visit_concept_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit_Type.json")
+    visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
+                                            CoderMapperJSONClass(visit_concept_type_json))
+
+    input_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
+    hi_encounter_csv_obj = InputClassCSVRealization(input_encounter_csv, PHFEncounterObject())
+
+    output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
+    cdm_visit_occurrence_csv_obj = OutputClassCSVRealization(output_visit_occurrence_csv, VisitOccurrenceObject())
+
+    visit_rules = [("encounter_id", "visit_source_value"),
+                   ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                   (":row_id", "visit_occurrence_id"),
+                   ("classification_primary_display", visit_concept_mapper, {"CONCEPT_ID": "visit_concept_id"}),
+                   (":row_id", visit_concept_type_mapper, {"CONCEPT_ID": "visit_type_concept_id"}),
+                   ("service_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_start_date", "time": "visit_start_time"}),
+                   ("discharge_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_end_date", "time": "visit_end_time"})
+                  ]
+
+    visit_rules_class = build_input_output_mapper(visit_rules)
+
+    in_out_map_obj.register(PHFEncounterObject(), VisitOccurrenceObject(), visit_rules_class)
+    output_directory_obj.register(VisitOccurrenceObject(), cdm_visit_occurrence_csv_obj)
+
+    visit_runner_obj = RunMapperAgainstSingleInputRealization(hi_encounter_csv_obj, in_out_map_obj,
+                                                              output_directory_obj,
+                                                              visit_router_obj)
+
+    # Need to check why the synpuf to CDM visit_concept_type and visit_type might be mapped wrong
+
+    visit_runner_obj.run()
+
+    encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_occurrence_id")
+    encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name)
 
     # measurement
 
-    # ["measurement_id", "person_id", "measurement_concept_id", "measurement_date", "measurement_time", "measurement_type_concept_id", "operator_concept_id", "value_as_number", "value_as_concept_id", "unit_concept_id", "range_low", "range_high", "provider_id", "visit_occurrence_id", "measurement_source_value", "measurement_source_concept_id", "unit_source_value", "value_source_value"]
+    # ["measurement_id", "person_id", "measurement_concept_id", "measurement_date", "measurement_time", "measurement_type_concept_id",
+    # "operator_concept_id", "value_as_number", "value_as_concept_id", "unit_concept_id", "range_low", "range_high", "provider_id",
+    # "visit_occurrence_id", "measurement_source_value", "measurement_source_concept_id", "unit_source_value", "value_source_value"]
+
+
+    input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
+    hi_result_csv_obj = InputClassCSVRealization(input_result_csv, PHFResultObject())
+
+    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm.csv")
+    cdm_measurement_csv_obj = OutputClassCSVRealization(output_measurement_csv, MeasurementObject())
+
+    loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
+    loinc_mapper = CoderMapperJSONClass(loinc_json)
+
+    # TODO: mapping for "measurement_type_concept_id"
+    measurement_rules = [(":row_id", "measurement_id"),
+                         ("empi_id", empi_id_mapper, {}),
+                         ("encounter_id", encounter_id_mapper, {}),
+                         ("service_date", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
+                         ("result_code", "measurement_source_value"), # TODO Add logic norm_codified_value_display
+                         ("result_code", loinc_mapper, {"CONCEPT_ID": "measurement_source_concept_id", "MAPPED_CONCEPT_ID": "measurement_concept_id"}),
+                         ("numeric_value", "value_as_number"),
+                         ("norm_unit_of_measure_primary_display", "unit_source_value"),
+                         ("result_primary_display", "value_source_value"),
+                         ("norm_ref_range_low", "range_low"), #TODO Some values contain non-numeric elements
+                         ("norm_ref_range_high", "range_high")]
+
+    measurement_rules_class = build_input_output_mapper(measurement_rules)
+
+    in_out_map_obj.register(PHFResultObject(), MeasurementObject(), measurement_rules_class)
+    output_directory_obj.register(MeasurementObject(), cdm_measurement_csv_obj)
+
+    measurement_runner_obj = RunMapperAgainstSingleInputRealization(hi_result_csv_obj, in_out_map_obj,
+                                                              output_directory_obj,
+                                                              measurement_router_obj)
+
+    measurement_runner_obj.run()
 
     # condition
+
+
 
     # procedure
 

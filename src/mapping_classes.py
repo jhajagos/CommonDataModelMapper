@@ -186,6 +186,17 @@ class ReplacementMapper(MapperClass):
         return translated_dict
 
 
+class ConstantMapper(MapperClass):
+    """Always returns the same thing in a map operation no matter what the input is"""
+
+    def __init__(self, mapping_result):
+        self.mapping_result = mapping_result
+
+    def map(self, void_dict):
+        return self.mapping_result
+
+
+
 class KeyTranslator(object):
     """Translate keys in a dict"""
 
