@@ -6,6 +6,7 @@ Mapping class
 
 import json
 import csv
+import copy
 
 def logger(obj):
     print(obj)
@@ -108,13 +109,18 @@ class CoderMapperStaticClass(CodeMapperClass):
 class CoderMapperJSONClass(CodeMapperClass):
     """A code mapper that reads code from a JSON dict of dicts"""
 
-    def __init__(self, json_file_name):
+    def __init__(self, json_file_name, field_name=None):
+        self.field_name = field_name
         with open(json_file_name, "r") as f:
             self.mapper_dict = json.load(f)
 
     def map(self, input_dict):
 
-        key = input_dict.keys()[0]
+        if self.field_name is None:
+            key = input_dict.keys()[0]
+        else:
+            key = self.field_name
+
         value = input_dict[key]
 
         if value in self.mapper_dict:
@@ -148,6 +154,17 @@ class TransformMapper(MapperClass):
         return mapped_dict
 
 
+class CaseMapper(MapperClass):
+    """Case function returns an integer 0....n where it then evalut"""
+    def __init__(self, case_function, *map_cases):
+        self.case_function = case_function
+        self.map_cases = map_cases
+
+    def map(self, input_dict):
+        case_value = self.case_function(input_dict)
+        return self.map_cases[case_value].map(input_dict)
+
+
 class ChainMapper(MapperClass):
     """Chain together separate mappers"""
     def __init__(self, *mapper_classes):
@@ -168,7 +185,7 @@ class ChainMapper(MapperClass):
 
 
 class ReplacementMapper(MapperClass):
-    """Translate a string"""
+    """Translate a string by exact match"""
 
     def __init__(self, mapping_dict):
         self.mapping_dict = mapping_dict
@@ -356,6 +373,7 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
                 output_class_instance = self.output_directory_obj[output_class]
                 mapper_obj = self.input_output_directory_obj[(input_class, output_class)]
                 mapped_row_dict = mapper_obj.map(row_dict)
+
                 output_class_instance.write(mapped_row_dict)
 
                 #TODO: will need to add a call back function

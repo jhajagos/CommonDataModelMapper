@@ -42,6 +42,33 @@ class TestMappers(unittest.TestCase):
         self.assertEquals("Female", mapper_result["g"])
         self.assertEquals("2", mapper_result["1"])
 
+    def test_case_mapper(self):
+
+        def determine_zero_positive_negative(input_dict):
+            numeric_value = input_dict[input_dict.keys()[0]]
+            if numeric_value == 0:
+                return 0
+            elif numeric_value > 0:
+                return 1
+            else:
+                return 2
+
+        import math
+        one_over_x = TransformMapper(lambda x: 1.0 / x)
+        square_mapper = TransformMapper(lambda x: x*x)
+        exp_mapper = TransformMapper(lambda x: math.exp(x))
+
+        case_mapper_obj = CaseMapper(determine_zero_positive_negative, square_mapper, one_over_x, exp_mapper)
+
+        result_dict_1 = case_mapper_obj.map({"x": 0})
+        self.assertEquals({"x": 0}, result_dict_1)
+
+        result_dict_2 = case_mapper_obj.map({"x": 0.5})
+        self.assertEquals({"x": 1/0.5}, result_dict_2)
+
+        result_dict_3 = case_mapper_obj.map({"x": -1})
+        self.assertEquals({"x": math.exp(-1)}, result_dict_3)
+
 
 class TestTranslators(unittest.TestCase):
 

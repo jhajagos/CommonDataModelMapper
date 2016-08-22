@@ -29,10 +29,18 @@ class DateSplit(MapperClass):
 
 
 def convert_datetime_with_tz(datetime_tz):
+    null_date = "1900-01-01 00:00:00"
+    if datetime_tz == '':
+        return null_date
+
     dt_dts = datetime_tz[:-6]
-    dt_h = int(datetime_tz[-6:-3])
+    dt_h_string = datetime_tz[-6:-3]
+    dt_h = int(dt_h_string)
     dt_dts_tuple = time.strptime(dt_dts, "%Y-%m-%dT%H:%M:%S")
-    dt_dts_epoch = time.mktime(dt_dts_tuple) +  dt_h * 60.0 * 60
+    try:
+        dt_dts_epoch = time.mktime(dt_dts_tuple) + dt_h * 60.0 * 60
+    except ValueError:
+        return null_date
     localized_datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dt_dts_epoch))
     return localized_datetime
 

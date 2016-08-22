@@ -1,5 +1,6 @@
-from mapping_classes import OutputClass
+"""These classes match the field values and field position for tables in the OMOP CDM V5"""
 
+from mapping_classes import OutputClass
 
 class DomainObject(OutputClass):
     def fields(self):

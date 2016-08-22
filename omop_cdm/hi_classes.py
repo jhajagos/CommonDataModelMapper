@@ -14,3 +14,9 @@ class PHFEncounterObject(InputClass):
 class PHFResultObject(InputClass):
     def fields(self):
         return []
+
+
+class PHFConditionObject(InputClass):
+    def fields(self):
+        return []
+
