@@ -4,6 +4,7 @@ import csv
 import os
 import json
 
+
 class DateSplit(MapperClass):
     """Split a date"""
     def map(self, date_dict):
@@ -63,6 +64,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
         json.dump(map_dict, fwj)
 
     return os.path.abspath(json_file_name)
+
 
 class SplitDateTimeWithTZ(MapperClass):
     def map(self, input_dict):

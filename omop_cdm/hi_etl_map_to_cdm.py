@@ -1,3 +1,6 @@
+"""
+Mapping data extracted from HealtheIntent Data warehouse into the OMOP CDM
+"""
 
 from omop_cdm_functions import *
 from omop_cdm_classes import *
@@ -11,17 +14,19 @@ def person_router_obj(input_dict):
 
 
 def death_router_obj(input_dict):
-    "Determines if a row_dict codes a death"
+    """Determines if a row_dict codes a death"""
     if input_dict["deceased"] == "true":
         return DeathObject()
     else:
         return NoOutputClass()
 
+
 def visit_router_obj(input_dict):
     return VisitOccurrenceObject()
 
+
 def measurement_router_obj(input_dict):
-    "Determine if the result is a LOINC code"
+    """Determine if the result contains a LOINC code"""
     if "-" in input_dict["result_code"]:
         return MeasurementObject()
     else:
@@ -29,6 +34,7 @@ def measurement_router_obj(input_dict):
 
 
 def icd9_versus_icd10_coding(coding_system_oid):
+    """Determine if the diagnosis is ICD9 versus ICD10"""
     if coding_system_oid == "2.16.840.1.113883.6.90":
         return "ICD10CM"
     elif coding_system_oid == "2.16.840.1.113883.6.103":
@@ -52,14 +58,14 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # Provider
 
-    # Location
+    # Location - Patient Location
+
+    # Person input / output
 
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
     gender_mapper = ChainMapper(upper_case_mapper, gender_json_mapper)
-
-    # Person input / output
 
     input_person_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
     hi_person_csv_obj = InputClassCSVRealization(input_person_csv, PHDPersonObject())
@@ -149,6 +155,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                    ("discharge_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_end_date", "time": "visit_end_time"})
                   ]
 
+    # Add care site id
+
     visit_rules_class = build_input_output_mapper(visit_rules)
 
     in_out_map_obj.register(PHFEncounterObject(), VisitOccurrenceObject(), visit_rules_class)
@@ -171,7 +179,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # "operator_concept_id", "value_as_number", "value_as_concept_id", "unit_concept_id", "range_low", "range_high", "provider_id",
     # "visit_occurrence_id", "measurement_source_value", "measurement_source_concept_id", "unit_source_value", "value_source_value"]
 
-
     input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
     hi_result_csv_obj = InputClassCSVRealization(input_result_csv, PHFResultObject())
 
@@ -184,6 +191,22 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: mapping for "measurement_type_concept_id"
     # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
     # "CONCEPT_CLASS_ID": "Lab Test"
+
+    # unit_concept_id - needs to be mapped
+
+    # SNOMED
+    # "Percent": {
+    #                "CONCEPT_CLASS_ID": "Qualifier Value",
+    #                "CONCEPT_CODE": "118582008",
+    #                "CONCEPT_ID": "4041099",
+    #                "CONCEPT_NAME": "Percent",
+    #                "DOMAIN_ID": "Observation",
+    #                "INVALID_REASON": "",
+    #                "STANDARD_CONCEPT": "S",
+    #                "VALID_END_DATE": "20991231",
+    #                "VALID_START_DATE": "19700101",
+    #                "VOCABULARY_ID": "SNOMED"
+    #            },
 
     measurement_rules = [(":row_id", "measurement_id"),
                          ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -211,7 +234,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #ConditionOccurrenceObject()
 
-    # Need to map ICD9CM versus ICD10CM DX codes
+    # Map ICD9CM and ICD10CM DX codes
     # Need to take into account domain issues
 
     # condition_id
@@ -234,6 +257,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     #condition_source_value
     #condition_raw_code
 
+    # What do with VCODES in ICD9 - preventive med
 
     input_condition_csv = os.path.join(input_csv_directory, "PH_F_Condition.csv")
     hi_condition_csv_obj = InputClassCSVRealization(input_condition_csv, PHFConditionObject())
@@ -278,6 +302,27 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                                     output_directory_obj,
                                                                     condition_router_obj)
     condition_runner_obj.run()
+
+    # Maps the DXs linked by the claims
+
+    # procedure
+
+        # Need to determine overlap between encounter and claims
+
+    # drug_exposure
+
+    # Map Multum Codes to RXAUI - add RXCUI maps
+
+    # observation
+
+    #  DRGs MS-DRGS
+
+
+if __name__ == "__main__":
+    with open("hi_config.json", "r") as f:
+        config_dict = json.load(f)
+
+    main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
 
     [u'Carrier claim detail - 10th position',
      u'Carrier claim detail - 11th position',
@@ -378,19 +423,3 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
      u'Primary Condition',
      u'Referral record',
      u'Secondary Condition']
-
-    # procedure
-
-    # observation - DRGs
-
-    # drug_exposure
-
-
-if __name__ == "__main__":
-    with open("hi_config.json", "r") as f:
-        config_dict = json.load(f)
-
-    main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
-
-
-
