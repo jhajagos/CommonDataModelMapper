@@ -42,6 +42,16 @@ class TestMappers(unittest.TestCase):
         self.assertEquals("Female", mapper_result["g"])
         self.assertEquals("2", mapper_result["1"])
 
+    def test_concatenate_mapper(self):
+
+        map_dict = {'a': '123', 'b': '456', 'c': '789'}
+
+        cm_obj = ConcatenateMapper('|', "a", "b")
+
+        mapped_dict = cm_obj.map(map_dict)
+
+        self.assertEquals(mapped_dict, {'a|b': '123|456'})
+
     def test_case_mapper(self):
 
         def determine_zero_positive_negative(input_dict):

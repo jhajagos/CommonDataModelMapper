@@ -25,6 +25,14 @@ def visit_router_obj(input_dict):
     return VisitOccurrenceObject()
 
 
+def drug_exposure_router_obj(input_dict):
+
+    if input_dict["status_primary_display"] != "Cancelled":
+        return DrugExposureObject()
+    else:
+        return NoOutputClass()
+
+
 def measurement_router_obj(input_dict):
     """Determine if the result contains a LOINC code"""
     if "-" in input_dict["result_code"]:
@@ -43,15 +51,19 @@ def icd9_versus_icd10_coding(coding_system_oid):
         return False
 
 
-def case_mapper_icd9_icd10(input_dict, field="condition_coding_system_id"):
+def multum_generic_brand_coding(input_dict, field="drug_raw_coding_system_id"):
 
     coding_system_oid = input_dict[field]
-    coding_version = icd9_versus_icd10_coding(coding_system_oid)
 
-    if coding_version == "ICD9CM":
-        return 0
+    if coding_system_oid == "2.16.840.1.113883.6.312":
+        return "Brand"
+    elif coding_system_oid == "2.16.840.1.113883.6.314":
+        return "Generic"
     else:
-        return 1
+        return False
+
+
+
 
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
@@ -268,12 +280,21 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     icd9cm_json = os.path.join(json_map_directory, "ICD9CM_with_parent.json")
     icd10cm_json = os.path.join(json_map_directory, "ICD10CM_with_parent.json")
 
+    def case_mapper_icd9_icd10(input_dict, field="condition_coding_system_id"):
+        coding_system_oid = input_dict[field]
+        coding_version = icd9_versus_icd10_coding(coding_system_oid)
+
+        if coding_version == "ICD9CM":
+            return 0
+        else:
+            return 1
+
     ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
 
     condition_rules = [(":row_id", "condition_occurrence_id"),
                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                       (("condition_raw_code","condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
+                       (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                        ("condition_raw_code", "condition_source_value"),
                        ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})
                       ]
@@ -311,7 +332,119 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # drug_exposure
 
+    input_med_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
+    hi_medication_csv_obj = InputClassCSVRealization(input_med_csv, PHFMedicationObject())
+
+    output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
+    cdm_drug_exposure_csv_obj = OutputClassCSVRealization(output_drug_exposure_csv, DrugExposureObject())
+
+    multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
+    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
+
+    rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
+
+    def case_mapper_multum_bn_gn(input_dict, field="drug_raw_coding_system_id"):
+        bn_gn_value = multum_generic_brand_coding(input_dict, field=field)
+
+        if bn_gn_value == "Brand":
+            return 0
+        else:
+            return 1
+
+    MultumMapper = ChainMapper(CaseMapper(case_mapper_multum_bn_gn, CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
+                                CoderMapperJSONClass(multum_gn_json, "drug_raw_code")),
+                                CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
+
+    medication_rules = [(":row_id", "drug_exposure_id"),
+                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                        (("drug_raw_code", "drug_primary_display", "drug_raw_coding_system_id"),
+                         ConcatenateMapper("|", "drug_primary_display", "drug_raw_code", "drug_raw_coding_system_id"),
+                         {"drug_primary_display|drug_raw_code|drug_raw_coding_system_id": "drug_source_value"}),
+                        ("route_display", "route_source_value"),
+                        ("dose_quantity", "dose_source_value"),
+                        ("start_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
+                        ("stop_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
+                        ("dose_quantity", "quantity"),
+                        (("drug_raw_coding_system_id", "drug_raw_code"), MultumMapper,
+                         {"CONCEPT_ID": "drug_source_concept_id"})
+                        ]
+
+    medication_rules_class = build_input_output_mapper(medication_rules)
+
+    in_out_map_obj.register(PHFMedicationObject(), DrugExposureObject(), medication_rules_class)
+    output_directory_obj.register(DrugExposureObject(), cdm_drug_exposure_csv_obj)
+
+    drug_exposure_runner_obj = RunMapperAgainstSingleInputRealization(hi_medication_csv_obj, in_out_map_obj,
+                                                              output_directory_obj,
+                                                              drug_exposure_router_obj)
+
+    drug_exposure_runner_obj.run()
+
+
+    ["drug_exposure_id", "person_id", "drug_concept_id", "drug_exposure_start_date", "drug_exposure_end_date",
+     "drug_type_concept_id", "stop_reason", "refills", "quantity", "days_supply", "sig", "route_concept_id",
+     "effective_drug_dose", "dose_unit_concept_id", "lot_number", "provider_id", "visit_occurrence_id",
+     "drug_source_value", "drug_source_concept_id", "route_source_value", "dose_unit_source_value"]
+
     # Map Multum Codes to RXAUI - add RXCUI maps
+
+
+    """
+
+    display_name
+    drug_code
+    drug_display
+    drug_coding_system_id
+    drug_raw_coding_system_id
+    drug_raw_code
+    drug_primary_display
+    start_dt_tm
+    start_date_id
+    stop_dt_tm
+    stop_date_id
+    status_code
+    status_display
+    status_coding_system_id
+    status_raw_coding_system_id
+    status_raw_code
+    status_primary_display
+    detail_line
+    prescribing_prsnl_id
+    prescribing_provider_id
+    claim_id
+    dose_quantity
+    dose_unit_code
+    dose_unit_display
+    dose_unit_coding_system_id
+    dose_unit_raw_coding_system_id
+    dose_unit_raw_code
+    dose_unit_primary_display
+    route_code
+    route_display
+    route_coding_system_id
+    route_raw_coding_system_id
+    route_raw_code
+    route_primary_display
+    frequency_code
+    frequency_display
+    frequency_coding_system_id
+    frequency_raw_coding_system_id
+    frequency_raw_code
+    frequency_primary_display
+    patient_instructions
+    update_dt_tm
+    update_date_id
+    update_prsnl_id
+    update_provider_id
+    source_type
+    source_id
+    source_version
+    source_description
+    intended_administrator
+    intended_dispenser
+
+    """
 
     # observation
 

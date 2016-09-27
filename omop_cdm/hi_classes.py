@@ -20,3 +20,7 @@ class PHFConditionObject(InputClass):
     def fields(self):
         return []
 
+
+class PHFMedicationObject(InputClass):
+    def fields(self):
+        return []

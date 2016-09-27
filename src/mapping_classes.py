@@ -11,6 +11,7 @@ import copy
 def logger(obj):
     print(obj)
 
+
 class InputClass(object):
     """Superclass representing the abstract input source"""
     def fields(self):
@@ -121,7 +122,10 @@ class CoderMapperJSONClass(CodeMapperClass):
         else:
             key = self.field_name
 
-        value = input_dict[key]
+        if key in input_dict:
+            value = input_dict[key]
+        else:
+            return {}
 
         if value in self.mapper_dict:
             return self.mapper_dict[value]
@@ -213,7 +217,6 @@ class ConstantMapper(MapperClass):
         return self.mapping_result
 
 
-
 class KeyTranslator(object):
     """Translate keys in a dict"""
 
@@ -242,6 +245,25 @@ class IdentityTranslator(KeyTranslator):
 
     def translate(self, dict_to_map):
         return dict_to_map
+
+
+class ConcatenateMapper(object):
+    """Concatenate several fields together"""
+
+    def __init__(self, delimiter, *fields):
+        self.delimiter = delimiter
+        self.fields = fields
+
+    def map(self, dict_to_map):
+        cat_string = ""
+        for field in self.fields:
+            if field in dict_to_map:
+                cat_string += dict_to_map[field] + self.delimiter
+
+        if len(cat_string):
+            return {self.delimiter.join(self.fields): cat_string[:-1]}
+        else:
+            return {self.delimiter.join(self.fields): ""}
 
 
 class InputOutputMapperInstance(object):
