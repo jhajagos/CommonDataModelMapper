@@ -54,16 +54,15 @@ def icd9_versus_icd10_coding(coding_system_oid):
 def multum_generic_brand_coding(input_dict, field="drug_raw_coding_system_id"):
 
     coding_system_oid = input_dict[field]
-
-    if coding_system_oid == "2.16.840.1.113883.6.312":
+    # TODO Add Other OIDs
+    # 2.16.840.1.113883.6.311 MMSL - BD - Fully-specified drug brand name that can be prescribed - CD -Clinical Drug
+    # 2.16.840.1.113883.6.88 - RxNorm - RXCUI
+    if coding_system_oid == "2.16.840.1.113883.6.312": # MMSL - BN - Fully specified drug brand name that can not be prescribed
         return "Brand"
-    elif coding_system_oid == "2.16.840.1.113883.6.314":
+    elif coding_system_oid == "2.16.840.1.113883.6.314": # MMSL - GN - d04373 -- Generic drug name
         return "Generic"
     else:
         return False
-
-
-
 
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
@@ -327,7 +326,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # Maps the DXs linked by the claims
 
     # procedure
-
+        # Map DX
         # Need to determine overlap between encounter and claims
 
     # drug_exposure
