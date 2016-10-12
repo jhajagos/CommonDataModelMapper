@@ -1,7 +1,7 @@
 import unittest
 import os
 from mapping_classes import *
-
+logging.basicConfig(level=logging.INFO)
 
 class Object1(InputClass):
     def fields(self):
@@ -131,15 +131,15 @@ class TestBuildInputOutMapper(unittest.TestCase):
 
 
 # Function which return the output
-def test_output_func(void_dict):
+def _test_output_func(void_dict):
     return Object1Output()
 
 
-def test_output_caps_func(void_dict):
+def _test_output_caps_func(void_dict):
     return Object1OutputCaps()
 
 
-def test_output_mapped_func(void_dict):
+def _test_output_mapped_func(void_dict):
     return Object1Mapped()
 
 
@@ -166,7 +166,7 @@ class TestRunMapper(unittest.TestCase):
 
         output_directory_obj.register(Object1Output(),output_realization)
 
-        map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj, test_output_func)
+        map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj, _test_output_func)
         map_runner_obj.run()
 
         output_realization.close()
@@ -194,7 +194,7 @@ class TestRunMapper(unittest.TestCase):
         output_directory_obj.register(Object1OutputCaps(), output_realization)
 
         map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj,
-                                                                test_output_caps_func)
+                                                                _test_output_caps_func)
         map_runner_obj.run()
         output_realization.close()
 
@@ -237,7 +237,7 @@ class TestRunMapper(unittest.TestCase):
         output_directory_obj.register(Object1Mapped(), output_realization)
 
         map_runner_obj = RunMapperAgainstSingleInputRealization(in_obj_1, in_out_map_obj, output_directory_obj,
-                                                                test_output_mapped_func)
+                                                                _test_output_mapped_func)
         map_runner_obj.run()
         output_realization.close()
 
@@ -245,7 +245,6 @@ class TestRunMapper(unittest.TestCase):
             list_dict = list(csv.DictReader(f))
 
         self.assertEquals(3, len(list_dict))
-
 
     def test_no_output_class_handling(self):
 

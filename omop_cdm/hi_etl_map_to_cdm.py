@@ -7,6 +7,8 @@ from omop_cdm_classes import *
 from hi_classes import *
 import os
 from mapping_classes import *
+import logging
+logging.basicConfig(level=logging.INFO)
 
 
 def person_router_obj(input_dict):

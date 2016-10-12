@@ -6,11 +6,8 @@ Mapping class
 
 import json
 import csv
-import copy
-
-def logger(obj):
-    print(obj)
-
+import logging
+from timeit import default_timer as timer
 
 class InputClass(object):
     """Superclass representing the abstract input source"""
@@ -381,13 +378,25 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         self.output_directory_obj = output_directory_obj
         self.output_class_func = output_class_func
 
-    def run(self):
+    def run(self, n_rows=1000):
 
+        i = 0
+        j = 0
+
+        mapping_results = {} # Stores counts of how many rows are mapped to specific classes
         input_class = self.input_class_realization_obj.input_class.__class__
 
+        global_start_time = timer()
+        start_time = timer()
+        logging.info("Mapping input %s" % input_class)
         for row_dict in self.input_class_realization_obj:
             output_class_obj = self.output_class_func(row_dict)
             output_class = output_class_obj.__class__
+
+            if output_class in mapping_results:
+                mapping_results[output_class] += 1
+            else:
+                mapping_results[output_class] = 1
 
             if output_class == NoOutputClass().__class__:
                 pass#logger("Row not mapped" + str(row_dict))
@@ -398,4 +407,18 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
 
                 output_class_instance.write(mapped_row_dict)
 
+                j += 1
                 #TODO: will need to add a call back function
+
+            if i % n_rows == 0 and i > 0:
+                end_time = timer()
+                logging.info("Read %s rows and mapped %s rows in %s seconds" % (i, j, end_time - start_time))
+                start_time = end_time
+
+            i += 1
+
+        global_end_time = timer()
+        total_time = global_end_time - global_start_time
+
+        logging.info("Total time %s seconds" % total_time)
+        logging.info("%s" % mapping_results)
