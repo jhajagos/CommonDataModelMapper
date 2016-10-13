@@ -53,16 +53,16 @@ def icd9_versus_icd10_coding(coding_system_oid):
         return False
 
 
-def multum_generic_brand_coding(input_dict, field="drug_raw_coding_system_id"):
+def drug_code_coding(input_dict, field="drug_raw_coding_system_id"):
 
     coding_system_oid = input_dict[field]
     # TODO Add Other OIDs
     # 2.16.840.1.113883.6.311 MMSL - BD - Fully-specified drug brand name that can be prescribed - CD -Clinical Drug
     # 2.16.840.1.113883.6.88 - RxNorm - RXCUI
     if coding_system_oid == "2.16.840.1.113883.6.312": # MMSL - BN - Fully specified drug brand name that can not be prescribed
-        return "Brand"
+        return "Multum Brand"
     elif coding_system_oid == "2.16.840.1.113883.6.314": # MMSL - GN - d04373 -- Generic drug name
-        return "Generic"
+        return "Multum Generic"
     else:
         return False
 
@@ -94,6 +94,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # care_site_id
 
     # Person input mapper
+
+    # TODO: Replace :row_id with starting seed that increments
+
     patient_rules = [(":row_id", "person_id"), ("empi_id", "person_source_value"),
                      ("birth_date", DateSplit(),
                         {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
@@ -115,6 +118,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id")
     empi_id_mapper = CoderMapperJSONClass(person_json_file_name)
+
+    # Map to CDM Death
 
     death_concept_mapper = ChainMapper(ReplacementMapper({"true": 'EHR record patient status "Deceased"'}),
                                                          CoderMapperJSONClass(os.path.join(json_map_directory,
@@ -139,10 +144,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     death_runner_obj.run()
 
-    # visit_occurrence
-
-    # ["visit_occurrence_id", "person_id", "visit_concept_id", "visit_start_date", "visit_start_time", "visit_end_date",
-    # "visit_end_time", "visit_type_concept_id", "provider_id", "care_site_id", "visit_source_value", "visit_source_concept_id"]
+    # Visit Occurrence
 
     visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
     visit_concept_mapper = ChainMapper(
@@ -168,7 +170,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                    ("discharge_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_end_date", "time": "visit_end_time"})
                   ]
 
-    # Add care site id
+    # TODO: Add care site id
 
     visit_rules_class = build_input_output_mapper(visit_rules)
 
@@ -195,7 +197,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
     hi_result_csv_obj = InputClassCSVRealization(input_result_csv, PHFResultObject())
 
-    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm.csv")
+    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm_encounter.csv")
     cdm_measurement_csv_obj = OutputClassCSVRealization(output_measurement_csv, MeasurementObject())
 
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
@@ -207,19 +209,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # unit_concept_id - needs to be mapped
 
-    # SNOMED
-    # "Percent": {
-    #                "CONCEPT_CLASS_ID": "Qualifier Value",
-    #                "CONCEPT_CODE": "118582008",
-    #                "CONCEPT_ID": "4041099",
-    #                "CONCEPT_NAME": "Percent",
-    #                "DOMAIN_ID": "Observation",
-    #                "INVALID_REASON": "",
-    #                "STANDARD_CONCEPT": "S",
-    #                "VALID_END_DATE": "20991231",
-    #                "VALID_START_DATE": "19700101",
-    #                "VOCABULARY_ID": "SNOMED"
-    #            },
+        # SNOMED
+        # "Percent": {
+        #                "CONCEPT_CLASS_ID": "Qualifier Value",
+        #                "CONCEPT_CODE": "118582008",
+        #                "CONCEPT_ID": "4041099",
+        #                "CONCEPT_NAME": "Percent",
+        #                "DOMAIN_ID": "Observation",
+        #                "INVALID_REASON": "",
+        #                "STANDARD_CONCEPT": "S",
+        #                "VALID_END_DATE": "20991231",
+        #                "VALID_START_DATE": "19700101",
+        #                "VOCABULARY_ID": "SNOMED"
+        #            },
 
     measurement_rules = [(":row_id", "measurement_id"),
                          ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -245,11 +247,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # PH_F_Condition
 
-    #ConditionOccurrenceObject()
-
-    # Map ICD9CM and ICD10CM DX codes
-    # Need to take into account domain issues
-
     # condition_id
     # Admitting
     # Billing
@@ -270,18 +267,20 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     #condition_source_value
     #condition_raw_code
 
-    # What do with VCODES in ICD9 - preventive med
+
+    # Conditions
 
     input_condition_csv = os.path.join(input_csv_directory, "PH_F_Condition.csv")
     hi_condition_csv_obj = InputClassCSVRealization(input_condition_csv, PHFConditionObject())
 
-    output_condition_csv = os.path.join(output_csv_directory, "condition_occurrence_cdm.csv")
+    output_condition_csv = os.path.join(output_csv_directory, "condition_occurrence_dx_cdm_encounter.csv")
     cdm_condition_csv_obj = OutputClassCSVRealization(output_condition_csv, ConditionOccurrenceObject())
 
     icd9cm_json = os.path.join(json_map_directory, "ICD9CM_with_parent.json")
     icd10cm_json = os.path.join(json_map_directory, "ICD10CM_with_parent.json")
 
     def case_mapper_icd9_icd10(input_dict, field="condition_coding_system_id"):
+        """Map ICD9 and ICD10 to the CDM vocabularies"""
         coding_system_oid = input_dict[field]
         coding_version = icd9_versus_icd10_coding(coding_system_oid)
 
@@ -290,9 +289,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return 1
 
-    ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
+    #TODO: condition_type_concept_id
 
-    condition_rules = [(":row_id", "condition_occurrence_id"),
+    ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
+    condition_rules_dx_encounter = [(":row_id", "condition_occurrence_id"),
                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                        (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
@@ -300,12 +300,35 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                        ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})
                       ]
 
-    condition_rules_class = build_input_output_mapper(condition_rules)
+    condition_rules_dx_encounter_class = build_input_output_mapper(condition_rules_dx_encounter)
 
-    in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_class)
+    # Conditions which map to measurements according to the CDM Vocabulary
+
+    in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_dx_encounter_class)
     output_directory_obj.register(ConditionOccurrenceObject(), cdm_condition_csv_obj)
 
+    measurement_rules_dx_encounter = [(":row_id", "measurement_id"),
+                                      ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                      ("encounter_id", encounter_id_mapper,
+                                       {"visit_occurrence_id": "visit_occurrence_id"}),
+                                      ("effective_dt_tm", SplitDateTimeWithTZ(),
+                                        {"date": "measurement_date", "time": "measurement_time"}),
+                                      ("condition_code", "measurement_source_value"),
+                                      (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "measurement_source_concept_id",
+                                                                       "MAPPED_CONCEPT_ID": "measurement_concept_id"})
+                                      ]
+
+    measurement_rules_dx_encounter_class = build_input_output_mapper(measurement_rules_dx_encounter)
+    in_out_map_obj.register(PHFConditionObject(), MeasurementObject(), measurement_rules_dx_encounter_class)
+
+    # The mapped ICD9 to measurements get mapped to a separate code
+    output_measurement_dx_encounter_csv = os.path.join(output_csv_directory, "measurement_dx_encounter_cdm.csv")
+    output_measurement_dx_encounter_csv_obj = OutputClassCSVRealization(output_measurement_dx_encounter_csv, MeasurementObject())
+
+    output_directory_obj.register(MeasurementObject(), output_measurement_dx_encounter_csv_obj)
+
     def condition_router_obj(input_dict):
+        """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["condition_coding_system_id"]
 
         if coding_system_oid:
@@ -313,8 +336,15 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if result_dict != {}:
                 if result_dict["DOMAIN_ID"] == "Condition":
                     return ConditionOccurrenceObject()
+                elif result_dict["DOMAIN_ID"] == "Observation":
+                    return NoOutputClass()
+                elif result_dict["DOMAIN_ID"] == "Procedure":
+                    return NoOutputClass()
+                elif result_dict["DOMAIN_ID"] == "Measurement":
+                    return MeasurementObject()
                 else:
                     return NoOutputClass()
+
             else:
                 return NoOutputClass()
         else:
@@ -328,8 +358,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # Maps the DXs linked by the claims
 
     # procedure
-        # Map DX
-        # Need to determine overlap between encounter and claims
+
 
     # drug_exposure
 
@@ -344,18 +373,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
 
-    def case_mapper_multum_bn_gn(input_dict, field="drug_raw_coding_system_id"):
-        bn_gn_value = multum_generic_brand_coding(input_dict, field=field)
+    def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
+        bn_gn_value = drug_code_coding(input_dict, field=field)
 
-        if bn_gn_value == "Brand":
+        if bn_gn_value == "Multum Brand":
             return 0
         else:
             return 1
 
-    MultumMapper = ChainMapper(CaseMapper(case_mapper_multum_bn_gn, CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
+    MultumMapper = ChainMapper(CaseMapper(case_mapper_drug_code, CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
                                 CoderMapperJSONClass(multum_gn_json, "drug_raw_code")),
                                 CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
 
+    # TODO: Map unit types
     medication_rules = [(":row_id", "drug_exposure_id"),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -382,74 +412,21 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     drug_exposure_runner_obj.run()
 
-
-    ["drug_exposure_id", "person_id", "drug_concept_id", "drug_exposure_start_date", "drug_exposure_end_date",
-     "drug_type_concept_id", "stop_reason", "refills", "quantity", "days_supply", "sig", "route_concept_id",
-     "effective_drug_dose", "dose_unit_concept_id", "lot_number", "provider_id", "visit_occurrence_id",
-     "drug_source_value", "drug_source_concept_id", "route_source_value", "dose_unit_source_value"]
-
     # Map Multum Codes to RXAUI - add RXCUI maps
 
 
-    """
+    # Claims based Visits
 
-    display_name
-    drug_code
-    drug_display
-    drug_coding_system_id
-    drug_raw_coding_system_id
-    drug_raw_code
-    drug_primary_display
-    start_dt_tm
-    start_date_id
-    stop_dt_tm
-    stop_date_id
-    status_code
-    status_display
-    status_coding_system_id
-    status_raw_coding_system_id
-    status_raw_code
-    status_primary_display
-    detail_line
-    prescribing_prsnl_id
-    prescribing_provider_id
-    claim_id
-    dose_quantity
-    dose_unit_code
-    dose_unit_display
-    dose_unit_coding_system_id
-    dose_unit_raw_coding_system_id
-    dose_unit_raw_code
-    dose_unit_primary_display
-    route_code
-    route_display
-    route_coding_system_id
-    route_raw_coding_system_id
-    route_raw_code
-    route_primary_display
-    frequency_code
-    frequency_display
-    frequency_coding_system_id
-    frequency_raw_coding_system_id
-    frequency_raw_code
-    frequency_primary_display
-    patient_instructions
-    update_dt_tm
-    update_date_id
-    update_prsnl_id
-    update_provider_id
-    source_type
-    source_id
-    source_version
-    source_description
-    intended_administrator
-    intended_dispenser
+    # Claims based procedures
+    # Will also include drugs
 
-    """
+    # Claims based conditions
 
-    # observation
+    # Observation
 
     #  DRGs MS-DRGS
+
+
 
 
 if __name__ == "__main__":
@@ -458,102 +435,102 @@ if __name__ == "__main__":
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
 
-    [u'Carrier claim detail - 10th position',
-     u'Carrier claim detail - 11th position',
-     u'Carrier claim detail - 12th position',
-     u'Carrier claim detail - 13th position',
-     u'Carrier claim detail - 1st position',
-     u'Carrier claim detail - 2nd position',
-     u'Carrier claim detail - 3rd position',
-     u'Carrier claim detail - 4th position',
-     u'Carrier claim detail - 5th position',
-     u'Carrier claim detail - 6th position',
-     u'Carrier claim detail - 7th position',
-     u'Carrier claim detail - 8th position',
-     u'Carrier claim detail - 9th position',
-     u'Carrier claim header - 1st position',
-     u'Carrier claim header - 2nd position',
-     u'Carrier claim header - 3rd position',
-     u'Carrier claim header - 4th position',
-     u'Carrier claim header - 5th position',
-     u'Carrier claim header - 6th position',
-     u'Carrier claim header - 7th position',
-     u'Carrier claim header - 8th position',
-     u'Condition era - 0 days persistence window',
-     u'Condition era - 30 days persistence window',
-     u'EHR Chief Complaint',
-     u'EHR Episode Entry',
-     u'EHR problem list entry',
-     u'First Position Condition',
-     u'Inpatient detail - 10th position',
-     u'Inpatient detail - 11th position',
-     u'Inpatient detail - 12th position',
-     u'Inpatient detail - 13th position',
-     u'Inpatient detail - 14th position',
-     u'Inpatient detail - 15th position',
-     u'Inpatient detail - 16th position',
-     u'Inpatient detail - 17th position',
-     u'Inpatient detail - 18th position',
-     u'Inpatient detail - 19th position',
-     u'Inpatient detail - 1st position',
-     u'Inpatient detail - 20th position',
-     u'Inpatient detail - 2nd position',
-     u'Inpatient detail - 3rd position',
-     u'Inpatient detail - 4th position',
-     u'Inpatient detail - 5th position',
-     u'Inpatient detail - 6th position',
-     u'Inpatient detail - 7th position',
-     u'Inpatient detail - 8th position',
-     u'Inpatient detail - 9th position',
-     u'Inpatient detail - primary',
-     u'Inpatient header - 10th position',
-     u'Inpatient header - 11th position',
-     u'Inpatient header - 12th position',
-     u'Inpatient header - 13th position',
-     u'Inpatient header - 14th position',
-     u'Inpatient header - 15th position',
-     u'Inpatient header - 1st position',
-     u'Inpatient header - 2nd position',
-     u'Inpatient header - 3rd position',
-     u'Inpatient header - 4th position',
-     u'Inpatient header - 5th position',
-     u'Inpatient header - 6th position',
-     u'Inpatient header - 7th position',
-     u'Inpatient header - 8th position',
-     u'Inpatient header - 9th position',
-     u'Inpatient header - primary',
-     u'Observation recorded from EHR',
-     u'Outpatient detail - 10th position',
-     u'Outpatient detail - 11th position',
-     u'Outpatient detail - 12th position',
-     u'Outpatient detail - 13th position',
-     u'Outpatient detail - 14th position',
-     u'Outpatient detail - 15th position',
-     u'Outpatient detail - 1st position',
-     u'Outpatient detail - 2nd position',
-     u'Outpatient detail - 3rd position',
-     u'Outpatient detail - 4th position',
-     u'Outpatient detail - 5th position',
-     u'Outpatient detail - 6th position',
-     u'Outpatient detail - 7th position',
-     u'Outpatient detail - 8th position',
-     u'Outpatient detail - 9th position',
-     u'Outpatient header - 10th position',
-     u'Outpatient header - 11th position',
-     u'Outpatient header - 12th position',
-     u'Outpatient header - 13th position',
-     u'Outpatient header - 14th position',
-     u'Outpatient header - 15th position',
-     u'Outpatient header - 1st position',
-     u'Outpatient header - 2nd position',
-     u'Outpatient header - 3rd position',
-     u'Outpatient header - 4th position',
-     u'Outpatient header - 5th position',
-     u'Outpatient header - 6th position',
-     u'Outpatient header - 7th position',
-     u'Outpatient header - 8th position',
-     u'Outpatient header - 9th position',
-     u'Patient Self-Reported Condition',
-     u'Primary Condition',
-     u'Referral record',
-     u'Secondary Condition']
+    # [u'Carrier claim detail - 10th position',
+    #  u'Carrier claim detail - 11th position',
+    #  u'Carrier claim detail - 12th position',
+    #  u'Carrier claim detail - 13th position',
+    #  u'Carrier claim detail - 1st position',
+    #  u'Carrier claim detail - 2nd position',
+    #  u'Carrier claim detail - 3rd position',
+    #  u'Carrier claim detail - 4th position',
+    #  u'Carrier claim detail - 5th position',
+    #  u'Carrier claim detail - 6th position',
+    #  u'Carrier claim detail - 7th position',
+    #  u'Carrier claim detail - 8th position',
+    #  u'Carrier claim detail - 9th position',
+    #  u'Carrier claim header - 1st position',
+    #  u'Carrier claim header - 2nd position',
+    #  u'Carrier claim header - 3rd position',
+    #  u'Carrier claim header - 4th position',
+    #  u'Carrier claim header - 5th position',
+    #  u'Carrier claim header - 6th position',
+    #  u'Carrier claim header - 7th position',
+    #  u'Carrier claim header - 8th position',
+    #  u'Condition era - 0 days persistence window',
+    #  u'Condition era - 30 days persistence window',
+    #  u'EHR Chief Complaint',
+    #  u'EHR Episode Entry',
+    #  u'EHR problem list entry',
+    #  u'First Position Condition',
+    #  u'Inpatient detail - 10th position',
+    #  u'Inpatient detail - 11th position',
+    #  u'Inpatient detail - 12th position',
+    #  u'Inpatient detail - 13th position',
+    #  u'Inpatient detail - 14th position',
+    #  u'Inpatient detail - 15th position',
+    #  u'Inpatient detail - 16th position',
+    #  u'Inpatient detail - 17th position',
+    #  u'Inpatient detail - 18th position',
+    #  u'Inpatient detail - 19th position',
+    #  u'Inpatient detail - 1st position',
+    #  u'Inpatient detail - 20th position',
+    #  u'Inpatient detail - 2nd position',
+    #  u'Inpatient detail - 3rd position',
+    #  u'Inpatient detail - 4th position',
+    #  u'Inpatient detail - 5th position',
+    #  u'Inpatient detail - 6th position',
+    #  u'Inpatient detail - 7th position',
+    #  u'Inpatient detail - 8th position',
+    #  u'Inpatient detail - 9th position',
+    #  u'Inpatient detail - primary',
+    #  u'Inpatient header - 10th position',
+    #  u'Inpatient header - 11th position',
+    #  u'Inpatient header - 12th position',
+    #  u'Inpatient header - 13th position',
+    #  u'Inpatient header - 14th position',
+    #  u'Inpatient header - 15th position',
+    #  u'Inpatient header - 1st position',
+    #  u'Inpatient header - 2nd position',
+    #  u'Inpatient header - 3rd position',
+    #  u'Inpatient header - 4th position',
+    #  u'Inpatient header - 5th position',
+    #  u'Inpatient header - 6th position',
+    #  u'Inpatient header - 7th position',
+    #  u'Inpatient header - 8th position',
+    #  u'Inpatient header - 9th position',
+    #  u'Inpatient header - primary',
+    #  u'Observation recorded from EHR',
+    #  u'Outpatient detail - 10th position',
+    #  u'Outpatient detail - 11th position',
+    #  u'Outpatient detail - 12th position',
+    #  u'Outpatient detail - 13th position',
+    #  u'Outpatient detail - 14th position',
+    #  u'Outpatient detail - 15th position',
+    #  u'Outpatient detail - 1st position',
+    #  u'Outpatient detail - 2nd position',
+    #  u'Outpatient detail - 3rd position',
+    #  u'Outpatient detail - 4th position',
+    #  u'Outpatient detail - 5th position',
+    #  u'Outpatient detail - 6th position',
+    #  u'Outpatient detail - 7th position',
+    #  u'Outpatient detail - 8th position',
+    #  u'Outpatient detail - 9th position',
+    #  u'Outpatient header - 10th position',
+    #  u'Outpatient header - 11th position',
+    #  u'Outpatient header - 12th position',
+    #  u'Outpatient header - 13th position',
+    #  u'Outpatient header - 14th position',
+    #  u'Outpatient header - 15th position',
+    #  u'Outpatient header - 1st position',
+    #  u'Outpatient header - 2nd position',
+    #  u'Outpatient header - 3rd position',
+    #  u'Outpatient header - 4th position',
+    #  u'Outpatient header - 5th position',
+    #  u'Outpatient header - 6th position',
+    #  u'Outpatient header - 7th position',
+    #  u'Outpatient header - 8th position',
+    #  u'Outpatient header - 9th position',
+    #  u'Patient Self-Reported Condition',
+    #  u'Primary Condition',
+    #  u'Referral record',
+    #  u'Secondary Condition']

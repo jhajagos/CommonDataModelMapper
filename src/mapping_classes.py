@@ -290,7 +290,12 @@ class InputOutputMapper(object):
                 field = (field, )
 
             for single_field in field:
-                single_field_value = input_dict[single_field]
+                try:
+                    single_field_value = input_dict[single_field]
+                except KeyError:
+                    logging.error("Cannot find key %s" % single_field)
+                    logging.error(input_dict)
+                    raise
                 field_dict[single_field] = single_field_value
 
             mapped_dict_instance = mapper_instance.map(field_dict)
@@ -378,7 +383,7 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         self.output_directory_obj = output_directory_obj
         self.output_class_func = output_class_func
 
-    def run(self, n_rows=1000):
+    def run(self, n_rows=10000):
 
         i = 0
         j = 0
@@ -421,4 +426,6 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         total_time = global_end_time - global_start_time
 
         logging.info("Total time %s seconds" % total_time)
+        logging.info("Rate per %s rows: %s" % (n_rows, n_rows * (total_time * 1.0)/i,))
+
         logging.info("%s" % mapping_results)
