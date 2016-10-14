@@ -43,7 +43,7 @@ def measurement_router_obj(input_dict):
         return NoOutputClass()
 
 
-def icd9_versus_icd10_coding(coding_system_oid):
+def condition_coding_system(coding_system_oid):
     """Determine if the diagnosis is ICD9 versus ICD10"""
     if coding_system_oid == "2.16.840.1.113883.6.90":
         return "ICD10CM"
@@ -53,16 +53,36 @@ def icd9_versus_icd10_coding(coding_system_oid):
         return False
 
 
-def drug_code_coding(input_dict, field="drug_raw_coding_system_id"):
+def drug_code_coding_system(input_dict, field="drug_raw_coding_system_id"):
 
     coding_system_oid = input_dict[field]
-    # TODO Add Other OIDs
-    # 2.16.840.1.113883.6.311 MMSL - BD - Fully-specified drug brand name that can be prescribed - CD -Clinical Drug
-    # 2.16.840.1.113883.6.88 - RxNorm - RXCUI
-    if coding_system_oid == "2.16.840.1.113883.6.312": # MMSL - BN - Fully specified drug brand name that can not be prescribed
-        return "Multum Brand"
+
+    if coding_system_oid == "2.16.840.1.113883.6.311":
+        return "Multum Main Drug Code (MMDC)"
+    elif coding_system_oid == "2.16.840.1.113883.6.312": # | MMSL - Multum drug synonym MMDC | BN - Fully specified drug brand name that can not be prescribed
+        return "Multum drug synonym"
     elif coding_system_oid == "2.16.840.1.113883.6.314": # MMSL - GN - d04373 -- Generic drug name
-        return "Multum Generic"
+        return "Multum drug identifier (dNUM)"
+    elif coding_system_oid == "2.16.840.1.113883.6.88":
+        return "RxNorm (RXCUI)"
+    else:
+        return False
+
+
+def procedure_coding_system(input_dict, field="procedure_coding_system_id"):
+
+    coding_system_oid = input_dict[field]
+
+    if coding_system_oid == '2.16.840.1.113883.6.104':
+        return 'ICD9 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.12':
+        return 'CPT Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.14':
+        return 'HCFA Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.4':
+        return 'ICD10 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.96':
+        return 'SNOMED'
     else:
         return False
 
@@ -147,6 +167,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # Visit Occurrence
 
     visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
+
+    #TODO: Add outpatient mapping
     visit_concept_mapper = ChainMapper(
         ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit"}),
         CoderMapperJSONClass(visit_concept_json))
@@ -282,7 +304,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def case_mapper_icd9_icd10(input_dict, field="condition_coding_system_id"):
         """Map ICD9 and ICD10 to the CDM vocabularies"""
         coding_system_oid = input_dict[field]
-        coding_version = icd9_versus_icd10_coding(coding_system_oid)
+        coding_version = condition_coding_system(coding_system_oid)
 
         if coding_version == "ICD9CM":
             return 0
@@ -290,6 +312,21 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             return 1
 
     #TODO: condition_type_concept_id
+    # PNED codes are not getting mapped
+    #   Reason for visit diagnosis     2xxx
+    #       Complaint of               1xxx
+    #       Confirmed                  1xxx
+    #
+    # 'Patient Self-Reported Condition'
+    # 'EHR Episode Entry'
+    # These codes do not appear to map to a known external vocabulary
+
+    #Final diagnosis(discharge) 3xxx
+    #Complaint of 1x
+    #Confirmed 3xxx
+    #Possible 1x
+    #Probable x
+    # 'Secondary Condition'
 
     ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
     condition_rules_dx_encounter = [(":row_id", "condition_occurrence_id"),
@@ -302,7 +339,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_rules_dx_encounter_class = build_input_output_mapper(condition_rules_dx_encounter)
 
-    # Conditions which map to measurements according to the CDM Vocabulary
+    # ICD9 and ICD10 conditions which map to measurements according to the CDM Vocabulary
 
     in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_dx_encounter_class)
     output_directory_obj.register(ConditionOccurrenceObject(), cdm_condition_csv_obj)
@@ -327,6 +364,58 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_directory_obj.register(MeasurementObject(), output_measurement_dx_encounter_csv_obj)
 
+    # ICD9 and ICD10 codes which map to observations according to the CDM Vocabulary
+
+    ["observation_id", "person_id", "observation_concept_id", "observation_date", "observation_time",
+     "observation_type_concept_id", "value_as_number", "value_as_string", "value_as_concept_id", "qualifier_concept_id",
+     "unit_concept_id", "provider_id", "visit_occurrence_id", "observation_source_value",
+     "observation_source_concept_id", "unit_source_value", "qualifier_source_value"]
+
+    observation_rules_dx_encounter = [(":row_id","observation_id"),
+                                      ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                      ("encounter_id", encounter_id_mapper,
+                                       {"visit_occurrence_id": "visit_occurrence_id"}),
+                                      ("effective_dt_tm", SplitDateTimeWithTZ(),
+                                       {"date": "observation_date", "time": "observation_time"}),
+                                      ("condition_code", "observation_source_value"),
+                                      (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
+                                      {"CONCEPT_ID": "observation_source_concept_id",
+                                       "MAPPED_CONCEPT_ID": "observation_concept_id"})
+                                      ]
+
+    observation_rules_dx_encounter_class = build_input_output_mapper(observation_rules_dx_encounter)
+
+    output_observation_dx_encounter_csv = os.path.join(output_csv_directory, "observation_dx_encounter_cdm.csv")
+    output_observation_dx_encounter_csv_obj = OutputClassCSVRealization(output_observation_dx_encounter_csv,
+                                                                        ObservationObject())
+
+    output_directory_obj.register(ObservationObject(), output_observation_dx_encounter_csv_obj)
+    in_out_map_obj.register(PHFConditionObject(), ObservationObject(), observation_rules_dx_encounter_class)
+
+    # ICD9 and ICD10 codes which map to procedures according to the CDM Vocabulary
+
+    # TODO: Map procedure_type_concept_id
+    procedure_rules_dx_encounter = [(":row_id", "procedure_id"),
+                                      ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                      ("encounter_id", encounter_id_mapper,
+                                       {"visit_occurrence_id": "visit_occurrence_id"}),
+                                      ("effective_dt_tm", SplitDateTimeWithTZ(),
+                                       {"date": "procedure_date"}),
+                                      ("condition_code", "procedure_source_value"),
+                                      (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
+                                       {"CONCEPT_ID": "procedure_source_concept_id",
+                                        "MAPPED_CONCEPT_ID": "procedure_concept_id"})
+                                      ]
+
+    procedure_rules_dx_encounter_class = build_input_output_mapper(procedure_rules_dx_encounter)
+
+    output_procedure_dx_encounter_csv = os.path.join(output_csv_directory, "procedure_dx_encounter_cdm.csv")
+    output_procedure_dx_encounter_csv_obj = OutputClassCSVRealization(output_procedure_dx_encounter_csv,
+                                                                        ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_procedure_dx_encounter_csv_obj)
+    in_out_map_obj.register(PHFConditionObject(), ProcedureOccurrenceObject(), procedure_rules_dx_encounter_class)
+
     def condition_router_obj(input_dict):
         """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["condition_coding_system_id"]
@@ -337,9 +426,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                 if result_dict["DOMAIN_ID"] == "Condition":
                     return ConditionOccurrenceObject()
                 elif result_dict["DOMAIN_ID"] == "Observation":
-                    return NoOutputClass()
+                    return ObservationObject()
                 elif result_dict["DOMAIN_ID"] == "Procedure":
-                    return NoOutputClass()
+                    return ProcedureOccurrenceObject()
                 elif result_dict["DOMAIN_ID"] == "Measurement":
                     return MeasurementObject()
                 else:
@@ -359,6 +448,71 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     # procedure
 
+    # 2.16.840.1.113883.6.104 -- ICD9 Procedure Codes
+    # 2.16.840.1.113883.6.12  -- CPT Codes
+    # 2.16.840.1.113883.6.14  -- HCFA Procedure Codes
+    # 2.16.840.1.113883.6.4 -- ICD10 Procedure Codes
+    # 2.16.840.1.113883.6.96 -- SNOMED
+
+    def case_mapper_procedures(input_dict, field="procedure_coding_system_id"):
+
+        proc_code_oid = procedure_coding_system(input_dict, field=field)
+
+        if proc_code_oid == "ICD9 Procedure Codes":
+            return 0
+        elif proc_code_oid == "ICD10 Procedure Codes":
+            return 1
+        elif proc_code_oid == "CPT Codes":
+            return 2
+
+    icd9proc_json = os.path.join(json_map_directory, "ICD9Proc_with_parent.json")
+    icd10proc_json = os.path.join(json_map_directory, "ICD10PCS_with_parent.json")
+    cpt_json = os.path.join(json_map_directory, "CPT4_with_parent.json")
+
+    #TODO: Add Snomed and HCPCS Codes
+
+    ProcedureCodeMapper = CaseMapper(case_mapper_procedures,
+                                     CoderMapperJSONClass(icd9proc_json, "procedure_raw_code"),
+                                     CoderMapperJSONClass(icd10proc_json, "procedure_raw_code"),
+                                     CoderMapperJSONClass(cpt_json, "procedure_raw_code")
+                                     )
+
+    input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
+    hi_procedure_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
+
+    procedure_rules_encounter = [(":row_id", "procedure_id"),
+                                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                    ("encounter_id", encounter_id_mapper,
+                                     {"visit_occurrence_id": "visit_occurrence_id"}),
+                                    ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                                     {"date": "procedure_date"}),
+                                    ("procedure_raw_code", "procedure_source_value"),
+                                    (("procedure_raw_code", "procedure_coding_system_id"), ProcedureCodeMapper,
+                                     {"CONCEPT_ID": "procedure_source_concept_id",
+                                      "MAPPED_CONCEPT_ID": "procedure_concept_id"})
+                                    ]
+
+    procedure_rules_encounter_class = build_input_output_mapper(procedure_rules_encounter)
+
+    output_procedure_encounter_csv = os.path.join(output_csv_directory, "procedure_encounter_cdm.csv")
+    output_procedure_encounter_csv_obj = OutputClassCSVRealization(output_procedure_encounter_csv,
+                                                                      ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_procedure_encounter_csv_obj)
+    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+
+    def procedure_router_obj(input_dict):
+
+        if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes"):
+            return ProcedureOccurrenceObject()
+        else:
+            return NoOutputClass()
+
+    procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_procedure_csv_obj, in_out_map_obj,
+                                                                  output_directory_obj,
+                                                                  procedure_router_obj)
+
+    procedure_runner_obj.run()
 
     # drug_exposure
 
@@ -370,22 +524,44 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
     multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
+    multum_bd_json = os.path.join(json_map_directory, "RxNorm_MMSL_BD.json")
 
     rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
 
     def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
-        bn_gn_value = drug_code_coding(input_dict, field=field)
+        bn_gn_value = drug_code_coding_system(input_dict, field=field)
 
-        if bn_gn_value == "Multum Brand":
+        if bn_gn_value == "Multum drug synonym":
             return 0
-        else:
+        elif bn_gn_value == "Multum drug identifier (dNUM)":
             return 1
+        elif bn_gn_value == "Multum Main Drug Code (MMDC)":
+            return 2
+        elif bn_gn_value == "RxNorm (RxCUI)":
+            return 3
+        else:
+            return False
 
-    MultumMapper = ChainMapper(CaseMapper(case_mapper_drug_code, CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
-                                CoderMapperJSONClass(multum_gn_json, "drug_raw_code")),
+    DrugCodeMapper = ChainMapper(CaseMapper(case_mapper_drug_code,
+                                            CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
+                                            CoderMapperJSONClass(multum_gn_json, "drug_raw_code"),
+                                            CoderMapperJSONClass(multum_bd_json, "drug_raw_code"),
+                                            KeyTranslator({"drug_raw_code": "RXCUI"})),
                                 CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
 
-    # TODO: Map unit types
+    # TODO: Map dose_unit_source_value -> drug_unit_concept_id
+    # TODO: Map route_source_value -> route_source_value
+
+    drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
+    drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
+
+    drug_type_mapper = ChainMapper(ReplacementMapper({"HOSPITAL_PHARMACY": "Inpatient administration",
+                       "INPATIENT_FLOOR_STOCK": "Inpatient administration",
+                       "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
+                       "UNKNOWN": "Prescription dispensed in pharmacy"
+                       }
+                      ), drug_type_code_mapper)
+
     medication_rules = [(":row_id", "drug_exposure_id"),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -397,8 +573,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                         ("start_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
                         ("stop_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
                         ("dose_quantity", "quantity"),
-                        (("drug_raw_coding_system_id", "drug_raw_code"), MultumMapper,
-                         {"CONCEPT_ID": "drug_source_concept_id"})
+                        ("dose_unit_display", "dose_unit_source_value"),
+                        (("drug_raw_coding_system_id", "drug_raw_code"), DrugCodeMapper,
+                         {"CONCEPT_ID": "drug_source_concept_id"}),
+                        (("drug_raw_coding_system_id", "drug_raw_code"), DrugCodeMapper,
+                        {"CONCEPT_ID": "drug_concept_id"}),
+                         ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})
                         ]
 
     medication_rules_class = build_input_output_mapper(medication_rules)
@@ -412,21 +592,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     drug_exposure_runner_obj.run()
 
-    # Map Multum Codes to RXAUI - add RXCUI maps
-
-
     # Claims based Visits
 
-    # Claims based procedures
-    # Will also include drugs
-
-    # Claims based conditions
 
     # Observation
 
     #  DRGs MS-DRGS
-
-
 
 
 if __name__ == "__main__":
