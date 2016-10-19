@@ -42,6 +42,25 @@ class TestMappers(unittest.TestCase):
         self.assertEquals("Female", mapper_result["g"])
         self.assertEquals("2", mapper_result["1"])
 
+    def test_cascade_mapper(self):
+        dict_mapper1 = {"a": "1", "b": "2", "c": "1"}
+        dict_mapper2 = {"1": "z", "2": "x", "3": "y"}
+
+        dm1 = CodeMapperDictClass(dict_mapper1)
+        dm2 = CodeMapperDictClass(dict_mapper2)
+
+        cascade_mapper = CascadeMapper(dm1, dm2)
+
+        result_dict = cascade_mapper.map({"field": "1"})
+
+        self.assertEquals({"mapped_value": "z"}, result_dict)
+
+    def test_filter_has_key_value_mapper(self):
+
+        result_dict = FilterHasKeyValueMapper(["wwww", "2", "3"]).map({"1": "z", "2": "x", "3": "y"})
+        self.assertEquals({"2": "x"},result_dict)
+
+
     def test_concatenate_mapper(self):
 
         map_dict = {'a': '123', 'b': '456', 'c': '789'}
@@ -95,6 +114,16 @@ class TestTranslators(unittest.TestCase):
         mapped_code = cdx_obj.map({"code": "101"})
 
         self.assertEquals({"code_id": 702}, mapped_code)
+
+
+    def test_dict_translator(self):
+
+        mapper_obj = CodeMapperDictClass({"a": "1", "b": "2", "c": "3"})
+
+        code_dict = {"v1": "a"}
+        mapper_result = mapper_obj.map(code_dict)
+
+        self.assertEquals({"mapped_value": "1"}, mapper_result)
 
 
 class TestInputSourceRealizations(unittest.TestCase):

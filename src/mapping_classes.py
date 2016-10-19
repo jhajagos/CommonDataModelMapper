@@ -104,6 +104,36 @@ class CoderMapperStaticClass(CodeMapperClass):
     pass
 
 
+class CodeMapperDictClass(CodeMapperClass):
+
+    def __init__ (self, mapper_dict, field_name=None, key_to_map_to=None):
+        self.mapper_dict = mapper_dict
+        self.key_to_map_to = key_to_map_to
+        self.field_name = field_name
+
+    def map(self, input_dict):
+
+        if self.field_name is None:
+            key = input_dict.keys()[0]
+        else:
+            key = self.field_name
+
+        if self.key_to_map_to is None:
+            key_to_map_to = "mapped_value"
+        else:
+            key_to_map_to = self.key_to_map_to
+
+        if key in input_dict:
+            value = input_dict[key]
+        else:
+            return {}
+
+        if value in self.mapper_dict:
+            return {key_to_map_to: self.mapper_dict[value]}
+        else:
+            return {}
+
+
 class CoderMapperJSONClass(CodeMapperClass):
     """A code mapper that reads code from a JSON dict of dicts"""
 
@@ -167,7 +197,7 @@ class CaseMapper(MapperClass):
 
 
 class ChainMapper(MapperClass):
-    """Chain together separate mappers"""
+    """Chain together separate mappers and applies each mapper from left to right."""
     def __init__(self, *mapper_classes):
         self.mapper_classes = mapper_classes
 
@@ -183,6 +213,40 @@ class ChainMapper(MapperClass):
             i += 1
 
         return result_dict
+
+
+class CascadeMapper(MapperClass):
+    """Runs through mappers until one returns a results"""
+
+    def __init__(self, *mapper_classes):
+        self.mapper_classes = mapper_classes
+
+    def map(self, input_dict):
+
+        for mapper_class in self.mapper_classes:
+            result_dict = mapper_class.map(input_dict)
+
+            if len(result_dict):
+                return result_dict
+
+        return {}
+
+
+class FilterHasKeyValueMapper(MapperClass):
+
+    def __init__(self, keys_to_track, empty_value=""):
+        self.keys_to_track = keys_to_track
+        self.empty_value = empty_value
+
+    def map(self, input_dict):
+
+        for key in self.keys_to_track:
+            if key in input_dict:
+                if input_dict[key] != self.empty_value:
+                    return {key: input_dict[key]}
+
+        return {}
+
 
 
 class ReplacementMapper(MapperClass):
@@ -223,10 +287,14 @@ class KeyTranslator(object):
     def translate(self, dict_to_map):
         translated_dict = {}
         for key in dict_to_map:
-            if key in self.translate_dict:
-                translated_dict[self.translate_dict[key]] = dict_to_map[key]
-            else:
-                translated_dict[key] = None
+            try:
+                if key in self.translate_dict:
+                    translated_dict[self.translate_dict[key]] = dict_to_map[key]
+                else:
+                    translated_dict[key] = None
+            except TypeError:
+                print(dict_to_map)
+                raise
 
         return translated_dict
 

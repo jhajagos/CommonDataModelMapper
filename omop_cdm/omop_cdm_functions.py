@@ -73,3 +73,20 @@ class SplitDateTimeWithTZ(MapperClass):
         date_part, time_part = datetime_local.split(" ")
 
         return {"date": date_part, "time": time_part}
+
+
+
+
+class FloatMapper(MapperClass):
+
+    def map(self, input_dict):
+        resulting_map = {}
+        for key in input_dict:
+            try:
+                resulting_map[key] = float(input_dict[key])
+            except ValueError:
+                pass
+
+
+        return resulting_map
+
