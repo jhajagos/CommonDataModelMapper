@@ -10,9 +10,8 @@ from mapping_classes import *
 import logging
 logging.basicConfig(level=logging.INFO)
 
+
 # Input and output routers
-
-
 def person_router_obj(input_dict):
     """Route a person"""
     return PersonObject()
@@ -32,7 +31,7 @@ def visit_router_obj(input_dict):
 
 def drug_exposure_router_obj(input_dict):
     """Route mapping of drug_exposure"""
-    if input_dict["status_primary_display"] not in  ("Deleted", "Cancelled"):
+    if input_dict["status_primary_display"] not in ("Deleted", "Cancelled"):
         return DrugExposureObject()
     else:
         return NoOutputClass()
@@ -91,82 +90,76 @@ def procedure_coding_system(input_dict, field="procedure_coding_system_id"):
         return False
 
 
+def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
+                        output_obj, in_out_map_obj, input_router_func):
+
+    input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
+    output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)
+
+    map_rules_obj = build_input_output_mapper(map_rules_list)
+
+    output_obj.register(output_class_obj, output_csv_class_obj)
+
+    in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)
+
+    map_runner_obj = RunMapperAgainstSingleInputRealization(input_csv_class_obj, in_out_map_obj, output_obj,
+                                                            input_router_func)
+
+    return map_runner_obj
+
+
 def main(input_csv_directory, output_csv_directory, json_map_directory):
-
     # TODO: Add Provider
-
     # TODO: Add Patient Location
 
-    # Person input / output
+    output_class_obj = OutputClassDirectory()
 
+    # Person input / output
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
     gender_mapper = ChainMapper(upper_case_mapper, gender_json_mapper)
 
-    input_person_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
-    hi_person_csv_obj = InputClassCSVRealization(input_person_csv, PHDPersonObject())
-
-    output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
-    cdm_person_csv_obj = OutputClassCSVRealization(output_person_csv, PersonObject())
-
-    # time_of_birth, race_concept_id, ethnicity_concept_id, location_id, provider_id, care_site_id
-
-    # Person input mapper
     # TODO: Replace :row_id with starting seed that increments
-
     patient_rules = [(":row_id", "person_id"), ("empi_id", "person_source_value"),
                      ("birth_date", DateSplit(),
                         {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
                      ("gender_display", "gender_source_value"),
-                     ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_concept_id"})
-                     ]
-
-    patient_mapper_rules_class = build_input_output_mapper(patient_rules)
+                     ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_concept_id"}),
+                     ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"})
+                    ]
 
     in_out_map_obj = InputOutputMapperDirectory()
-    in_out_map_obj.register(PHDPersonObject(), PersonObject(), patient_mapper_rules_class)
-
     output_directory_obj = OutputClassDirectory()
-    output_directory_obj.register(PersonObject(), cdm_person_csv_obj)
 
-    person_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_csv_obj, in_out_map_obj, output_directory_obj,
-                                                            person_router_obj)
+
+    input_person_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
+    output_person_csv = os.path.join(output_csv_directory, "person_cdv.csv")
+    person_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_person_csv, PersonObject(), patient_rules,
+                        output_class_obj, in_out_map_obj, person_router_obj)
+
     person_runner_obj.run()
 
-    person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id")
+    person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id") # Generate
     empi_id_mapper = CoderMapperJSONClass(person_json_file_name)
 
     # Map to CDM Death
-
     death_concept_mapper = ChainMapper(ReplacementMapper({"true": 'EHR record patient status "Deceased"'}),
                                                          CoderMapperJSONClass(os.path.join(json_map_directory,
                                                                                            "CONCEPT_NAME_Death_Type.json")))
-
-    hi_person_death_csv_obj = InputClassCSVRealization(input_person_csv, PHDPersonObject())
 
     death_rules = [("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                    ("deceased", death_concept_mapper, {"CONCEPT_ID":  "death_type_concept_id"}),
                    ("deceased_dt_tm", SplitDateTimeWithTZ(), {"date": "death_date"})]
 
     output_death_csv = os.path.join(output_csv_directory, "death_cdm.csv")
-    cdm_death_csv_obj = OutputClassCSVRealization(output_death_csv, DeathObject())
-
-    death_mapper_rules_class = build_input_output_mapper(death_rules)
-
-    in_out_map_obj.register(PHDPersonObject(), DeathObject(), death_mapper_rules_class)
-    output_directory_obj.register(DeathObject(), cdm_death_csv_obj)
-
-    death_runner_obj = RunMapperAgainstSingleInputRealization(hi_person_death_csv_obj, in_out_map_obj, output_directory_obj,
-                                                              death_router_obj)
-
+    death_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_death_csv, DeathObject(), death_rules,
+                                           output_class_obj, in_out_map_obj, death_router_obj)
     death_runner_obj.run()
 
     # Visit Occurrence
-
-    visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
-
     #TODO: Add Outpatient mapping
+    visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
     visit_concept_mapper = ChainMapper(
         ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit"}),
         CoderMapperJSONClass(visit_concept_json))
@@ -175,12 +168,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
                                             CoderMapperJSONClass(visit_concept_type_json))
 
-    input_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
-    hi_encounter_csv_obj = InputClassCSVRealization(input_encounter_csv, PHFEncounterObject())
-
-    output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
-    cdm_visit_occurrence_csv_obj = OutputClassCSVRealization(output_visit_occurrence_csv, VisitOccurrenceObject())
-
+    # TODO: Add care site id
     visit_rules = [("encounter_id", "visit_source_value"),
                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
@@ -190,35 +178,20 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                    ("discharge_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_end_date", "time": "visit_end_time"})
                   ]
 
-    # TODO: Add care site id
-
-    visit_rules_class = build_input_output_mapper(visit_rules)
-
-    in_out_map_obj.register(PHFEncounterObject(), VisitOccurrenceObject(), visit_rules_class)
-    output_directory_obj.register(VisitOccurrenceObject(), cdm_visit_occurrence_csv_obj)
-
-    visit_runner_obj = RunMapperAgainstSingleInputRealization(hi_encounter_csv_obj, in_out_map_obj,
-                                                              output_directory_obj,
-                                                              visit_router_obj)
+    input_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
+    output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
+    visit_runner_obj = generate_mapper_obj(input_encounter_csv, PHFEncounterObject(), output_visit_occurrence_csv,
+                                           VisitOccurrenceObject(), visit_rules,
+                                           output_class_obj, in_out_map_obj, visit_router_obj)
 
     # Need to check why the synpuf to CDM visit_concept_type and visit_type might be mapped wrong
-
     visit_runner_obj.run()
 
+    # Encounter mapping
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_occurrence_id")
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name)
 
-    # measurement
-
-    # ["measurement_id", "person_id", "measurement_concept_id", "measurement_date", "measurement_time", "measurement_type_concept_id",
-    # "operator_concept_id", "value_as_number", "value_as_concept_id", "unit_concept_id", "range_low", "range_high", "provider_id",
-    # "visit_occurrence_id", "measurement_source_value", "measurement_source_concept_id", "unit_source_value", "value_source_value"]
-
-    input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
-    hi_result_csv_obj = InputClassCSVRealization(input_result_csv, PHFResultObject())
-
-    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm_encounter.csv")
-    cdm_measurement_csv_obj = OutputClassCSVRealization(output_measurement_csv, MeasurementObject())
+    # Measurement
 
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CoderMapperJSONClass(loinc_json)
@@ -228,7 +201,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper)
 
-    # TODO Add Snomed Mapper
+    # TODO Add SNOMED Mapper
     # TODO: mapping for "measurement_type_concept_id"
     # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
     # "CONCEPT_CLASS_ID": "Lab Test"
@@ -236,7 +209,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: Add value_as_concept_id
     # TODO: Will need to map standard concepts to values
 
-    numeric_coded_mapper = FilterHasKeyValueMapper(["numeric_value", "norm_codified_value_primary_display"])
+    numeric_coded_mapper = FilterHasKeyValueMapper(["numeric_value", "norm_codified_value_primary_display", "result_primary_display"])
 
     measurement_rules = [(":row_id", "measurement_id"),
                          ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -248,19 +221,17 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                          ("norm_codified_value_primary_display", snomed_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
                          ("norm_unit_of_measure_primary_display", "unit_source_value"),
                          ("norm_unit_of_measure_primary_display", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
-                         (("numeric_value", "norm_codified_value_primary_display"), numeric_coded_mapper,
-                          {"numeric_value": "value_source_value", "norm_codified_value_primary_display": "value_source_value"}),
+                         (("numeric_value", "norm_codified_value_primary_display", "result_primary_display"), numeric_coded_mapper,
+                          {"numeric_value": "value_source_value", "norm_codified_value_primary_display": "value_source_value",
+                           "result_primary_display": "value_source_value"}),
                          ("norm_ref_range_low", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
                          ("norm_ref_range_high", FloatMapper(), "range_high")]
 
-    measurement_rules_class = build_input_output_mapper(measurement_rules)
+    input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
+    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm_encounter.csv")
 
-    in_out_map_obj.register(PHFResultObject(), MeasurementObject(), measurement_rules_class)
-    output_directory_obj.register(MeasurementObject(), cdm_measurement_csv_obj)
-
-    measurement_runner_obj = RunMapperAgainstSingleInputRealization(hi_result_csv_obj, in_out_map_obj,
-                                                              output_directory_obj,
-                                                              measurement_router_obj)
+    measurement_runner_obj = generate_mapper_obj(input_result_csv, PHFResultObject(), output_measurement_csv, MeasurementObject(),
+                                                 measurement_rules, output_class_obj, in_out_map_obj, measurement_router_obj)
     measurement_runner_obj.run()
 
     # Conditions
@@ -269,6 +240,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # condition_id: Admitting, Billing Diagnosis, Discharge, Final, Other, Reason For Visit Working
 
     # "CONCEPT_NAME_Condition_Type.json
+
+    condition_type_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_Condition_Type.json")
+    condition_type_name_map = CoderMapperJSONClass(condition_type_name_json)
 
     input_condition_csv = os.path.join(input_csv_directory, "PH_F_Condition.csv")
     hi_condition_csv_obj = InputClassCSVRealization(input_condition_csv, PHFConditionObject())
@@ -291,20 +265,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #TODO: condition_type_concept_id
     # PNED codes are not getting mapped
-    #   Reason for visit diagnosis     2xxx
-    #       Complaint of               1xxx
-    #       Confirmed                  1xxx
-    #
-    # 'Patient Self-Reported Condition'
-    # 'EHR Episode Entry'
-    # These codes do not appear to map to a known external vocabulary
 
-    #Final diagnosis(discharge) 3xxx
-    #Complaint of 1x
-    #Confirmed 3xxx
-    #Possible 1x
-    #Probable x
-    # 'Secondary Condition'
+    condition_encounter_mapper = ChainMapper(ConstantMapper({"diagnosis_type_name": "Observation recorded from EHR"}), condition_type_name_map)
 
     ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
     condition_rules_dx_encounter = [(":row_id", "condition_occurrence_id"),
@@ -312,8 +274,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                        (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                        ("condition_raw_code", "condition_source_value"),
-                       ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})
-                      ]
+                       ("classification_primary_display", condition_encounter_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
+                       ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
 
     condition_rules_dx_encounter_class = build_input_output_mapper(condition_rules_dx_encounter)
 
@@ -329,8 +291,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                       ("effective_dt_tm", SplitDateTimeWithTZ(),
                                         {"date": "measurement_date", "time": "measurement_time"}),
                                       ("condition_code", "measurement_source_value"),
-                                      (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "measurement_source_concept_id",
-                                                                       "MAPPED_CONCEPT_ID": "measurement_concept_id"})
+                                      (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
+                                       {"CONCEPT_ID": "measurement_source_concept_id",
+                                        "MAPPED_CONCEPT_ID": "measurement_concept_id"})
                                       ]
 
     measurement_rules_dx_encounter_class = build_input_output_mapper(measurement_rules_dx_encounter)
@@ -384,7 +347,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_procedure_dx_encounter_csv = os.path.join(output_csv_directory, "procedure_dx_encounter_cdm.csv")
     output_procedure_dx_encounter_csv_obj = OutputClassCSVRealization(output_procedure_dx_encounter_csv,
-                                                                        ProcedureOccurrenceObject())
+                                                                      ProcedureOccurrenceObject())
 
     output_directory_obj.register(ProcedureOccurrenceObject(), output_procedure_dx_encounter_csv_obj)
     in_out_map_obj.register(PHFConditionObject(), ProcedureOccurrenceObject(), procedure_rules_dx_encounter_class)
@@ -406,7 +369,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                     return MeasurementObject()
                 else:
                     return NoOutputClass()
-
             else:
                 return NoOutputClass()
         else:
@@ -417,10 +379,59 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                                     condition_router_obj)
     condition_runner_obj.run()
 
+    # TODO: Map "PH_F_Condition_Claim" using mapping defined in "Map_Between_Claim_Id_Encounter_Id.csv"
+
+    map_claim_id_encounter = os.path.join(input_csv_directory, "Map_Between_Claim_Id_Encounter_Id.csv")
+
+    map_claim_id_encounter_json = create_json_map_from_csv_file(map_claim_id_encounter, "claim_id", "encounter_id")
+
+    claim_id_encounter_id_mapper = CoderMapperJSONClass(map_claim_id_encounter_json)
+    claim_id_visit_occurrence_id_mapper = ChainMapper(claim_id_encounter_id_mapper, encounter_id_mapper)
+
+    condition_claim_type_map = \
+        ChainMapper(
+            ReplacementMapper({"PRIMARY": "Primary Condition", "SECONDARY": "Secondary Condition"}),
+            condition_type_name_map
+        )
+
+    condition_claim_rules = [(":row_id", "condition_occurrence_id"), #TODO: Needs to be +1 of the encounter claim
+                             ("corrected_claim_id", claim_id_visit_occurrence_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                             ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                             (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
+                              {"CONCEPT_ID": "condition_source_concept_id",
+                               "MAPPED_CONCEPT_ID": "condition_concept_id"}),
+                             ("condition_raw_code", "condition_source_value"),
+                             (("rank_type",), condition_claim_type_map, {"CONCEPT_ID": "condition_type_concept_id"}),
+                             ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})
+                             ]
+
+    def condition_claim_router(input_dict):
+        # we need to check
+        claim_id_mapped_dict = claim_id_encounter_id_mapper.map({"corrected_claim_id": input_dict["corrected_claim_id"]})
+        if len(input_dict["present_on_admission_code"]): # Remove these blanks are admit codes
+            if len(claim_id_mapped_dict):
+                claim_encounter_id_mapped_dict = encounter_id_mapper.map(claim_id_mapped_dict)
+                if len(claim_encounter_id_mapped_dict):
+                    return ConditionOccurrenceObject()
+                else:
+                    return NoOutputClass()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    input_condition_claim_csv = os.path.join(input_csv_directory, "PH_F_Condition_Claim.csv")
+    output_condition_occurrence_claim_csv = os.path.join(output_csv_directory, "condition_occurrence_claim.csv")
+
+    condition_claim_runner_obj = generate_mapper_obj(input_condition_claim_csv, PHFConditionClaimObject(),
+                                                     output_condition_occurrence_claim_csv, ConditionOccurrenceObject(),
+                                                     condition_claim_rules, output_class_obj, in_out_map_obj, condition_claim_router
+                                                     )
+
+    condition_claim_runner_obj.run()
+
     # Maps the DXs linked by the claims
-
     # procedure
-
     # 2.16.840.1.113883.6.104 -- ICD9 Procedure Codes
     # 2.16.840.1.113883.6.12  -- CPT Codes
     # 2.16.840.1.113883.6.14  -- HCFA Procedure Codes
@@ -443,7 +454,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     cpt_json = os.path.join(json_map_directory, "CPT4_with_parent.json")
 
     #TODO: Add SNOMED and HCPCS Codes to the Mapping
-
     ProcedureCodeMapper = CaseMapper(case_mapper_procedures,
                                      CoderMapperJSONClass(icd9proc_json, "procedure_raw_code"),
                                      CoderMapperJSONClass(icd10proc_json, "procedure_raw_code"),
@@ -482,11 +492,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_procedure_csv_obj, in_out_map_obj,
                                                                   output_directory_obj,
                                                                   procedure_router_obj)
-
     procedure_runner_obj.run()
 
     # Drug_Exposure
-
     input_med_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
     hi_medication_csv_obj = InputClassCSVRealization(input_med_csv, PHFMedicationObject())
 
@@ -520,9 +528,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                             KeyTranslator({"drug_raw_code": "RXCUI"})),
                                             CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
 
-
     rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
-
     rxnorm_name_mapper = CoderMapperJSONClass(rxnorm_name_json)
 
     def string_to_cap_first_letter(raw_string):
@@ -531,16 +537,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return raw_string
 
-
     rxnorm_name_mapper_chained = ChainMapper(TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper)
 
     drug_mapper = CascadeMapper(DrugCodeMapper, rxnorm_name_mapper_chained)
 
-
     # TODO: Map dose_unit_source_value -> drug_unit_concept_id
     # TODO: Map route_source_value -> route_source_value
-
-
 
     drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
     drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
@@ -591,7 +593,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                       "Continuous IV": "Intravenous", "IntraMuscular": "Intramuscular"}),
                                                   CodeMapperDictClass(routes_to_concept_id_dict))
 
-
     medication_rules = [(":row_id", "drug_exposure_id"),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -638,103 +639,3 @@ if __name__ == "__main__":
         config_dict = json.load(f)
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
-
-    # [u'Carrier claim detail - 10th position',
-    #  u'Carrier claim detail - 11th position',
-    #  u'Carrier claim detail - 12th position',
-    #  u'Carrier claim detail - 13th position',
-    #  u'Carrier claim detail - 1st position',
-    #  u'Carrier claim detail - 2nd position',
-    #  u'Carrier claim detail - 3rd position',
-    #  u'Carrier claim detail - 4th position',
-    #  u'Carrier claim detail - 5th position',
-    #  u'Carrier claim detail - 6th position',
-    #  u'Carrier claim detail - 7th position',
-    #  u'Carrier claim detail - 8th position',
-    #  u'Carrier claim detail - 9th position',
-    #  u'Carrier claim header - 1st position',
-    #  u'Carrier claim header - 2nd position',
-    #  u'Carrier claim header - 3rd position',
-    #  u'Carrier claim header - 4th position',
-    #  u'Carrier claim header - 5th position',
-    #  u'Carrier claim header - 6th position',
-    #  u'Carrier claim header - 7th position',
-    #  u'Carrier claim header - 8th position',
-    #  u'Condition era - 0 days persistence window',
-    #  u'Condition era - 30 days persistence window',
-    #  u'EHR Chief Complaint',
-    #  u'EHR Episode Entry',
-    #  u'EHR problem list entry',
-    #  u'First Position Condition',
-    #  u'Inpatient detail - 10th position',
-    #  u'Inpatient detail - 11th position',
-    #  u'Inpatient detail - 12th position',
-    #  u'Inpatient detail - 13th position',
-    #  u'Inpatient detail - 14th position',
-    #  u'Inpatient detail - 15th position',
-    #  u'Inpatient detail - 16th position',
-    #  u'Inpatient detail - 17th position',
-    #  u'Inpatient detail - 18th position',
-    #  u'Inpatient detail - 19th position',
-    #  u'Inpatient detail - 1st position',
-    #  u'Inpatient detail - 20th position',
-    #  u'Inpatient detail - 2nd position',
-    #  u'Inpatient detail - 3rd position',
-    #  u'Inpatient detail - 4th position',
-    #  u'Inpatient detail - 5th position',
-    #  u'Inpatient detail - 6th position',
-    #  u'Inpatient detail - 7th position',
-    #  u'Inpatient detail - 8th position',
-    #  u'Inpatient detail - 9th position',
-    #  u'Inpatient detail - primary',
-    #  u'Inpatient header - 10th position',
-    #  u'Inpatient header - 11th position',
-    #  u'Inpatient header - 12th position',
-    #  u'Inpatient header - 13th position',
-    #  u'Inpatient header - 14th position',
-    #  u'Inpatient header - 15th position',
-    #  u'Inpatient header - 1st position',
-    #  u'Inpatient header - 2nd position',
-    #  u'Inpatient header - 3rd position',
-    #  u'Inpatient header - 4th position',
-    #  u'Inpatient header - 5th position',
-    #  u'Inpatient header - 6th position',
-    #  u'Inpatient header - 7th position',
-    #  u'Inpatient header - 8th position',
-    #  u'Inpatient header - 9th position',
-    #  u'Inpatient header - primary',
-    #  u'Observation recorded from EHR',
-    #  u'Outpatient detail - 10th position',
-    #  u'Outpatient detail - 11th position',
-    #  u'Outpatient detail - 12th position',
-    #  u'Outpatient detail - 13th position',
-    #  u'Outpatient detail - 14th position',
-    #  u'Outpatient detail - 15th position',
-    #  u'Outpatient detail - 1st position',
-    #  u'Outpatient detail - 2nd position',
-    #  u'Outpatient detail - 3rd position',
-    #  u'Outpatient detail - 4th position',
-    #  u'Outpatient detail - 5th position',
-    #  u'Outpatient detail - 6th position',
-    #  u'Outpatient detail - 7th position',
-    #  u'Outpatient detail - 8th position',
-    #  u'Outpatient detail - 9th position',
-    #  u'Outpatient header - 10th position',
-    #  u'Outpatient header - 11th position',
-    #  u'Outpatient header - 12th position',
-    #  u'Outpatient header - 13th position',
-    #  u'Outpatient header - 14th position',
-    #  u'Outpatient header - 15th position',
-    #  u'Outpatient header - 1st position',
-    #  u'Outpatient header - 2nd position',
-    #  u'Outpatient header - 3rd position',
-    #  u'Outpatient header - 4th position',
-    #  u'Outpatient header - 5th position',
-    #  u'Outpatient header - 6th position',
-    #  u'Outpatient header - 7th position',
-    #  u'Outpatient header - 8th position',
-    #  u'Outpatient header - 9th position',
-    #  u'Patient Self-Reported Condition',
-    #  u'Primary Condition',
-    #  u'Referral record',
-    #  u'Secondary Condition']
