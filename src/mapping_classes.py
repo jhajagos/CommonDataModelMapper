@@ -144,18 +144,21 @@ class CoderMapperJSONClass(CodeMapperClass):
 
     def map(self, input_dict):
 
-        if self.field_name is None:
-            key = input_dict.keys()[0]
-        else:
-            key = self.field_name
+        if len(input_dict):
+            if self.field_name is None:
+                key = input_dict.keys()[0]
+            else:
+                key = self.field_name
 
-        if key in input_dict:
-            value = input_dict[key]
-        else:
-            return {}
+            if key in input_dict:
+                value = input_dict[key]
+            else:
+                return {}
 
-        if value in self.mapper_dict:
-            return self.mapper_dict[value]
+            if value in self.mapper_dict:
+                return self.mapper_dict[value]
+            else:
+                return {}
         else:
             return {}
 
@@ -209,7 +212,6 @@ class ChainMapper(MapperClass):
                 result_dict = mapper_class.map(input_dict)
             else:
                 result_dict = mapper_class.map(result_dict)
-
             i += 1
 
         return result_dict
@@ -246,7 +248,6 @@ class FilterHasKeyValueMapper(MapperClass):
                     return {key: input_dict[key]}
 
         return {}
-
 
 
 class ReplacementMapper(MapperClass):
@@ -445,11 +446,17 @@ class RunMapper(object):
 
 
 class RunMapperAgainstSingleInputRealization(RunMapper):
-    def __init__(self, input_class_realization_obj, input_output_directory_obj, output_directory_obj, output_class_func):
+    def __init__(self, input_class_realization_obj, input_output_directory_obj, output_directory_obj, output_class_func,
+                 pre_map_func=None, post_map_func=None):
         self.input_class_realization_obj = input_class_realization_obj
         self.input_output_directory_obj = input_output_directory_obj
         self.output_directory_obj = output_directory_obj
         self.output_class_func = output_class_func
+
+        self.pre_map_func = pre_map_func
+        self.post_map_func = post_map_func
+
+        self.rows_run = 0
 
     def run(self, n_rows=10000):
 
@@ -463,6 +470,10 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         start_time = timer()
         logging.info("Mapping input %s" % input_class)
         for row_dict in self.input_class_realization_obj:
+
+            if self.pre_map_func is not None:
+                row_dict = self.pre_map_func(row_dict)
+
             output_class_obj = self.output_class_func(row_dict)
             output_class = output_class_obj.__class__
 
@@ -476,7 +487,15 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
             else:
                 output_class_instance = self.output_directory_obj[output_class]
                 mapper_obj = self.input_output_directory_obj[(input_class, output_class)]
-                mapped_row_dict = mapper_obj.map(row_dict)
+
+                try:
+                    mapped_row_dict = mapper_obj.map(row_dict)
+                except:
+                    print(row_dict)
+                    raise
+
+                if self.post_map_func is not None:
+                    mapped_row_dict = self.post_map_func(mapped_row_dict)
 
                 output_class_instance.write(mapped_row_dict)
 
@@ -489,6 +508,8 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
                 start_time = end_time
 
             i += 1
+
+        self.rows_run = i
 
         global_end_time = timer()
         total_time = global_end_time - global_start_time

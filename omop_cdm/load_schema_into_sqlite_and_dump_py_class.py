@@ -10,6 +10,7 @@ import sys
 
 from generate_io_classes_file_from_source import *
 
+
 def load_sql(schema_file_name="omop_cdm.sql", sa_connection_string="sqlite:///cdm_v5.db3"):
 
     engine = sa.create_engine(sa_connection_string)
@@ -32,6 +33,6 @@ if __name__ == "__main__":
     load_sql()
 
     with open("./omop_cdm_classes.py", "w") as f:
-        f.write("from mapping_classes import InputClass\n\n")
+        f.write("from mapping_classes import OutputClass\n\n")
         f.write(generate_sql_from_connection_string("sqlite:///cdm_v5.db3"))
 

@@ -75,8 +75,6 @@ class SplitDateTimeWithTZ(MapperClass):
         return {"date": date_part, "time": time_part}
 
 
-
-
 class FloatMapper(MapperClass):
 
     def map(self, input_dict):
@@ -87,6 +85,23 @@ class FloatMapper(MapperClass):
             except ValueError:
                 pass
 
-
         return resulting_map
+
+
+class row_map_offset(MapperClass):
+
+    def __init__(self, field_name, start_i=0):
+        self.start_i = start_i
+        self.field_name = field_name
+
+    def map(self, input_dict):
+        return {self.field_name: input_dict[":row_id"] + self.start_i}
+
+
+def capitalize_words_and_normalize_spacing(input_string):
+    split_input_string = input_string.split()
+    capitalized_input_string = ""
+    for token in split_input_string:
+        capitalized_input_string += token[0].upper() + token[1:].lower() + " "
+    return capitalized_input_string.strip()
 

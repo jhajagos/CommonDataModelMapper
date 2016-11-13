@@ -6,7 +6,7 @@
 import sqlalchemy as sa
 
 
-def input_output_class_generate_string(class_name, parent_class_name, fields, indent="    "):
+def input_output_class_generate_string(class_name, parent_class_name, fields, table_name, indent="    "):
 
     class_py_string = "class " + class_name + "(" + parent_class_name + "):\n"
     class_py_string += indent + "def fields(self):\n"
@@ -21,7 +21,11 @@ def input_output_class_generate_string(class_name, parent_class_name, fields, in
 
     class_py_string += indent + indent + "return " + fields_string + "\n"
 
+    class_py_string += "\n" + indent + "def table_name(self):\n"
+    class_py_string += indent + indent + "return " + '"' + table_name + '"\n'
+
     return class_py_string
+
 
 def transform_table_name_to_class_name(table_name, suffix="Object"):
     """"Transform a table name encounter_event into EncounterEventObject"""
@@ -45,7 +49,7 @@ def generate_sql_from_connection_string(connection_string, parent_class_name="Ou
     for table_name in table_names:
         table_class_name = transform_table_name_to_class_name(table_name)
         field_names = meta_data.tables[table_name].columns.keys()
-        class_libaray_py += input_output_class_generate_string(table_class_name, parent_class_name, field_names)
+        class_libaray_py += input_output_class_generate_string(table_class_name, parent_class_name, field_names, table_name)
         class_libaray_py += "\n\n"
 
     return class_libaray_py
