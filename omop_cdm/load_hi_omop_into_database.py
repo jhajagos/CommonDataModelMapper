@@ -6,7 +6,8 @@ import pprint
 import time
 import json
 
-def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",", lower_case_keys=True):
+def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
+                           lower_case_keys=True, i_print_update=1000):
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()
 
@@ -57,10 +58,10 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                         pprint.pprint(cleaned_dict)
                         raise
 
-                    if i > 0 and i % 1000 == 0:
+                    if i > 0 and i % i_print_update == 0:
                         current_time = time.time()
                         time_difference = current_time - elapsed_time
-                        print("Loaded %s rows in %s seconds" % (i, time_difference))
+                        print("Loaded %s total rows at %s seconds per %s rows" % (i, time_difference, i_print_update))
                         elapsed_time = time.time()
                     i += 1
 
@@ -99,7 +100,8 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
                   ("visit_occurrence", "visit_occurrence_cdm.csv"),
                   ("procedure_occurrence", "procedure_encounter_cdm.csv"),
                   ("measurement", "measurement_cdm_encounter.csv"),
-                  ("drug_exposure", "drug_exposure_cdm.csv")
+                  ("drug_exposure", "drug_exposure_cdm.csv"),
+                  ("death", "death_cdm.csv")
              ]
 
     data_dict = {}
@@ -108,27 +110,27 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
 
     connection_string = "sqlite:///" + output_sqlite3
 
-    load_csv_files_into_db(connection_string, data_dict, omop_cdm_sql, indices_ddl=omop_cdm_idx_sql)
+    load_csv_files_into_db(connection_string, data_dict, omop_cdm_sql, indices_ddl=omop_cdm_idx_sql,
+                           i_print_update=1000)
 
     if load_vocabularies:
-        vocab_pairs =  generate_vocabulary_load(vocabulary_directory)
+        vocab_pairs = generate_vocabulary_load(vocabulary_directory, vocabularies=["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_RELATIONSHIP"])
         vocab_dict = {}
         for pair in vocab_pairs:
             vocab_dict[pair[1]] = pair[0]
 
-        load_csv_files_into_db(connection_string, vocab_dict, delimiter="\t")
+        load_csv_files_into_db(connection_string, vocab_dict, delimiter="\t", i_print_update=100000)
 
 
-
-def generate_vocabulary_load(vocabulary_directory):
-    vocabularies = ["CONCEPT", "CONCEPT_ANCESTOR",
-     "CONCEPT_CLASS",
-     "CONCEPT_RELATIONSHIP",
-     "CONCEPT_SYNONYM",
-     "DOMAIN",
-     "DRUG_STRENGTH",
-     "RELATIONSHIP",
-     "VOCABULARY"]
+def generate_vocabulary_load(vocabulary_directory,  vocabularies = ["CONCEPT",
+                    "CONCEPT_ANCESTOR",
+                    "CONCEPT_CLASS",
+                    "CONCEPT_RELATIONSHIP",
+                    "CONCEPT_SYNONYM",
+                    "DOMAIN",
+                    "DRUG_STRENGTH",
+                    "RELATIONSHIP",
+                    "VOCABULARY"]):
 
     load_pairs = []
 

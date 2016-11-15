@@ -163,13 +163,8 @@ def create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_ma
 
     unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper)
 
-    # TODO Add SNOMED Mapper
-    # TODO: mapping for "measurement_type_concept_id"
-    # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
-    # "CONCEPT_CLASS_ID": "Lab Test"
-
-    # TODO: Add value_as_concept_id
-    # TODO: Will need to map standard concepts to values
+    # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
+    # TODO: Add value_as_concept_id -  Add more cases where value matches a SNOMED concept
 
     measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
 
@@ -178,8 +173,13 @@ def create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_ma
                                                                  measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
     value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["norm_codified_value_primary_display", "norm_text_value"]),
                                           TransformMapper(capitalize_words_and_normalize_spacing),
-                                          ReplacementMapper({"Implant": "implant", "A": "Blood group A", "Ab": "Blood group AB", "O": "Blood group O"}),
+                                          ReplacementMapper({"Implant": "implant", "A": "Blood group A", "Ab": "Blood group AB", "O": "Blood group O",
+                                                             "B": "Blood group B"
+                                                             }),
                                           snomed_mapper)
+
+    # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
+    # "CONCEPT_CLASS_ID": "Lab Test"
     numeric_coded_mapper = FilterHasKeyValueMapper(["numeric_value", "norm_codified_value_primary_display", "norm_text_value", "result_primary_display"])
 
     measurement_rules = [(":row_id", "measurement_id"),
@@ -269,6 +269,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
 
     rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
 
+    #TODO: Increase mapping coverage of drugs
     def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
         drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
 
@@ -303,8 +304,8 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
 
     drug_mapper = CascadeMapper(DrugCodeMapper, rxnorm_name_mapper_chained)
 
-    # TODO: Map dose_unit_source_value -> drug_unit_concept_id
-    # TODO: Map route_source_value -> route_source_value
+    # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
+    # TODO: Increase coverage of "Map route_source_value -> route_source_value"
 
     drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
     drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
@@ -315,7 +316,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                                                       "UNKNOWN": "Prescription dispensed in pharmacy"}),
                                    drug_type_code_mapper)
 
-    # TODO: Rework this mapper
+    # TODO: Rework this mapper not to be static code
     # Source: http://forums.ohdsi.org/t/route-standard-concepts-not-standard-anymore/1300/7
     routes_to_concept_id_dict = {
         "Gastroenteral": "4186834",
@@ -355,6 +356,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
     route_mapper = ChainMapper(ReplacementMapper({"SubCutaneous": "Subcutaneous", "IV Push": "Intravenous",
                                                   "Continuous IV": "Intravenous", "IntraMuscular": "Intramuscular"}),
                                CodeMapperDictClass(routes_to_concept_id_dict))
+
     # Required # drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_type_concept_id
     medication_rules = [(":row_id", "drug_exposure_id"),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -374,7 +376,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                         (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_mapper,
                          {"CONCEPT_ID": "drug_source_concept_id"}),
                         (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_mapper,
-                         {"CONCEPT_ID": "drug_concept_id"}),
+                         {"CONCEPT_ID": "drug_concept_id"}), # TODO: Make sure map maps to standard concept
                         ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})
                         ]
 
@@ -441,8 +443,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_occurrence_id")
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name)
 
-    #### MEASUREMENT ####
-
+    #### MEASUREMENT and OBSERVATIONS dervived from PH_F_Result ####
 
     snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
     snomed_code_mapper = CoderMapperJSONClass(snomed_code_json)
@@ -455,10 +456,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if len(input_dict["result_code"]):
                 mapped_result_code = snomed_code_result_mapper.map(input_dict)
                 if "CONCEPT_CLASS_ID" in mapped_result_code:
-                    if mapped_result_code["CONCEPT_CLASS_ID"] in ("Procedure", "Clinical Finding", "Staging / Scales"):
-                        return NoOutputClass()
-                    else:
+                    if mapped_result_code["DOMAIN_ID"] == "Measurement":
                         return MeasurementObject()
+                    elif mapped_result_code["DOMAIN_ID"] == "Observation":
+                        return NoOutputClass() #TODO: Support generation of observations e.g. Body weight from PH_F_Result
+                    else:
+                        return NoOutputClass()
                 else:
                     return MeasurementObject()
             else:
