@@ -263,9 +263,13 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
 
 
 def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper):
-    multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
-    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
-    multum_bd_json = os.path.join(json_map_directory, "RxNorm_MMSL_BD.json")
+    # multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
+    # multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
+    # multum_bd_json = os.path.join(json_map_directory, "RxNorm_MMSL_BD.json")
+
+    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.json")
+    multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.json")
+    multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.json")
 
     rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
 
@@ -285,11 +289,18 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
             return False
 
     DrugCodeMapper = ChainMapper(CaseMapper(case_mapper_drug_code,
-                                            CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
-                                            CoderMapperJSONClass(multum_gn_json, "drug_raw_code"),
-                                            CoderMapperJSONClass(multum_bd_json, "drug_raw_code"),
-                                            KeyTranslator({"drug_raw_code": "RXCUI"})),
-                                 CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
+                                            CoderMapperJSONClass(multum_json, "drug_raw_code"),
+                                            CoderMapperJSONClass(multum_drug_json, "drug_raw_code"),
+                                            CoderMapperJSONClass(multum_drug_mmdc_json, "drug_raw_code"),
+                                            KeyTranslator({"drug_raw_code": "RXNORM_ID"})),
+                                 CoderMapperJSONClass(rxcui_mapper_json, "RXNORM_ID"))
+
+    # DrugCodeMapper = ChainMapper(CaseMapper(case_mapper_drug_code,
+    #                                         CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
+    #                                         CoderMapperJSONClass(multum_gn_json, "drug_raw_code"),
+    #                                         CoderMapperJSONClass(multum_bd_json, "drug_raw_code"),
+    #                                         KeyTranslator({"drug_raw_code": "RXCUI"})),
+    #                              CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
 
     rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
     rxnorm_name_mapper = CoderMapperJSONClass(rxnorm_name_json)
@@ -452,7 +463,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def measurement_router_obj(input_dict):
         """Determine if the result contains a LOINC code"""
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-
             if len(input_dict["result_code"]):
                 mapped_result_code = snomed_code_result_mapper.map(input_dict)
                 if "CONCEPT_CLASS_ID" in mapped_result_code:
@@ -582,7 +592,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                       (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
                                        {"CONCEPT_ID": "procedure_source_concept_id",
                                         "MAPPED_CONCEPT_ID": "procedure_concept_id"})
-                                      ]
+                                    ]
 
     procedure_rules_dx_encounter_class = build_input_output_mapper(procedure_rules_dx_encounter)
 
