@@ -80,14 +80,14 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
             db_connection.execute(sql_statement)
 
 
-def main(output_directory=None, vocabulary_directory=None, load_vocabularies=False, load_data=False):
+def main(output_directory=None, vocabulary_directory=None, load_vocabularies=False, load_data=True):
     with open("./omop_cdm.sql") as f:
         omop_cdm_sql = f.read()
 
     with open("./omop_cdm_indexes.sql") as f:
         omop_cdm_idx_sql = f.read()
 
-    output_sqlite3 = os.path.join("X:\\output\\omop_concept_load.db3")
+    output_sqlite3 = os.path.join("X:\\output\\omop_db_load.db3")
 
     if os.path.exists(output_sqlite3):
         os.remove(output_sqlite3)
@@ -101,7 +101,8 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
                   ("procedure_occurrence", "procedure_encounter_cdm.csv"),
                   ("measurement", "measurement_cdm_encounter.csv"),
                   ("drug_exposure", "drug_exposure_cdm.csv"),
-                  ("death", "death_cdm.csv")
+                  ("death", "death_cdm.csv"),
+                  ("observation", "observation_cdm_measurement_encounter.csv")
              ]
 
     data_dict = {}
@@ -109,7 +110,6 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
         data_dict[os.path.join(output_dir, pair[1])] = pair[0]
 
     connection_string = "sqlite:///" + output_sqlite3
-
 
     if not load_data:
         data_dict = {}
@@ -126,7 +126,7 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
         load_csv_files_into_db(connection_string, vocab_dict, delimiter="\t", i_print_update=100000)
 
 
-def generate_vocabulary_load(vocabulary_directory,  vocabularies = ["CONCEPT",
+def generate_vocabulary_load(vocabulary_directory,  vocabularies=["CONCEPT",
                     "CONCEPT_ANCESTOR",
                     "CONCEPT_CLASS",
                     "CONCEPT_RELATIONSHIP",

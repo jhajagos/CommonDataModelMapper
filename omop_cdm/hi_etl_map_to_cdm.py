@@ -32,6 +32,8 @@ def condition_coding_system(coding_system_oid):
         return "ICD10CM"
     elif coding_system_oid == "2.16.840.1.113883.6.103":
         return "ICD9CM"
+    elif coding_system_oid == '2.16.840.1.113883.6.96':
+        return 'SNOMED'
     else:
         return False
 
@@ -68,6 +70,20 @@ def procedure_coding_system(input_dict, field="procedure_coding_system_id"):
         return 'SNOMED'
     else:
         return False
+
+
+def register_to_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj,
+                            map_rules_list,
+                            output_obj, in_out_map_obj):
+
+        input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
+        output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)
+
+        map_rules_obj = build_input_output_mapper(map_rules_list)
+
+        output_obj.register(output_class_obj, output_csv_class_obj)
+
+        in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)
 
 
 def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
@@ -152,31 +168,38 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
     return visit_rules
 
 
-def create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
-    """Generate rules for mapping PH_F_Result to Measurement"""
-
-    loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
-    loinc_mapper = CoderMapperJSONClass(loinc_json)
-
-    measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
-    measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
-
-    unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper)
-
-    # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
-    # TODO: Add value_as_concept_id -  Add more cases where value matches a SNOMED concept
-
-    measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
-
-    measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
-                                                                 ReplacementMapper({"Lab Test": "Lab result"}),
-                                                                 measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+def generate_value_as_concept_mapper(snomed_mapper):
     value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["norm_codified_value_primary_display", "norm_text_value"]),
                                           TransformMapper(capitalize_words_and_normalize_spacing),
                                           ReplacementMapper({"Implant": "implant", "A": "Blood group A", "Ab": "Blood group AB", "O": "Blood group O",
                                                              "B": "Blood group B"
                                                              }),
                                           snomed_mapper)
+    return value_as_concept_mapper
+
+
+def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
+    """Generate rules for mapping PH_F_Result to Measurement"""
+
+    unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper)
+
+    loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
+    loinc_mapper = CoderMapperJSONClass(loinc_json)
+
+    measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
+
+    # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
+    # TODO: Add value_as_concept_id -  Add more cases where value matches a SNOMED concept
+
+    measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
+    measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
+
+    value_as_concept_mapper = generate_value_as_concept_mapper(snomed_mapper)
+
+
+    measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
+                                                                 ReplacementMapper({"Lab Test": "Lab result"}),
+                                                                 measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
 
     # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
     # "CONCEPT_CLASS_ID": "Lab Test"
@@ -186,7 +209,7 @@ def create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_ma
                          ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                          ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("service_date", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
-                         ("result_code", "measurement_source_value"),  # TODO: Add logic norm_codified_value_display
+                         ("result_code", "measurement_source_value"),
                          ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
                          ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
                          ("result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
@@ -202,7 +225,46 @@ def create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_ma
                          ("norm_ref_range_low", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
                          ("norm_ref_range_high", FloatMapper(), "range_high")]
 
-    return measurement_rules
+
+    measurement_observation_rules = [(":row_id", "observation_id"),
+                                     ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                     ("encounter_id", encounter_id_mapper,
+                                      {"visit_occurrence_id": "visit_occurrence_id"}),
+                                     ("service_date", SplitDateTimeWithTZ(),
+                                      {"date": "observation_date", "time": "observation_time"}),
+                                     ("result_code", "observation_source_value"),
+                                     ("result_code", measurement_code_mapper,
+                                      {"CONCEPT_ID": "observation_source_concept_id"}),
+                                     ("result_code", measurement_code_mapper,
+                                      {"CONCEPT_ID": "observation_concept_id"}),
+                                     ("result_code", measurement_type_chained_mapper,
+                                      {"CONCEPT_ID": "observation_type_concept_id"}),
+                                     ("numeric_value", FloatMapper(), "value_as_number"),
+                                     (("norm_text_value", "norm_codified_value_primary_display"),
+                                      value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
+                                     ("norm_unit_of_measure_primary_display", "unit_source_value"),
+                                     ("norm_unit_of_measure_primary_display", unit_measurement_mapper,
+                                      {"CONCEPT_ID": "unit_concept_id"}),
+                                     (("numeric_value", "norm_codified_value_primary_display", "result_primary_display",
+                                       "norm_text_value"), numeric_coded_mapper,
+                                      {"numeric_value": "value_source_value",
+                                       "norm_codified_value_primary_display": "value_as_string",
+                                       "result_primary_display": "value_as_string",
+                                       "norm_text_value": "value_as_string"})
+                                     ]
+
+    return measurement_rules, measurement_observation_rules
+
+
+def case_mapper_procedures(input_dict, field="procedure_coding_system_id"):
+    proc_code_oid = procedure_coding_system(input_dict, field=field)
+
+    if proc_code_oid == "ICD9 Procedure Codes":
+        return 0
+    elif proc_code_oid == "ICD10 Procedure Codes":
+        return 1
+    elif proc_code_oid == "CPT Codes":
+        return 2
 
 
 def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper):
@@ -213,17 +275,6 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
     # 2.16.840.1.113883.6.14  -- HCFA Procedure Codes
     # 2.16.840.1.113883.6.4 -- ICD10 Procedure Codes
     # 2.16.840.1.113883.6.96 -- SNOMED
-
-    def case_mapper_procedures(input_dict, field="procedure_coding_system_id"):
-
-        proc_code_oid = procedure_coding_system(input_dict, field=field)
-
-        if proc_code_oid == "ICD9 Procedure Codes":
-            return 0
-        elif proc_code_oid == "ICD10 Procedure Codes":
-            return 1
-        elif proc_code_oid == "CPT Codes":
-            return 2
 
     icd9proc_json = os.path.join(json_map_directory, "ICD9Proc_with_parent.json")
     icd10proc_json = os.path.join(json_map_directory, "ICD10PCS_with_parent.json")
@@ -317,7 +368,6 @@ def generate_drug_name_mapper(json_map_directory):
 def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper):
 
     #TODO: Increase mapping coverage of drugs - while likely need manual overrides
-
 
     DrugCodeMapper = generate_drug_code_mapper(json_map_directory)
     rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)
@@ -428,11 +478,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     person_runner_obj.run()
 
     # Generate look up for encounter_id to visit_occurrence_id
-
     person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id")
     empi_id_mapper = CoderMapperJSONClass(person_json_file_name)
 
-    #### DEATH ####
+    #### DEATH RECORD ####
     death_rules = create_death_patient_rules(json_map_directory, empi_id_mapper)
 
     output_death_csv = os.path.join(output_csv_directory, "death_cdm.csv")
@@ -462,7 +511,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name)
 
     #### MEASUREMENT and OBSERVATIONS dervived from PH_F_Result ####
-
     snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
     snomed_code_mapper = CoderMapperJSONClass(snomed_code_json)
     snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["result_code"]), snomed_code_mapper)
@@ -476,7 +524,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                     if mapped_result_code["DOMAIN_ID"] == "Measurement":
                         return MeasurementObject()
                     elif mapped_result_code["DOMAIN_ID"] == "Observation":
-                        return NoOutputClass() #TODO: Support generation of observations e.g. Body weight from PH_F_Result
+                        return ObservationObject() #TODO: Support generation of observations e.g. Body weight, height from PH_F_Result
                     else:
                         return NoOutputClass()
                 else:
@@ -489,14 +537,20 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     snomed_json = os.path.join(json_map_directory, "CONCEPT_NAME_SNOMED.json")  # We don't need the entire SNOMED
     snomed_mapper = CoderMapperJSONClass(snomed_json)
 
-    measurement_rules = create_measurement_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper)
+    measurement_rules, observation_measurement_rules = \
+        create_measurement_and_observation_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper)
 
     input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
     output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm_encounter.csv")
 
     measurement_runner_obj = generate_mapper_obj(input_result_csv, PHFResultObject(), output_measurement_csv, MeasurementObject(),
                                                  measurement_rules, output_class_obj, in_out_map_obj, measurement_router_obj)
-    #measurement_runner_obj.run()
+
+    output_observation_csv = os.path.join(output_csv_directory, "observation_cdm_measurement_encounter.csv")
+    register_to_mapper_obj(input_result_csv, PHFResultObject(), output_observation_csv,
+                           ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
+
+    measurement_runner_obj.run()
 
     #### CONDITION / DX ####
 
@@ -538,7 +592,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     condition_rules_dx_encounter_class = build_input_output_mapper(condition_rules_dx_encounter)
 
     # ICD9 and ICD10 conditions which map to measurements according to the CDM Vocabulary
-
     in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_dx_encounter_class)
     output_directory_obj.register(ConditionOccurrenceObject(), cdm_condition_csv_obj)
 
@@ -587,7 +640,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     in_out_map_obj.register(PHFConditionObject(), ObservationObject(), observation_rules_dx_encounter_class)
 
     # ICD9 and ICD10 codes which map to procedures according to the CDM Vocabulary
-
     # TODO: Map procedure_type_concept_id
     procedure_rules_dx_encounter = [(":row_id", "procedure_id"),
                                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -718,6 +770,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                )
 
     procedure_runner_obj.run()
+
+    #TODO: Add procedures derived from claims
 
     #### DRUG EXPOSURE ####
     def drug_exposure_router_obj(input_dict):
