@@ -299,6 +299,9 @@ class KeyTranslator(object):
 
         return translated_dict
 
+    def map(self, dict_to_map):
+        return self.translate(dict_to_map)
+
 
 def single_key_translator(map_field_from, map_field_to):
     """Create a simple key translator mapping a single key to a second key"""

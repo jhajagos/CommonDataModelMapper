@@ -236,7 +236,6 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
             CoderMapperJSONClass(procedure_type_name_json)
         )
 
-
     # TODO: Add SNOMED and HCPCS Codes to the Mapping
     ProcedureCodeMapper = CaseMapper(case_mapper_procedures,
                                      CoderMapperJSONClass(icd9proc_json, "procedure_raw_code"),
@@ -262,9 +261,10 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
     return procedure_rules_encounter
 
 
-def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper):
+def generate_drug_code_mapper(json_map_directory):
+
     # multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
-    # multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
+    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
     # multum_bd_json = os.path.join(json_map_directory, "RxNorm_MMSL_BD.json")
 
     multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.json")
@@ -273,7 +273,6 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
 
     rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
 
-    #TODO: Increase mapping coverage of drugs
     def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
         drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
 
@@ -288,22 +287,21 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
         else:
             return False
 
-    DrugCodeMapper = ChainMapper(CaseMapper(case_mapper_drug_code,
+    drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
                                             CoderMapperJSONClass(multum_json, "drug_raw_code"),
-                                            CoderMapperJSONClass(multum_drug_json, "drug_raw_code"),
+                                            CascadeMapper(
+                                                ChainMapper(CoderMapperJSONClass(multum_gn_json, "drug_raw_code"), KeyTranslator({"RXCUI": "RXNORM_ID"})),
+                                                CoderMapperJSONClass(multum_drug_json, "drug_raw_code")),
                                             CoderMapperJSONClass(multum_drug_mmdc_json, "drug_raw_code"),
                                             KeyTranslator({"drug_raw_code": "RXNORM_ID"})),
-                                 CoderMapperJSONClass(rxcui_mapper_json, "RXNORM_ID"))
+                                            CoderMapperJSONClass(rxcui_mapper_json, "RXNORM_ID"))
 
-    # DrugCodeMapper = ChainMapper(CaseMapper(case_mapper_drug_code,
-    #                                         CoderMapperJSONClass(multum_bn_json, "drug_raw_code"),
-    #                                         CoderMapperJSONClass(multum_gn_json, "drug_raw_code"),
-    #                                         CoderMapperJSONClass(multum_bd_json, "drug_raw_code"),
-    #                                         KeyTranslator({"drug_raw_code": "RXCUI"})),
-    #                              CoderMapperJSONClass(rxcui_mapper_json, "RXCUI"))
+    return drug_code_mapper
 
+
+def generate_drug_name_mapper(json_map_directory):
     rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
-    rxnorm_name_mapper = CoderMapperJSONClass(rxnorm_name_json)
+    rxnorm_name_mapper = CoderMapperJSONClass(rxnorm_name_json, "drug_primary_display")
 
     def string_to_cap_first_letter(raw_string):
         if len(raw_string):
@@ -311,8 +309,18 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
         else:
             return raw_string
 
-    rxnorm_name_mapper_chained = ChainMapper(TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper)
+    rxnorm_name_mapper_chained = CascadeMapper(rxnorm_name_mapper, ChainMapper(TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper))
 
+    return rxnorm_name_mapper_chained
+
+
+def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper):
+
+    #TODO: Increase mapping coverage of drugs - while likely need manual overrides
+
+
+    DrugCodeMapper = generate_drug_code_mapper(json_map_directory)
+    rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)
     drug_mapper = CascadeMapper(DrugCodeMapper, rxnorm_name_mapper_chained)
 
     # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
@@ -433,7 +441,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     death_runner_obj.run()
 
     #### VISIT ####
-
     visit_rules = create_visit_rules(json_map_directory, empi_id_mapper)
     input_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
     output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
@@ -489,7 +496,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     measurement_runner_obj = generate_mapper_obj(input_result_csv, PHFResultObject(), output_measurement_csv, MeasurementObject(),
                                                  measurement_rules, output_class_obj, in_out_map_obj, measurement_router_obj)
-    measurement_runner_obj.run()
+    #measurement_runner_obj.run()
 
     #### CONDITION / DX ####
 
@@ -717,7 +724,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         """Route mapping of drug_exposure"""
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
             if input_dict["status_primary_display"] not in ("Deleted", "Cancelled"):
-                return DrugExposureObject()
+                if len(input_dict["drug_raw_code"]) > 0 and len(input_dict["drug_primary_display"]) > 0:
+                    return DrugExposureObject()
+                else:
+                    return NoOutputClass()
             else:
                 return NoOutputClass()
         else:
@@ -730,8 +740,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if field not in output_dict:
                 output_dict[field] = 0
             else:
-                if not len(output_dict[field]):
-                    output_dict[field] = 0
+                if output_dict[field] is not None:
+                    if not len(output_dict[field]):
+                        output_dict[field] = 0
         return output_dict
 
     input_med_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
@@ -745,7 +756,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     drug_exposure_runner_obj.run()
 
-    #  DRGs MS-DRGS
+    #  TODO: Add MS-DRGS
 
     # ["observation_id", "person_id", "observation_concept_id", "observation_date", "observation_time",
     #  "observation_type_concept_id", "value_as_number", "value_as_string", "value_as_concept_id", "qualifier_concept_id",

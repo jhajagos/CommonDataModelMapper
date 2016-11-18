@@ -6,6 +6,7 @@ import pprint
 import time
 import json
 
+
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
                            lower_case_keys=True, i_print_update=1000):
     db_engine = sa.create_engine(connection_string)
@@ -54,7 +55,6 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                     try:
                         db_connection.execute(s)
                     except:
-
                         pprint.pprint(cleaned_dict)
                         raise
 
@@ -80,14 +80,14 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
             db_connection.execute(sql_statement)
 
 
-def main(output_directory=None, vocabulary_directory=None, load_vocabularies=False):
+def main(output_directory=None, vocabulary_directory=None, load_vocabularies=False, load_data=False):
     with open("./omop_cdm.sql") as f:
         omop_cdm_sql = f.read()
 
     with open("./omop_cdm_indexes.sql") as f:
         omop_cdm_idx_sql = f.read()
 
-    output_sqlite3 = os.path.join("X:\\output\\omop_cdm_test_load.db3")
+    output_sqlite3 = os.path.join("X:\\output\\omop_concept_load.db3")
 
     if os.path.exists(output_sqlite3):
         os.remove(output_sqlite3)
@@ -110,11 +110,15 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
 
     connection_string = "sqlite:///" + output_sqlite3
 
+
+    if not load_data:
+        data_dict = {}
+
     load_csv_files_into_db(connection_string, data_dict, omop_cdm_sql, indices_ddl=omop_cdm_idx_sql,
-                           i_print_update=1000)
+                               i_print_update=1000)
 
     if load_vocabularies:
-        vocab_pairs = generate_vocabulary_load(vocabulary_directory, vocabularies=["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_RELATIONSHIP"])
+        vocab_pairs = generate_vocabulary_load(vocabulary_directory, vocabularies=["CONCEPT"])
         vocab_dict = {}
         for pair in vocab_pairs:
             vocab_dict[pair[1]] = pair[0]
@@ -133,7 +137,6 @@ def generate_vocabulary_load(vocabulary_directory,  vocabularies = ["CONCEPT",
                     "VOCABULARY"]):
 
     load_pairs = []
-
     for vocabulary in vocabularies:
         load_pairs += [(vocabulary.lower(), os.path.join(vocabulary_directory, vocabulary + ".csv"))]
 
