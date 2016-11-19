@@ -98,6 +98,17 @@ class row_map_offset(MapperClass):
         return {self.field_name: input_dict[":row_id"] + self.start_i}
 
 
+def get_largest_id_from_csv_file(csv_file_name, primary_key_field_name):
+
+    max_value = 0
+    with open(csv_file_name, "rb") as f:
+        cdict = csv.DictReader(f)
+        for row_dict in cdict:
+            max_value = max(max_value, int(row_dict[primary_key_field_name]))
+
+    return max_value
+
+
 def capitalize_words_and_normalize_spacing(input_string):
     split_input_string = input_string.split()
     capitalized_input_string = ""

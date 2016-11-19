@@ -286,5 +286,3 @@ class CohortAttributeObject(OutputClass):
 
     def table_name(self):
         return "cohort_attribute"
-
-

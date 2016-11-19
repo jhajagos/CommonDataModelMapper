@@ -99,11 +99,14 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
                   ("person", "person_cdm.csv"),
                   ("visit_occurrence", "visit_occurrence_cdm.csv"),
                   ("procedure_occurrence", "procedure_encounter_cdm.csv"),
+                  ("procedure_occurrence", "procedure_dx_encounter_cdm.csv"),
+                  ("procedure_occurrence", "procedure_claim_cdm.csv"),
                   ("measurement", "measurement_cdm_encounter.csv"),
                   ("drug_exposure", "drug_exposure_cdm.csv"),
                   ("death", "death_cdm.csv"),
-                  ("observation", "observation_cdm_measurement_encounter.csv")
-             ]
+                  ("observation", "observation_cdm_measurement_encounter.csv"),
+                  ("observation", "observation_dx_encounter_cdm.csv")
+                 ]
 
     data_dict = {}
     for pair in load_pairs:

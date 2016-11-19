@@ -225,7 +225,7 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                          ("norm_ref_range_low", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
                          ("norm_ref_range_high", FloatMapper(), "range_high")]
 
-
+    #TODO: observation_type_concept_id <- "Observation recorded from EHR"
     measurement_observation_rules = [(":row_id", "observation_id"),
                                      ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                      ("encounter_id", encounter_id_mapper,
@@ -267,7 +267,7 @@ def case_mapper_procedures(input_dict, field="procedure_coding_system_id"):
         return 2
 
 
-def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper):
+def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, procedure_id_start):
     # Maps the DXs linked by the claims
     # procedure
     # 2.16.840.1.113883.6.104 -- ICD9 Procedure Codes
@@ -293,9 +293,9 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
                                      CoderMapperJSONClass(icd10proc_json, "procedure_raw_code"),
                                      CoderMapperJSONClass(cpt_json, "procedure_raw_code")
                                      )
-
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
-    procedure_rules_encounter = [(":row_id", "procedure_occurrence_id"),
+    procedure_rules_encounter = [(":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
+                                  {"procedure_occurrence_id": "procedure_occurrence_id"}),
                                  ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                  ("encounter_id", encounter_id_mapper,
                                   {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -617,8 +617,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_directory_obj.register(MeasurementObject(), output_measurement_dx_encounter_csv_obj)
 
+    observation_start_id = measurement_runner_obj.rows_run
+
     # ICD9 and ICD10 codes which map to observations according to the CDM Vocabulary
-    observation_rules_dx_encounter = [(":row_id","observation_id"),
+    observation_rules_dx_encounter = [(":row_id", row_map_offset("observation_id", observation_start_id),
+                                       {"observation_id": "observation_id"}),
+                                      (":row_id", ConstantMapper({"observation_type_concept_id": 0}), {"observation_type_concept_id": "observation_type_concept_id"}),
                                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                       ("encounter_id", encounter_id_mapper,
                                        {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -639,9 +643,17 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_directory_obj.register(ObservationObject(), output_observation_dx_encounter_csv_obj)
     in_out_map_obj.register(PHFConditionObject(), ObservationObject(), observation_rules_dx_encounter_class)
 
+    procedure_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
+    procedure_type_mapper = CoderMapperJSONClass(procedure_type_json)
+
+
     # ICD9 and ICD10 codes which map to procedures according to the CDM Vocabulary
+    #"Procedure recorded as diagnostic code"
     # TODO: Map procedure_type_concept_id
-    procedure_rules_dx_encounter = [(":row_id", "procedure_id"),
+    procedure_rules_dx_encounter = [(":row_id", "procedure_occurrence_id"),
+                                      (":row_id", ChainMapper(ConstantMapper({"name": "Procedure recorded as diagnostic code"}),
+                                                              procedure_type_mapper),
+                                       {"CONCEPT_ID": "procedure_type_concept_id"}),
                                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                       ("encounter_id", encounter_id_mapper,
                                        {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -689,7 +701,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     condition_runner_obj = RunMapperAgainstSingleInputRealization(hi_condition_csv_obj, in_out_map_obj,
                                                                     output_directory_obj,
                                                                     condition_router_obj)
+
     condition_runner_obj.run()
+
+    procedure_table_max_value = get_largest_id_from_csv_file(output_procedure_dx_encounter_csv, "procedure_occurrence_id")
 
     condition_row_offset = condition_runner_obj.rows_run
 
@@ -710,7 +725,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_claim_rules = [(":row_id", row_map_offset("condition_occurrence_id", condition_row_offset),
                               {"condition_occurrence_id": "condition_occurrence_id"}),
-                             ("corrected_claim_id", claim_id_visit_occurrence_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                             ("corrected_claim_id", claim_id_visit_occurrence_id_mapper,
+                              {"visit_occurrence_id": "visit_occurrence_id"}),
                              ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                              (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
                               {"CONCEPT_ID": "condition_source_concept_id",
@@ -727,8 +743,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if len(input_dict["present_on_admission_code"]): # Remove these blanks are admit codes
                 if len(claim_id_mapped_dict):
                     claim_encounter_id_mapped_dict = encounter_id_mapper.map(claim_id_mapped_dict)
+                    #coding_system_oid = input_dict["condition_coding_system_id"]
+                    result_dict = ICDMapper.map(input_dict)
                     if len(claim_encounter_id_mapped_dict):
-                        return ConditionOccurrenceObject()
+                        if result_dict["DOMAIN_ID"] == "Condition":
+                            return ConditionOccurrenceObject()
+                        elif result_dict["DOMAIN_ID"] == "Observation":
+                            return NoOutputClass()
+                        elif result_dict["DOMAIN_ID"] == "Measurement":
+                            return NoOutputClass()
+                        elif result_dict["DOMAIN_ID"] == "Procedure":
+                            return NoOutputClass()
+                        else:
+                            return NoOutputClass()
                     else:
                         return NoOutputClass()
                 else:
@@ -757,9 +784,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
-
-
-    procedure_rules_encounter = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper)
+    procedure_rules_encounter = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper,
+                                                       condition_row_offset)
 
     input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
     output_procedure_encounter_csv = os.path.join(output_csv_directory, "procedure_encounter_cdm.csv")
@@ -770,6 +796,24 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                )
 
     procedure_runner_obj.run()
+
+    procedure_row_offset = condition_row_offset + procedure_runner_obj.rows_run
+
+    procedure_rules_claim = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapper,
+                                                       procedure_row_offset)
+
+    procedure_rules_claim[2] = ("corrected_claim_id", claim_id_visit_occurrence_id_mapper,
+                                  {"visit_occurrence_id": "visit_occurrence_id"})
+
+    input_proc_claim_csv = os.path.join(input_csv_directory, "PH_F_Procedure_Claim.csv")
+    output_procedure_claim_csv = os.path.join(output_csv_directory, "procedure_claim_cdm.csv")
+
+    procedure_claim_runner_obj = generate_mapper_obj(input_proc_claim_csv, PHFProcedureClaimObject(), output_procedure_claim_csv,
+                                               ProcedureOccurrenceObject(), procedure_rules_claim,
+                                               output_class_obj, in_out_map_obj, procedure_router_obj
+                                               )
+
+    procedure_claim_runner_obj.run()
 
     #TODO: Add procedures derived from claims
 

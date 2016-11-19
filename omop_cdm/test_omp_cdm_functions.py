@@ -34,7 +34,6 @@ class TestDrugCodeMapper(unittest.TestCase):
             config = json.load(f)
         self.load_json_directory = config["json_map_directory"]
 
-
     def test_d_code(self):
         drug_code_mapper = generate_drug_code_mapper(self.load_json_directory)
 
@@ -44,13 +43,11 @@ class TestDrugCodeMapper(unittest.TestCase):
         print(mapping_result_1)
         self.assertTrue(len(mapping_result_1))
 
-
         dict_to_map_2 = {"drug_raw_code": "d03431", "drug_raw_coding_system_id": "2.16.840.1.113883.6.314"}
 
         mapping_result_2 = drug_code_mapper.map(dict_to_map_2)
 
         self.assertFalse(len(mapping_result_2))
-
 
     def test_drug_name_mapper(self):
 
