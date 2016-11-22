@@ -2,6 +2,7 @@ import csv
 import json
 import os
 
+
 def main(csv_files_list, key_field="MULDRUG_ID"):
 
     for csv_file in csv_files_list:
@@ -12,7 +13,7 @@ def main(csv_files_list, key_field="MULDRUG_ID"):
             for row_dict in csv_dict_reader:
                 keyed_dict[row_dict[key_field]] = row_dict
 
-            with open(csv_file + ".json", "w") as fw:
+            with open(csv_file + "." + key_field + ".json", "w") as fw:
                 json.dump(keyed_dict, fw, sort_keys = True, indent=4, separators=(',', ': '))
 
 
@@ -24,7 +25,5 @@ if __name__ == "__main__":
     csv_files = []
     for base_name in base_names:
         csv_files += [os.path.join(base_directory, base_name + ".csv")]
-
-    print(csv_files)
 
     main(csv_files)

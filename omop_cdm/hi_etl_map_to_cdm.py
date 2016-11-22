@@ -312,31 +312,27 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
     return procedure_rules_encounter
 
 
-def generate_drug_code_mapper(json_map_directory):
+def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
+    drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
 
-    # multum_bn_json = os.path.join(json_map_directory, "RxNorm_MMSL_BN.json")
+    if drug_coding_system_name == "Multum drug synonym":
+        return 0
+    elif drug_coding_system_name == "Multum drug identifier (dNUM)":
+        return 1
+    elif drug_coding_system_name == "Multum Main Drug Code (MMDC)":
+        return 2
+    elif drug_coding_system_name == "RxNorm (RxCUI)":
+        return 3
+    else:
+        return False
+
+
+def generate_rxcui_drug_code_mapper(json_map_directory):
+
     multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
-    # multum_bd_json = os.path.join(json_map_directory, "RxNorm_MMSL_BD.json")
-
-    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.json")
-    multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.json")
-    multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.json")
-
-    rxcui_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
-
-    def case_mapper_drug_code(input_dict, field="drug_raw_coding_system_id"):
-        drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
-
-        if drug_coding_system_name == "Multum drug synonym":
-            return 0
-        elif drug_coding_system_name == "Multum drug identifier (dNUM)":
-            return 1
-        elif drug_coding_system_name == "Multum Main Drug Code (MMDC)":
-            return 2
-        elif drug_coding_system_name == "RxNorm (RxCUI)":
-            return 3
-        else:
-            return False
+    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.MULDRUG_ID.json")
+    multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
+    multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.MULDRUG_ID.json")
 
     drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
                                             CoderMapperJSONClass(multum_json, "drug_raw_code"),
@@ -345,7 +341,7 @@ def generate_drug_code_mapper(json_map_directory):
                                                 CoderMapperJSONClass(multum_drug_json, "drug_raw_code")),
                                             CoderMapperJSONClass(multum_drug_mmdc_json, "drug_raw_code"),
                                             KeyTranslator({"drug_raw_code": "RXNORM_ID"})),
-                                            CoderMapperJSONClass(rxcui_mapper_json, "RXNORM_ID"))
+                                            )
 
     return drug_code_mapper
 
@@ -369,9 +365,8 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
 
     #TODO: Increase mapping coverage of drugs - while likely need manual overrides
 
-    DrugCodeMapper = generate_drug_code_mapper(json_map_directory)
+    rxnorm_rxcui_mapper = generate_rxcui_drug_code_mapper(json_map_directory)
     rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)
-    drug_mapper = CascadeMapper(DrugCodeMapper, rxnorm_name_mapper_chained)
 
     # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
     # TODO: Increase coverage of "Map route_source_value -> route_source_value"
@@ -379,11 +374,37 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
     drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
     drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
 
+    rxnorm_code_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
+    rxnorm_code_concept_mapper = CoderMapperJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
+    drug_source_concept_mapper = ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper), rxnorm_name_mapper_chained))
+
+    rxnorm_bn_in_mapper_json = os.path.join(json_map_directory, "select_n_in__ot___from___select_bn_rxcui.csv.bn_rxcui.json")
+    rxnorm_bn_sbdf_mapper_json = os.path.join(json_map_directory, "select_tt_n_sbdf__ott___from___select_bn.csv.bn_rxcui.json")
+
+    rxnorm_bn_in_mapper = CoderMapperJSONClass(rxnorm_bn_in_mapper_json,"RXNORM_ID")
+    rxnorm_bn_sbdf_mapper = CoderMapperJSONClass(rxnorm_bn_sbdf_mapper_json, "RXNORM_ID")
+
+    rxnorm_str_bn_in_mapper_json = os.path.join(json_map_directory,
+                                            "select_n_in__ot___from___select_bn_rxcui.csv.bn_str.json")
+    rxnorm_str_bn_sbdf_mapper_json = os.path.join(json_map_directory,
+                                              "select_tt_n_sbdf__ott___from___select_bn.csv.bn_str.json")
+
+    rxnorm_str_bn_in_mapper = CoderMapperJSONClass(rxnorm_str_bn_in_mapper_json)
+    rxnorm_str_bn_sbdf_mapper = CoderMapperJSONClass(rxnorm_str_bn_sbdf_mapper_json)
+
+    rxnorm_concept_mapper = CascadeMapper(ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_sbdf_mapper, KeyTranslator({"sbdf_rxcui": "RXNORM_ID"}))),
+                                          ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_in_mapper, KeyTranslator({"in_rxcui": "RXNORM_ID"}))),
+                                          rxnorm_rxcui_mapper), rxnorm_code_concept_mapper),
+                                          CascadeMapper(ChainMapper(rxnorm_str_bn_sbdf_mapper, rxnorm_name_mapper_chained),
+                                                        ChainMapper(rxnorm_str_bn_in_mapper, rxnorm_name_mapper_chained),
+                                          rxnorm_name_mapper_chained))
+
     drug_type_mapper = ChainMapper(ReplacementMapper({"HOSPITAL_PHARMACY": "Inpatient administration",
                                                       "INPATIENT_FLOOR_STOCK": "Inpatient administration",
                                                       "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
                                                       "UNKNOWN": "Prescription dispensed in pharmacy"}),
                                    drug_type_code_mapper)
+
 
     # TODO: Rework this mapper not to be static code
     # Source: http://forums.ohdsi.org/t/route-standard-concepts-not-standard-anymore/1300/7
@@ -426,6 +447,8 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                                                   "Continuous IV": "Intravenous", "IntraMuscular": "Intramuscular"}),
                                CodeMapperDictClass(routes_to_concept_id_dict))
 
+
+
     # Required # drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_type_concept_id
     medication_rules = [(":row_id", "drug_exposure_id"),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -442,9 +465,9 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                         ("dose_quantity", "quantity"),
                         ("dose_unit_display", "dose_unit_source_value"),
                         ("dose_unit_display", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
-                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_mapper,
+                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_source_concept_mapper,
                          {"CONCEPT_ID": "drug_source_concept_id"}),
-                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_mapper,
+                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), rxnorm_concept_mapper,
                          {"CONCEPT_ID": "drug_concept_id"}), # TODO: Make sure map maps to standard concept
                         ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})
                         ]

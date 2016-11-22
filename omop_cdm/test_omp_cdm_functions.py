@@ -2,7 +2,8 @@ import unittest
 from omop_cdm_functions import *
 import json
 
-from hi_etl_map_to_cdm import generate_drug_code_mapper, generate_drug_name_mapper
+from hi_etl_map_to_cdm import generate_rxcui_drug_code_mapper, generate_drug_name_mapper
+import mapping_classes as mc
 
 class TestMappers(unittest.TestCase):
     def test_date_split(self):
@@ -35,7 +36,7 @@ class TestDrugCodeMapper(unittest.TestCase):
         self.load_json_directory = config["json_map_directory"]
 
     def test_d_code(self):
-        drug_code_mapper = generate_drug_code_mapper(self.load_json_directory)
+        drug_code_mapper = generate_rxcui_drug_code_mapper(self.load_json_directory)
 
         dict_to_map_1 = {"drug_raw_code": "d00313", "drug_raw_coding_system_id": "2.16.840.1.113883.6.314"}
 
@@ -47,7 +48,19 @@ class TestDrugCodeMapper(unittest.TestCase):
 
         mapping_result_2 = drug_code_mapper.map(dict_to_map_2)
 
-        self.assertFalse(len(mapping_result_2))
+        #self.assertFalse(len(mapping_result_2))
+
+        rxnorm_code_mapper_json = os.path.join(self.load_json_directory, "CONCEPT_CODE_RxNorm.json")
+
+        rxnorm_code_mapper = mc.CoderMapperJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
+
+        rxnorm_code_mapper_concept = mc.ChainMapper(drug_code_mapper, rxnorm_code_mapper)
+
+        mapping_result3 = rxnorm_code_mapper_concept.map(dict_to_map_1)
+
+        print(mapping_result3)
+
+        self.assertTrue(0)
 
     def test_drug_name_mapper(self):
 
