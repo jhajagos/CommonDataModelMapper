@@ -1,0 +1,5 @@
+{
+  "json_map_directory":   "/path/to_json_files/",
+  "csv_input_directory":  "/path/data/input/",
+  "csv_output_directory": "/path/data/output/"
+}

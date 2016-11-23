@@ -156,7 +156,12 @@ class CoderMapperJSONClass(CodeMapperClass):
                 return {}
 
             if value in self.mapper_dict:
-                return self.mapper_dict[value]
+                mapped_dict_instance = self.mapper_dict[value]
+                if mapped_dict_instance.__class__ == [].__class__:
+                    mapped_dict_instance = mapped_dict_instance[0]
+                    logging.error("Map '%s' to non-unique value" % value)
+
+                return mapped_dict_instance
             else:
                 return {}
         else:
@@ -371,6 +376,7 @@ class InputOutputMapper(object):
                 field_dict[single_field] = single_field_value
 
             mapped_dict_instance = mapper_instance.map(field_dict)
+
             for key in mapped_dict_instance:
                 mapped_dict[key] = mapped_dict_instance[key]
 
@@ -461,6 +467,8 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
 
         self.rows_run = 0
 
+        self.output_classes_written = []
+
     def run(self, n_rows=10000):
 
         i = 0
@@ -489,6 +497,10 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
                 pass#logger("Row not mapped" + str(row_dict))
             else:
                 output_class_instance = self.output_directory_obj[output_class]
+
+                if output_class_instance not in self.output_classes_written:
+                    self.output_classes_written += [output_class_instance]
+
                 mapper_obj = self.input_output_directory_obj[(input_class, output_class)]
 
                 try:
@@ -521,3 +533,6 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         logging.info("Rate per %s rows: %s" % (n_rows, n_rows * (total_time * 1.0)/i,))
 
         logging.info("%s" % mapping_results)
+
+        for output_class_inst in self.output_classes_written:
+            output_class_inst.close()

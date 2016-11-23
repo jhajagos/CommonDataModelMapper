@@ -87,12 +87,10 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
     with open("./omop_cdm_indexes.sql") as f:
         omop_cdm_idx_sql = f.read()
 
-    output_sqlite3 = os.path.join("X:\\output\\omop_db_load.db3")
+    output_sqlite3 = os.path.join(output_directory,"omop_db_load.db3")
 
     if os.path.exists(output_sqlite3):
         os.remove(output_sqlite3)
-
-    output_dir = "X:\\output\\"
 
     load_pairs = [("condition_occurrence", "condition_occurrence_cdm_claim.csv"),
                   ("condition_occurrence", "condition_occurrence_dx_cdm_encounter.csv"),
@@ -110,7 +108,7 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
 
     data_dict = {}
     for pair in load_pairs:
-        data_dict[os.path.join(output_dir, pair[1])] = pair[0]
+        data_dict[os.path.join(output_directory, pair[1])] = pair[0]
 
     connection_string = "sqlite:///" + output_sqlite3
 
@@ -150,4 +148,4 @@ if __name__ == "__main__":
     with open("./hi_config.json") as f:
         config = json.load(f)
 
-    main(vocabulary_directory=config["json_map_directory"], load_vocabularies=True)
+    main(output_directory=config["csv_output_directory"], vocabulary_directory=config["json_map_directory"], load_vocabularies=True)

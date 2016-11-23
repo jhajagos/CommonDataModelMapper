@@ -248,9 +248,9 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                                      (("numeric_value", "norm_codified_value_primary_display", "result_primary_display",
                                        "norm_text_value"), numeric_coded_mapper,
                                       {"numeric_value": "value_source_value",
-                                       "norm_codified_value_primary_display": "value_as_string",
-                                       "result_primary_display": "value_as_string",
-                                       "norm_text_value": "value_as_string"})
+                                       "norm_codified_value_primary_display": "value_source_value",
+                                       "result_primary_display": "value_source_value",
+                                       "norm_text_value": "value_source_value"})
                                      ]
 
     return measurement_rules, measurement_observation_rules
@@ -282,17 +282,20 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
     procedure_type_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
 
     procedure_type_map = \
-        ChainMapper(
-            ReplacementMapper({"PRIMARY": "Primary Procedure", "SECONDARY": "Secondary Procedure"}),
-            CoderMapperJSONClass(procedure_type_name_json)
+        CascadeMapper(ChainMapper(
+                ReplacementMapper({"PRIMARY": "Primary Procedure", "SECONDARY": "Secondary Procedure"}),
+                CoderMapperJSONClass(procedure_type_name_json)),
+            ConstantMapper({"CONCEPT_ID": 0})
         )
 
+
     # TODO: Add SNOMED and HCPCS Codes to the Mapping
-    ProcedureCodeMapper = CaseMapper(case_mapper_procedures,
+    ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
                                      CoderMapperJSONClass(icd9proc_json, "procedure_raw_code"),
                                      CoderMapperJSONClass(icd10proc_json, "procedure_raw_code"),
                                      CoderMapperJSONClass(cpt_json, "procedure_raw_code")
-                                     )
+                                      ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
+
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [(":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
                                   {"procedure_occurrence_id": "procedure_occurrence_id"}),
@@ -769,14 +772,17 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                     #coding_system_oid = input_dict["condition_coding_system_id"]
                     result_dict = ICDMapper.map(input_dict)
                     if len(claim_encounter_id_mapped_dict):
-                        if result_dict["DOMAIN_ID"] == "Condition":
-                            return ConditionOccurrenceObject()
-                        elif result_dict["DOMAIN_ID"] == "Observation":
-                            return NoOutputClass()
-                        elif result_dict["DOMAIN_ID"] == "Measurement":
-                            return NoOutputClass()
-                        elif result_dict["DOMAIN_ID"] == "Procedure":
-                            return NoOutputClass()
+                        if "DOMAIN_ID" in result_dict:
+                            if result_dict["DOMAIN_ID"] == "Condition":
+                                return ConditionOccurrenceObject()
+                            elif result_dict["DOMAIN_ID"] == "Observation":
+                                return NoOutputClass()
+                            elif result_dict["DOMAIN_ID"] == "Measurement":
+                                return NoOutputClass()
+                            elif result_dict["DOMAIN_ID"] == "Procedure":
+                                return NoOutputClass()
+                            else:
+                                return NoOutputClass()
                         else:
                             return NoOutputClass()
                     else:

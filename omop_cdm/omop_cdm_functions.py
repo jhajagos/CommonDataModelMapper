@@ -3,6 +3,7 @@ import time
 import csv
 import os
 import json
+import logging
 
 
 class DateSplit(MapperClass):
@@ -40,7 +41,8 @@ def convert_datetime_with_tz(datetime_tz):
     dt_dts_tuple = time.strptime(dt_dts, "%Y-%m-%dT%H:%M:%S")
     try:
         dt_dts_epoch = time.mktime(dt_dts_tuple) + dt_h * 60.0 * 60
-    except ValueError:
+    except: #ValueError, time.OverflowError
+        logging.error("Invalid date '%s'" % datetime_tz)
         return null_date
     localized_datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dt_dts_epoch))
     return localized_datetime
