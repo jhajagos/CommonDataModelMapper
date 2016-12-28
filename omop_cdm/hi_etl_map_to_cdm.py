@@ -185,7 +185,7 @@ def generate_value_as_concept_mapper(snomed_mapper):
 def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Result to Measurement"""
 
-    unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper)
+    unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper) # TODO: Switch to UCUM coding
 
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CoderMapperJSONClass(loinc_json)
@@ -199,7 +199,6 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
     measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
 
     value_as_concept_mapper = generate_value_as_concept_mapper(snomed_mapper)
-
 
     measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
                                                                  ReplacementMapper({"Lab Test": "Lab result"}),
@@ -297,15 +296,15 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
 
     # TODO: Add SNOMED Codes to the Mapping
     ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
-                                     CoderMapperJSONClass(icd9proc_json, "procedure_raw_code"),
-                                     CoderMapperJSONClass(icd10proc_json, "procedure_raw_code"),
-                                     CoderMapperJSONClass(cpt_json, "procedure_raw_code"),
-                                     CoderMapperJSONClass(hcpcs_json, "procedure_raw_code"),
+                                     CoderMapperJSONClass(icd9proc_json, "procedure_code"),
+                                     CoderMapperJSONClass(icd10proc_json, "procedure_code"),
+                                     CoderMapperJSONClass(cpt_json, "procedure_code"),
+                                     CoderMapperJSONClass(hcpcs_json, "procedure_code"),
                                       ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
 
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [
-                                (("procedure_raw_code", "procedure_coding_system_id"), ProcedureCodeMapper,
+                                (("procedure_code", "procedure_coding_system_id"), ProcedureCodeMapper,
                                  {"CONCEPT_ID": "procedure_source_concept_id",
                                   "MAPPED_CONCEPT_ID": "procedure_concept_id"},
                                  ),
@@ -316,7 +315,7 @@ def create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_mapp
                                   {"visit_occurrence_id": "visit_occurrence_id"}),
                                  ("service_start_dt_tm", SplitDateTimeWithTZ(),
                                   {"date": "procedure_date"}),
-                                 ("procedure_raw_code", "procedure_source_value"),
+                                 ("procedure_code", "procedure_source_value"),
                                  ("rank_type", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})
                                  ]
 
@@ -492,6 +491,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: Add Observation Period
     # TODO: Add Provider
     # TODO: Add Patient Location
+    # TODO: Handle End Dates
 
     output_class_obj = OutputClassDirectory()
 
@@ -774,29 +774,82 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     procedure_rules_encounter = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_claim_id_mapper,
                                                        condition_row_offset)
-
     procedure_rule = procedure_rules_encounter[0]
     procedure_code_map = procedure_rule[1]
 
-    #TODO: Add Device, Measurement, Observation, Procedure, DrugExposure
+    procedure_rules_encounter_class = build_input_output_mapper(procedure_rules_encounter)
+
+    # Procedure codes which map to measurements according to the CDM Vocabulary
+    #TODO: Add measurement_type_concept_id
+    measurement_rules_proc_encounter = [(":row_id", "measurement_id"), #TODO: Add offset
+                                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                        (("encounter_id", "claim_id"),
+                                            encounter_id_claim_id_mapper,
+                                            {"visit_occurrence_id": "visit_occurrence_id"}),
+                                        ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                                            {"date": "measurement_date", "time": "measurement_time"}),
+                                        ("procedure_code", "measurement_source_value"),
+                                        (("procedure_code", "procedure_coding_system_id"), procedure_code_map,
+                                            {"CONCEPT_ID": "measurement_source_concept_id",
+                                             "MAPPED_CONCEPT_ID": "measurement_concept_id"})
+                                      ]
+
+    measurement_rules_proc_encounter_class = build_input_output_mapper(measurement_rules_proc_encounter)
+
+    output_measurement_proc_encounter_csv = os.path.join(output_csv_directory, "measurement_proc_cdm.csv")
+    output_measurement_proc_encounter_csv_obj = OutputClassCSVRealization(output_measurement_proc_encounter_csv,
+                                                                      MeasurementObject())
+
+    output_directory_obj.register(MeasurementObject(), output_measurement_proc_encounter_csv_obj)
+
+    in_out_map_obj.register(PHFProcedureObject(), MeasurementObject(), measurement_rules_proc_encounter_class)
+
+    #TODO: Add: Device, Measurement, Observation, Procedure, DrugExposure
 
     def procedure_router_obj(input_dict):
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-            if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes", "HCPCS"):
-                return ProcedureOccurrenceObject()
+            #print(procedure_coding_system(input_dict))
+            if "procedure_coding_system_id" in input_dict:
+                if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes", "HCPCS"):
+                    result_dict = procedure_code_map.map(input_dict)
+                    #print(procedure_coding_system(input_dict),input_dict, result_dict)
+                    if "DOMAIN_ID" in result_dict:
+                        domain = result_dict["DOMAIN_ID"]
+                        if domain == "Procedure":
+                            return ProcedureOccurrenceObject()
+                        elif domain == "Measurement":
+                            return MeasurementObject()
+                        elif domain == "Observation":
+                            return NoOutputClass() # ObservationObject()
+                        elif domain == "Drug":
+                            return NoOutputClass() # DrugExposure()
+                        elif domain == "Device":
+                            return NoOutputClass()  # DeviceExposure()
+                        else:
+                            return NoOutputClass()
+                    else:
+                        return NoOutputClass()
+                else:
+                    return NoOutputClass()
             else:
                 return NoOutputClass()
         else:
             return NoOutputClass()
 
-
     input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
-    output_procedure_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
+    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
 
-    procedure_runner_obj = generate_mapper_obj(input_proc_csv, PHFProcedureObject(), output_procedure_encounter_csv,
-                                               ProcedureOccurrenceObject(), procedure_rules_encounter,
-                                               output_class_obj, in_out_map_obj, procedure_router_obj
-                                               )
+    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+
+    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
+    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
+                                                                          ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
+
+    procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_proc_csv_obj, in_out_map_obj,
+                                                                    output_directory_obj,
+                                                                    procedure_router_obj)
 
     procedure_runner_obj.run()
 
