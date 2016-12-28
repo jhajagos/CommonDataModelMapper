@@ -39,3 +39,8 @@ class PHFProcedureObject(InputClass):
 class PHFProcedureClaimObject(InputClass):
     def fields(self):
         return []
+
+
+class EmpIdObservationPeriod(InputClass):
+    def fields(self):
+        return []

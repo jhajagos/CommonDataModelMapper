@@ -143,6 +143,22 @@ def create_death_patient_rules(json_map_directory, empi_id_mapper):
     return death_rules
 
 
+def create_observation_period_rules(json_map_directory, empi_id_mapper):
+        observation_period_mapper = CoderMapperJSONClass(os.path.join(json_map_directory, "CONCEPT_NAME_Obs_Period_Type.json"))
+        observation_period_constant_mapper = ChainMapper(ConstantMapper({"observation_period_type_name": "Period covering healthcare encounters"}), observation_period_mapper)
+
+        observation_period_rules = [(":row_id", "observation_period_id"),
+                                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                    ("min_service_dt_tm", SplitDateTimeWithTZ(),
+                                     {"date": "observation_period_start_date"}),
+                                    ("max_service_dt_tm", SplitDateTimeWithTZ(),
+                                     {"date": "observation_period_end_date"}),
+                                    (":row_id", observation_period_constant_mapper, {"CONCEPT_ID": "period_type_concept_id"})
+                                    ]
+
+        return observation_period_rules
+
+
 def create_visit_rules(json_map_directory, empi_id_mapper):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
@@ -488,7 +504,6 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
 
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
-    # TODO: Add Observation Period
     # TODO: Add Provider
     # TODO: Add Patient Location
     # TODO: Handle End Dates
@@ -526,6 +541,22 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     death_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_death_csv, DeathObject(),
                                            death_rules, output_class_obj, in_out_map_obj, death_router_obj)
     death_runner_obj.run()
+
+    #### Observation Period ####
+
+
+    obs_per_rules = create_observation_period_rules(json_map_directory, empi_id_mapper)
+
+    output_obs_per_csv = os.path.join(output_csv_directory, "observation_period_cdm.csv")
+
+    input_obs_per_csv = os.path.join(input_csv_directory, "EMPI_ID_Oberservation_Period.csv")
+
+    def obs_router_obj(input_dict):
+        return ObservationPeriodObject()
+
+    obs_per_runner_obj = generate_mapper_obj(input_obs_per_csv, EmpIdObservationPeriod(), output_obs_per_csv, ObservationPeriodObject(),
+                                           obs_per_rules, output_class_obj, in_out_map_obj, obs_router_obj)
+    obs_per_runner_obj.run()
 
     #### VISIT ####
     visit_rules = create_visit_rules(json_map_directory, empi_id_mapper)
@@ -582,12 +613,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         create_measurement_and_observation_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper)
 
     input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
-    output_measurement_csv = os.path.join(output_csv_directory, "measurement_cdm_encounter.csv")
+    output_measurement_csv = os.path.join(output_csv_directory, "measurement_encounter_cdm.csv")
 
     measurement_runner_obj = generate_mapper_obj(input_result_csv, PHFResultObject(), output_measurement_csv, MeasurementObject(),
                                                  measurement_rules, output_class_obj, in_out_map_obj, measurement_router_obj)
 
-    output_observation_csv = os.path.join(output_csv_directory, "observation_cdm_measurement_encounter.csv")
+    output_observation_csv = os.path.join(output_csv_directory, "observation_measurement_encounter_cdm.csv")
     register_to_mapper_obj(input_result_csv, PHFResultObject(), output_observation_csv,
                            ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
 
@@ -639,23 +670,29 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     ICDMapper = CaseMapper(case_mapper_icd9_icd10, CoderMapperJSONClass(icd9cm_json, "condition_raw_code"), CoderMapperJSONClass(icd10cm_json, "condition_raw_code"))
     # Required: condition_occurrence_id, person_id, condition_concept_id, condition_start_date
-    condition_rules_dx_encounter = [(":row_id", "condition_occurrence_id"),
+    condition_rules_dx = [(":row_id", "condition_occurrence_id"),
                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                        (("encounter_id", "claim_id"),
                         encounter_id_claim_id_mapper,
                         {"visit_occurrence_id": "visit_occurrence_id"}),
-                       (("condition_raw_code", "condition_coding_system_id"), ICDMapper, {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
+                       (("condition_raw_code", "condition_coding_system_id"),
+                        ICDMapper,
+                        {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                        ("condition_raw_code", "condition_source_value"),
                        ("rank_type", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
                        ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
 
-    condition_rules_dx_encounter_class = build_input_output_mapper(condition_rules_dx_encounter)
+    condition_rules_dx_class = build_input_output_mapper(condition_rules_dx)
 
     # ICD9 and ICD10 conditions which map to measurements according to the CDM Vocabulary
-    in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_dx_encounter_class)
+    in_out_map_obj.register(PHFConditionObject(), ConditionOccurrenceObject(), condition_rules_dx_class)
     output_directory_obj.register(ConditionOccurrenceObject(), cdm_condition_csv_obj)
 
-    measurement_rules_dx_encounter = [(":row_id", "measurement_id"),
+    measurement_row_offset = measurement_runner_obj.rows_run
+    measurement_rules_dx = [(":row_id", row_map_offset("measurement_id", measurement_row_offset),
+                                      {"measurement_id": "measurement_id"}),
+                                      (":row_id", ConstantMapper({"measurement_type_concept_id": 0}),
+                                       {"measurement_type_concept_id": "measurement_type_concept_id"}),
                                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                       (("encounter_id", "claim_id"),
                                        encounter_id_claim_id_mapper,
@@ -668,8 +705,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                         "MAPPED_CONCEPT_ID": "measurement_concept_id"})
                                       ]
 
-    measurement_rules_dx_encounter_class = build_input_output_mapper(measurement_rules_dx_encounter)
-    in_out_map_obj.register(PHFConditionObject(), MeasurementObject(), measurement_rules_dx_encounter_class)
+    measurement_rules_dx_class = build_input_output_mapper(measurement_rules_dx)
+    in_out_map_obj.register(PHFConditionObject(), MeasurementObject(), measurement_rules_dx_class)
 
     # The mapped ICD9 to measurements get mapped to a separate code
     output_measurement_dx_encounter_csv = os.path.join(output_csv_directory, "measurement_dx_cdm.csv")
@@ -678,12 +715,13 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_directory_obj.register(MeasurementObject(), output_measurement_dx_encounter_csv_obj)
 
-    observation_start_id = measurement_runner_obj.rows_run
+    observation_row_offset = measurement_runner_obj.rows_run
 
     # ICD9 and ICD10 codes which map to observations according to the CDM Vocabulary
-    observation_rules_dx_encounter = [(":row_id", row_map_offset("observation_id", observation_start_id),
+    observation_rules_dx = [(":row_id", row_map_offset("observation_id", observation_row_offset),
                                        {"observation_id": "observation_id"}),
-                                      (":row_id", ConstantMapper({"observation_type_concept_id": 0}), {"observation_type_concept_id": "observation_type_concept_id"}),
+                                      (":row_id", ConstantMapper({"observation_type_concept_id": 0}),
+                                       {"observation_type_concept_id": "observation_type_concept_id"}),
                                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                                       (("encounter_id", "claim_id"),
                                        encounter_id_claim_id_mapper,
@@ -698,14 +736,14 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                        {"CONCEPT_ID": "condition_type_concept_id"})
                                       ]
 
-    observation_rules_dx_encounter_class = build_input_output_mapper(observation_rules_dx_encounter)
+    observation_rules_dx_class = build_input_output_mapper(observation_rules_dx)
 
     output_observation_dx_encounter_csv = os.path.join(output_csv_directory, "observation_dx_cdm.csv")
     output_observation_dx_encounter_csv_obj = OutputClassCSVRealization(output_observation_dx_encounter_csv,
                                                                         ObservationObject())
 
     output_directory_obj.register(ObservationObject(), output_observation_dx_encounter_csv_obj)
-    in_out_map_obj.register(PHFConditionObject(), ObservationObject(), observation_rules_dx_encounter_class)
+    in_out_map_obj.register(PHFConditionObject(), ObservationObject(), observation_rules_dx_class)
 
     procedure_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
     procedure_type_mapper = CoderMapperJSONClass(procedure_type_json)
@@ -768,21 +806,28 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_runner_obj.run()
 
+    # Update needed offsets
     condition_row_offset = condition_runner_obj.rows_run
+    procedure_row_offset = condition_runner_obj.rows_run
+    measurement_row_offset += condition_row_offset
+
 
     #### PROCEDURE ENCOUNTER ####
 
     procedure_rules_encounter = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_claim_id_mapper,
-                                                       condition_row_offset)
+                                                       procedure_row_offset)
     procedure_rule = procedure_rules_encounter[0]
     procedure_code_map = procedure_rule[1]
 
     procedure_rules_encounter_class = build_input_output_mapper(procedure_rules_encounter)
 
     # Procedure codes which map to measurements according to the CDM Vocabulary
-    #TODO: Add measurement_type_concept_id
-    measurement_rules_proc_encounter = [(":row_id", "measurement_id"), #TODO: Add offset
+
+    measurement_rules_proc_encounter = [(":row_id", row_map_offset("measurement_id", measurement_row_offset),
+                                      {"measurement_id": "measurement_id"}),
                                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                        (":row_id", ConstantMapper({"measurement_type_concept_id": 0}), #TODO: Add measurement_type_concept_id
+                                         {"measurement_type_concept_id": "measurement_type_concept_id"}),
                                         (("encounter_id", "claim_id"),
                                             encounter_id_claim_id_mapper,
                                             {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -799,12 +844,22 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_measurement_proc_encounter_csv = os.path.join(output_csv_directory, "measurement_proc_cdm.csv")
     output_measurement_proc_encounter_csv_obj = OutputClassCSVRealization(output_measurement_proc_encounter_csv,
                                                                       MeasurementObject())
-
     output_directory_obj.register(MeasurementObject(), output_measurement_proc_encounter_csv_obj)
 
     in_out_map_obj.register(PHFProcedureObject(), MeasurementObject(), measurement_rules_proc_encounter_class)
 
     #TODO: Add: Device, Measurement, Observation, Procedure, DrugExposure
+
+    input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
+    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
+
+    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+
+    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
+    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
+                                                                          ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
 
     def procedure_router_obj(input_dict):
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
@@ -836,22 +891,13 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
-    input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
-    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
-
-    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
-
-    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
-    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
-                                                                          ProcedureOccurrenceObject())
-
-    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
-
     procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_proc_csv_obj, in_out_map_obj,
                                                                     output_directory_obj,
                                                                     procedure_router_obj)
 
     procedure_runner_obj.run()
+
+    drug_row_offset = procedure_runner_obj.rows_run
 
     #### DRUG EXPOSURE ####
     def drug_exposure_router_obj(input_dict):
@@ -882,7 +928,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_med_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
     output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
 
-    medication_rules = create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper)
+    medication_rules = create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper) #TODO: add drug_row_offset
 
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, PHFMedicationObject(), output_drug_exposure_csv, DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj, drug_exposure_router_obj,
