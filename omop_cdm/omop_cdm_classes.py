@@ -1,5 +1,6 @@
 from mapping_classes import OutputClass
 
+
 class DomainObject(OutputClass):
     def fields(self):
         return ["domain_id", "domain_name", "domain_concept_id"]

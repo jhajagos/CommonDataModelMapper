@@ -87,23 +87,20 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
     with open("./omop_cdm_indexes.sql") as f:
         omop_cdm_idx_sql = f.read()
 
-    output_sqlite3 = os.path.join(output_directory,"omop_db_load.db3")
+    output_sqlite3 = os.path.join(output_directory, "omop_db_load.db3")
 
     if os.path.exists(output_sqlite3):
         os.remove(output_sqlite3)
 
-    load_pairs = [("condition_occurrence", "condition_occurrence_cdm_claim.csv"),
-                  ("condition_occurrence", "condition_occurrence_dx_cdm_encounter.csv"),
+    load_pairs = [("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
                   ("person", "person_cdm.csv"),
                   ("visit_occurrence", "visit_occurrence_cdm.csv"),
-                  ("procedure_occurrence", "procedure_encounter_cdm.csv"),
-                  ("procedure_occurrence", "procedure_dx_encounter_cdm.csv"),
-                  ("procedure_occurrence", "procedure_claim_cdm.csv"),
+                  ("procedure_occurrence", "procedure_cdm.csv"),
+                  ("procedure_occurrence", "procedure_dx_cdm.csv"),
                   ("measurement", "measurement_cdm_encounter.csv"),
                   ("drug_exposure", "drug_exposure_cdm.csv"),
                   ("death", "death_cdm.csv"),
-                  ("observation", "observation_cdm_measurement_encounter.csv"),
-                  ("observation", "observation_dx_encounter_cdm.csv")
+                  ("observation", "observation_dx_cdm.csv")
                  ]
 
     data_dict = {}

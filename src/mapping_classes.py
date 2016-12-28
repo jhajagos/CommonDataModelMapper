@@ -239,6 +239,23 @@ class CascadeMapper(MapperClass):
         return {}
 
 
+class CascadeKeyMapper(MapperClass):
+    """Runs through mappers until one returns a results"""
+
+    def __init__(self, key, *mapper_classes):
+        self.mapper_classes = mapper_classes
+        self.key = key
+
+    def map(self, input_dict):
+
+        for mapper_class in self.mapper_classes:
+            result_dict = mapper_class.map(input_dict)
+            if self.key in result_dict:
+                return result_dict
+
+        return {}
+
+
 class FilterHasKeyValueMapper(MapperClass):
 
     def __init__(self, keys_to_track, empty_value=""):
