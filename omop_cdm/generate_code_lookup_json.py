@@ -56,6 +56,18 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
         with open(global_concept_json, "w") as fw:
             json.dump(concept_dict_vocabulary, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
+    with open(concept_csv, "rb") as f:
+        dict_reader = csv.DictReader(f, delimiter=delimiter)
+        concept_dict_domain = {}
+        for row_dict in dict_reader:
+            concept_dict_domain[row_dict["CONCEPT_ID"]] = row_dict["DOMAIN_ID"]
+
+        global_concept_domain_json = os.path.join(output_json_directory, "global_concept_domain.json")
+        print("Generating '%s" % global_concept_json)
+        with open(global_concept_domain_json, "w") as fw:
+            json.dump(concept_dict_vocabulary, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
+
     vocabularies_with_maps = ["ICD9CM", "ICD9Proc", "ICD10CM", "ICD10PCS", "Multum", "LOINC", "CPT4", "HCPCS"]
     for vocabulary_id in vocabularies_with_maps:
         print("Annotating '%s'" % vocabulary_id)
@@ -86,6 +98,12 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
                         concept_dict["MAPPED_CONCEPT_VOCAB"] = concept_dict_vocabulary[mapped_concept_id]
                     else:
                         concept_dict["MAPPED_CONCEPT_VOCAB"] = None
+
+                    if mapped_concept_id in concept_dict_domain:
+                        concept_dict["MAPPED_CONCEPT_DOMAIN"] = concept_dict_domain[mapped_concept_id]
+                    else:
+                        concept_dict["MAPPED_CONCEPT_DOMAIN"] = None
+
 
                 else:
                     concept_dict["MAPPED_CONCEPT_ID"] = None

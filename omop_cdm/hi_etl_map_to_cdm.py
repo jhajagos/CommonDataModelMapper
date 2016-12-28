@@ -387,7 +387,7 @@ def generate_drug_name_mapper(json_map_directory):
     return rxnorm_name_mapper_chained
 
 
-def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper):
+def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, row_offset):
 
     #TODO: Increase mapping coverage of drugs - while likely need manual overrides
 
@@ -478,7 +478,8 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                                CodeMapperDictClass(routes_to_concept_id_dict))
 
     # Required # drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_type_concept_id
-    medication_rules = [(":row_id", "drug_exposure_id"),
+    medication_rules = [(":row_id", row_map_offset("drug_exposure_id", row_offset),
+                                      {"drug_exposure_id": "drug_exposure_id"}),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                         (("drug_raw_code", "drug_primary_display", "drug_raw_coding_system_id"),
@@ -782,14 +783,23 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
             if coding_system_oid:
                 result_dict = ICDMapper.map(input_dict)
+
+                if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
+                    if "MAPPED_CONCEPT_DOMAIN" in result_dict:
+                        domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                    else:
+                        domain = result_dict["DOMAIN_ID"]
+                else:
+                    domain = ""
+
                 if result_dict != {}:
-                    if result_dict["DOMAIN_ID"] == "Condition":
+                    if domain == "Condition":
                         return ConditionOccurrenceObject()
-                    elif result_dict["DOMAIN_ID"] == "Observation":
+                    elif domain == "Observation":
                         return ObservationObject()
-                    elif result_dict["DOMAIN_ID"] == "Procedure":
+                    elif domain == "Procedure":
                         return ProcedureOccurrenceObject()
-                    elif result_dict["DOMAIN_ID"] == "Measurement":
+                    elif domain == "Measurement":
                         return MeasurementObject()
                     else:
                         return NoOutputClass()
@@ -812,7 +822,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     measurement_row_offset += condition_row_offset
 
 
-    #### PROCEDURE ENCOUNTER ####
+    #### PROCEDURE  ####
 
     procedure_rules_encounter = create_procedure_rules(json_map_directory, empi_id_mapper, encounter_id_claim_id_mapper,
                                                        procedure_row_offset)
@@ -821,8 +831,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     procedure_rules_encounter_class = build_input_output_mapper(procedure_rules_encounter)
 
-    # Procedure codes which map to measurements according to the CDM Vocabulary
+    input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
+    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
 
+    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+
+    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
+    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
+                                                                          ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
+
+
+    #### Measurements from Procedures #####
     measurement_rules_proc_encounter = [(":row_id", row_map_offset("measurement_id", measurement_row_offset),
                                       {"measurement_id": "measurement_id"}),
                                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -848,38 +869,104 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     in_out_map_obj.register(PHFProcedureObject(), MeasurementObject(), measurement_rules_proc_encounter_class)
 
-    #TODO: Add: Device, Measurement, Observation, Procedure, DrugExposure
+    #### Observations from Procedures #####
+    observation_rules_proc = [(":row_id", row_map_offset("observation_id", observation_row_offset),
+                               {"observation_id": "observation_id"}),
+                              (":row_id", ConstantMapper({"observation_type_concept_id": 0}),
+                               {"observation_type_concept_id": "observation_type_concept_id"}),
+                              ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                              (("encounter_id", "claim_id"),
+                               encounter_id_claim_id_mapper,
+                               {"visit_occurrence_id": "visit_occurrence_id"}),
+                              ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                               {"date": "observation_date", "time": "observation_time"}),
+                              ("procedure_code", "observation_source_value"),
+                              (("procedure_code", "procedure_coding_system_id"), procedure_code_map,
+                               {"CONCEPT_ID": "observation_source_concept_id",
+                                "MAPPED_CONCEPT_ID": "observation_concept_id"})
+                              ]
 
-    input_proc_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
-    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, PHFProcedureObject())
+    observation_rules_proc_class = build_input_output_mapper(observation_rules_proc)
+    output_observation_proc_csv = os.path.join(output_csv_directory, "observation_proc_cdm.csv")
+    output_observation_proc_csv_obj = OutputClassCSVRealization(output_observation_proc_csv,
+                                                                          ObservationObject())
 
-    in_out_map_obj.register(PHFProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+    output_directory_obj.register(ObservationObject(), output_observation_proc_csv_obj)
+    in_out_map_obj.register(PHFProcedureObject(), ObservationObject(), observation_rules_proc_class)
 
-    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
-    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
-                                                                          ProcedureOccurrenceObject())
+    ##### DrugExposure from Procedures ####
+    drug_rules_proc = [(":row_id", "drug_exposure_id"),
+                              (":row_id", ConstantMapper({"drug_type_concept_id": 0}),
+                               {"drug_type_concept_id": "drug_type_concept_id"}),
+                              ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                              (("encounter_id", "claim_id"),
+                               encounter_id_claim_id_mapper,
+                               {"visit_occurrence_id": "visit_occurrence_id"}),
+                              ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                               {"date": "drug_exposure_start_date"}),
+                              ("procedure_code", "drug_source_value"),
+                              (("procedure_code", "procedure_coding_system_id"), procedure_code_map,
+                               {"CONCEPT_ID": "drug_source_concept_id",
+                                "MAPPED_CONCEPT_ID": "drug_concept_id"})
+                              ]
 
-    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
+    drug_rules_proc_class = build_input_output_mapper(drug_rules_proc)
+    output_drug_proc_csv = os.path.join(output_csv_directory, "drug_exposure_proc_cdm.csv")
+    output_drug_proc_csv_obj = OutputClassCSVRealization(output_drug_proc_csv,
+                                                                DrugExposureObject())
+
+    output_directory_obj.register(DrugExposureObject(), output_drug_proc_csv_obj)
+    in_out_map_obj.register(PHFProcedureObject(), DrugExposureObject(), drug_rules_proc_class)
+
+    #### Device Exposure from Procedures ####
+
+    device_rules_proc = [(":row_id", "device_exposure_id"),
+                       (":row_id", ConstantMapper({"device_type_concept_id": 0}),
+                        {"device_type_concept_id": "device_type_concept_id"}),
+                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                       (("encounter_id", "claim_id"),
+                        encounter_id_claim_id_mapper,
+                        {"visit_occurrence_id": "visit_occurrence_id"}),
+                       ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                        {"date": "device_exposure_start_date"}),
+                       ("procedure_code", "device_source_value"),
+                       (("procedure_code", "procedure_coding_system_id"), procedure_code_map,
+                        {"CONCEPT_ID": "device_source_concept_id",
+                         "MAPPED_CONCEPT_ID": "device_concept_id"})
+                       ]
+
+    device_rules_proc_class = build_input_output_mapper(device_rules_proc)
+    output_device_proc_csv = os.path.join(output_csv_directory, "device_exposure_proc_cdm.csv")
+    output_device_proc_csv_obj = OutputClassCSVRealization(output_device_proc_csv,
+                                                                DeviceExposureObject())
+
+    output_directory_obj.register(DeviceExposureObject(), output_device_proc_csv_obj)
+    in_out_map_obj.register(PHFProcedureObject(), DeviceExposureObject(), device_rules_proc_class)
 
     def procedure_router_obj(input_dict):
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-            #print(procedure_coding_system(input_dict))
+
             if "procedure_coding_system_id" in input_dict:
+
                 if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes", "HCPCS"):
                     result_dict = procedure_code_map.map(input_dict)
-                    #print(procedure_coding_system(input_dict),input_dict, result_dict)
-                    if "DOMAIN_ID" in result_dict:
-                        domain = result_dict["DOMAIN_ID"]
+
+                    if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
+                        if "MAPPED_CONCEPT_DOMAIN" in result_dict:
+                            domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                        else:
+                            domain = result_dict["DOMAIN_ID"]
+
                         if domain == "Procedure":
                             return ProcedureOccurrenceObject()
                         elif domain == "Measurement":
                             return MeasurementObject()
                         elif domain == "Observation":
-                            return NoOutputClass() # ObservationObject()
+                            return ObservationObject()
                         elif domain == "Drug":
-                            return NoOutputClass() # DrugExposure()
+                            return DrugExposureObject()
                         elif domain == "Device":
-                            return NoOutputClass()  # DeviceExposure()
+                            return DeviceExposureObject()
                         else:
                             return NoOutputClass()
                     else:
@@ -928,7 +1015,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_med_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
     output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
 
-    medication_rules = create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper) #TODO: add drug_row_offset
+    medication_rules = create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, drug_row_offset) #TODO: add drug_row_offset
 
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, PHFMedicationObject(), output_drug_exposure_csv, DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj, drug_exposure_router_obj,
