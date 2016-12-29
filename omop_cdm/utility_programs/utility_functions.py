@@ -7,14 +7,25 @@ import os
 
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
-                           lower_case_keys=True, i_print_update=1000):
+                           lower_case_keys=True, i_print_update=1000, truncate=False):
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()
 
+    table_names = []
     if schema_ddl is not None:
         split_sql = schema_ddl.split(";")
         for sql_statement in split_sql:
             db_connection.execute(sql_statement)
+
+    for key in data_dict:
+        table_name = data_dict[key]
+        if table_name not in table_names:
+            table_names += [table_name]
+
+    if truncate:
+        for table_name in table_names:
+            truncate_sql = "truncate %s" % table_name
+            db_connection.execute(truncate_sql)
 
     meta_data = sa.MetaData(db_connection, reflect=True, schema=schema)
     for data_file in data_dict:
