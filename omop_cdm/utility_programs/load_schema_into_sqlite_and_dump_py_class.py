@@ -11,7 +11,7 @@ import sys
 from generate_io_classes_file_from_source import *
 
 
-def load_sql(schema_file_name="omop_cdm.sql", sa_connection_string="sqlite:///cdm_v5.db3"):
+def load_sql(schema_file_name="../schema/omop_cdm.sql", sa_connection_string="sqlite:///cdm_v5.db3"):
 
     engine = sa.create_engine(sa_connection_string)
     connection = engine.connect()
