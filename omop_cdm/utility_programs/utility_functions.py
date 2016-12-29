@@ -20,6 +20,8 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
     for key in data_dict:
         table_name = data_dict[key]
         if table_name not in table_names:
+            if schema:
+                table_name = schema + "." + table_name
             table_names += [table_name]
 
     if truncate:
@@ -31,6 +33,9 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
     for data_file in data_dict:
 
         table_name = data_dict[data_file]
+        if schema:
+            table_name = schema + "." + table_name
+
         table_obj = meta_data.tables[table_name]
 
         print("Loading %s" % table_name)

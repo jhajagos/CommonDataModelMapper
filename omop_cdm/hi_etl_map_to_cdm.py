@@ -175,8 +175,20 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
                                             CoderMapperJSONClass(visit_concept_type_json))
 
     # TODO: Add care site id
+
+    class LeftMapperString(MapperClass):
+        def __init__(self, length):
+            self.length = length
+
+        def map(self, input_dict):
+            new_dict = {}
+            for key in input_dict:
+                new_dict[key] = input_dict[key][0:self.length]
+
+            return new_dict
+
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
-    visit_rules = [("encounter_id", "visit_source_value"),
+    visit_rules = [("encounter_id", LeftMapperString(50), {"encounter_id": "visit_source_value"}),
                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
                    ("classification_display", visit_concept_mapper, {"CONCEPT_ID": "visit_concept_id"}),
@@ -482,9 +494,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                                       {"drug_exposure_id": "drug_exposure_id"}),
                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                        (("drug_raw_code", "drug_primary_display", "drug_raw_coding_system_id"),
-                         ConcatenateMapper("|", "drug_primary_display", "drug_raw_code", "drug_raw_coding_system_id"),
-                         {"drug_primary_display|drug_raw_code|drug_raw_coding_system_id": "drug_source_value"}),
+                        ("drug_raw_code", "drug_source_value"),
                         ("route_display", "route_source_value"),
                         ("status_display", "stop_reason"),
                         ("route_display", route_mapper, {"mapped_value": "route_concept_id"}),
