@@ -176,16 +176,6 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
 
     # TODO: Add care site id
 
-    class LeftMapperString(MapperClass):
-        def __init__(self, length):
-            self.length = length
-
-        def map(self, input_dict):
-            new_dict = {}
-            for key in input_dict:
-                new_dict[key] = input_dict[key][0:self.length]
-
-            return new_dict
 
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("encounter_id", LeftMapperString(50), {"encounter_id": "visit_source_value"}),
@@ -248,7 +238,8 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                          (("norm_text_value", "norm_codified_value_primary_display"), value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
                          ("norm_unit_of_measure_primary_display", "unit_source_value"),
                          ("norm_unit_of_measure_primary_display", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
-                         (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"), numeric_coded_mapper,
+                         (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
+                          ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
                           {"norm_numeric_value": "value_source_value",
                            "norm_codified_value_primary_display": "value_source_value",
                            "result_primary_display": "value_source_value",

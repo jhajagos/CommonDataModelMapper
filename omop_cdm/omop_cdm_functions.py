@@ -6,6 +6,18 @@ import json
 import logging
 
 
+class LeftMapperString(MapperClass):
+    def __init__(self, length):
+        self.length = length
+
+    def map(self, input_dict):
+        new_dict = {}
+        for key in input_dict:
+            new_dict[key] = input_dict[key][0:self.length]
+
+        return new_dict
+
+
 class DateSplit(MapperClass):
     """Split a date"""
     def map(self, date_dict):
