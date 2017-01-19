@@ -178,7 +178,7 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
 
 
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
-    visit_rules = [("encounter_id", LeftMapperString(50), {"encounter_id": "visit_source_value"}),
+    visit_rules = [("encounter_id", IdentityMapper(), {"encounter_id": "visit_source_value"}), #LeftMapperString(50)
                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
                    ("classification_display", visit_concept_mapper, {"CONCEPT_ID": "visit_concept_id"}),
@@ -239,7 +239,7 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                          ("norm_unit_of_measure_primary_display", "unit_source_value"),
                          ("norm_unit_of_measure_primary_display", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
                          (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
-                          ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
+                            numeric_coded_mapper, #ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
                           {"norm_numeric_value": "value_source_value",
                            "norm_codified_value_primary_display": "value_source_value",
                            "result_primary_display": "value_source_value",
@@ -546,7 +546,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #### Observation Period ####
 
-
     obs_per_rules = create_observation_period_rules(json_map_directory, empi_id_mapper)
 
     output_obs_per_csv = os.path.join(output_csv_directory, "observation_period_cdm.csv")
@@ -592,17 +591,20 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def measurement_router_obj(input_dict):
         """Determine if the result contains a LOINC code"""
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-            if len(input_dict["result_code"]):
-                mapped_result_code = snomed_code_result_mapper.map(input_dict)
-                if "CONCEPT_CLASS_ID" in mapped_result_code:
-                    if mapped_result_code["DOMAIN_ID"] == "Measurement":
-                        return MeasurementObject()
-                    elif mapped_result_code["DOMAIN_ID"] == "Observation":
-                        return ObservationObject() #TODO: Support generation of observations e.g. Body weight, height from PH_F_Result
+            if input_dict["service_date"] != '1899-12-29T23:00:00-06:00' and input_dict["service_date"] != "":
+                if len(input_dict["result_code"]):
+                    mapped_result_code = snomed_code_result_mapper.map(input_dict)
+                    if "CONCEPT_CLASS_ID" in mapped_result_code:
+                        if mapped_result_code["DOMAIN_ID"] == "Measurement":
+                            return MeasurementObject()
+                        elif mapped_result_code["DOMAIN_ID"] == "Observation":
+                            return ObservationObject() #TODO: Support generation of observations e.g. Body weight, height from PH_F_Result
+                        else:
+                            return NoOutputClass()
                     else:
-                        return NoOutputClass()
+                        return MeasurementObject()
                 else:
-                    return MeasurementObject()
+                    return NoOutputClass()
             else:
                 return NoOutputClass()
         else:
@@ -782,26 +784,29 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["condition_coding_system_id"]
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-            if coding_system_oid:
-                result_dict = ICDMapper.map(input_dict)
+            if input_dict["effective_dt_tm"] != '1899-12-29T23:00:00-06:00' and input_dict["effective_dt_tm"] != "":
+                if coding_system_oid:
+                    result_dict = ICDMapper.map(input_dict)
 
-                if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
-                    if "MAPPED_CONCEPT_DOMAIN" in result_dict:
-                        domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                    if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
+                        if "MAPPED_CONCEPT_DOMAIN" in result_dict:
+                            domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                        else:
+                            domain = result_dict["DOMAIN_ID"]
                     else:
-                        domain = result_dict["DOMAIN_ID"]
-                else:
-                    domain = ""
+                        domain = ""
 
-                if result_dict != {}:
-                    if domain == "Condition":
-                        return ConditionOccurrenceObject()
-                    elif domain == "Observation":
-                        return ObservationObject()
-                    elif domain == "Procedure":
-                        return ProcedureOccurrenceObject()
-                    elif domain == "Measurement":
-                        return MeasurementObject()
+                    if result_dict != {}:
+                        if domain == "Condition":
+                            return ConditionOccurrenceObject()
+                        elif domain == "Observation":
+                            return ObservationObject()
+                        elif domain == "Procedure":
+                            return ProcedureOccurrenceObject()
+                        elif domain == "Measurement":
+                            return MeasurementObject()
+                        else:
+                            return NoOutputClass()
                     else:
                         return NoOutputClass()
                 else:
@@ -991,9 +996,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def drug_exposure_router_obj(input_dict):
         """Route mapping of drug_exposure"""
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
-            if input_dict["status_primary_display"] not in ("Deleted", "Cancelled"):
-                if len(input_dict["drug_raw_code"]) > 0 and len(input_dict["drug_primary_display"]) > 0:
-                    return DrugExposureObject()
+            if input_dict["start_dt_tm"] != '1899-12-29T23:00:00-06:00' and input_dict["start_dt_tm"] != "":
+                if input_dict["status_primary_display"] not in ("Deleted", "Cancelled", "Canceled"):
+                    if len(input_dict["drug_raw_code"]) > 0 and len(input_dict["drug_primary_display"]) > 0:
+                        return DrugExposureObject()
+                    else:
+                        return NoOutputClass()
                 else:
                     return NoOutputClass()
             else:
