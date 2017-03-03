@@ -499,8 +499,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                          {"CONCEPT_ID": "drug_source_concept_id"}),
                         (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), rxnorm_concept_mapper,
                          {"CONCEPT_ID": "drug_concept_id"}), # TODO: Make sure map maps to standard concept
-                        ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})
-                        ]
+                        ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})]
 
     return medication_rules
 
@@ -848,7 +847,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
 
-
     #### Measurements from Procedures #####
     measurement_rules_proc_encounter = [(":row_id", row_map_offset("measurement_id", measurement_row_offset),
                                       {"measurement_id": "measurement_id"}),
@@ -995,6 +993,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     #### DRUG EXPOSURE ####
     def drug_exposure_router_obj(input_dict):
         """Route mapping of drug_exposure"""
+
         if len(empi_id_mapper.map({"empi_id": input_dict["empi_id"]})):
             if input_dict["start_dt_tm"] != '1899-12-29T23:00:00-06:00' and input_dict["start_dt_tm"] != "":
                 if input_dict["status_primary_display"] not in ("Deleted", "Cancelled", "Canceled"):

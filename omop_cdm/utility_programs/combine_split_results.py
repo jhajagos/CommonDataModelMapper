@@ -1,8 +1,7 @@
-
-
-import json
 import glob
 import os
+import argparse
+
 
 def main(directory, glob_pattern, combined_file_name):
     glob_results = glob.glob(os.path.join(directory, glob_pattern))
@@ -17,6 +16,9 @@ def main(directory, glob_pattern, combined_file_name):
         for part_file_name in files_to_combine:
 
             part_file_name_path = os.path.join(directory, part_file_name)
+
+            print("Reading '%s'" % part_file_name_path)
+
             with open(part_file_name_path, "rb") as f:
                 if i > 0:
                     f.next() # skip the header
@@ -28,4 +30,13 @@ def main(directory, glob_pattern, combined_file_name):
 
 
 if __name__ == "__main__":
-    main("E:\\external\\healtheanalytics\\hf_inpatient_201601\\input\\", "PH_F_Result.*.csv", "PH_F_Result.csv")
+
+    arg_parser_obj = argparse.ArgumentParser()
+    arg_parser_obj.add_argument("-d" "--directory", dest="directory",
+                                help="Directory")
+    arg_parser_obj.add_argument("-s" "--search-pattern", dest="search_pattern", help="Search pattern for files 'files_*.csv'")
+    arg_parser_obj.add_argument("-o" "--out-filename", dest="outfile_name",
+                                help="Combined filename")
+
+    arg_obj = arg_parser_obj.parse_args()
+    main(arg_obj.directory, arg_obj.search_pattern, arg_obj.outfile_name)
