@@ -113,7 +113,7 @@ def create_patient_rules(json_map_directory):
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
-    gender_mapper = ChainMapper(upper_case_mapper, gender_json_mapper)
+    gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
 
     # TODO: Replace :row_id with starting seed that increments
     # Required person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id
@@ -487,7 +487,7 @@ def create_medication_rules(json_map_directory, empi_id_mapper, encounter_id_map
                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                         ("drug_raw_code", "drug_source_value"),
                         ("route_display", "route_source_value"),
-                        ("status_display", "stop_reason"),
+                        ("status_display", "stop_reason"), #TODO: LeftMapperString(20)
                         ("route_display", route_mapper, {"mapped_value": "route_concept_id"}),
                         ("dose_quantity", "dose_source_value"),
                         ("start_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
