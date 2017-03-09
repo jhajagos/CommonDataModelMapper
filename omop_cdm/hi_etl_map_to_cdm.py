@@ -176,12 +176,12 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
 
     # TODO: Add care site id
 
-
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("encounter_id", IdentityMapper(), {"encounter_id": "visit_source_value"}), #LeftMapperString(50)
                    ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
-                   ("classification_display", visit_concept_mapper, {"CONCEPT_ID": "visit_concept_id"}),
+                   ("classification_display", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID": 0})),
+                    {"CONCEPT_ID": "visit_concept_id"}),
                    (":row_id", visit_concept_type_mapper, {"CONCEPT_ID": "visit_type_concept_id"}),
                    ("service_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_start_date", "time": "visit_start_time"}),
                    ("discharge_dt_tm", SplitDateTimeWithTZ(), {"date": "visit_end_date", "time": "visit_end_time"})

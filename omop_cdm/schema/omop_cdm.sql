@@ -190,7 +190,7 @@ CREATE TABLE  person
      location_id					INTEGER		NULL, 
      provider_id					INTEGER		NULL, 
      care_site_id					INTEGER		NULL, 
-     person_source_value			VARCHAR(50) NULL, 
+     person_source_value			VARCHAR(255) NULL,
      gender_source_value			VARCHAR(50) NULL,
 	 gender_source_concept_id		INTEGER		NULL, 
      race_source_value				VARCHAR(50) NULL, 
@@ -263,7 +263,7 @@ CREATE TABLE  visit_occurrence
 	 visit_type_concept_id			INTEGER			NOT NULL ,
 	 provider_id					INTEGER			NULL,
      care_site_id					INTEGER			NULL, 
-     visit_source_value				VARCHAR(50)		NULL,
+     visit_source_value				VARCHAR(511)		NULL,
 	 visit_source_concept_id		INTEGER			NULL
     ) 
 ;
@@ -308,7 +308,7 @@ CREATE TABLE  drug_exposure
 	 lot_number						VARCHAR(50)		NULL ,
      provider_id					INTEGER			NULL , 
      visit_occurrence_id			INTEGER			NULL , 
-     drug_source_value				VARCHAR(50)		NULL ,
+     drug_source_value				VARCHAR(511)		NULL ,
 	 drug_source_concept_id			INTEGER			NULL ,
 	 route_source_value				VARCHAR(50)		NULL ,
 	 dose_unit_source_value			VARCHAR(50)		NULL
@@ -368,7 +368,7 @@ CREATE TABLE  measurement
      range_high						NUMERIC			NULL , 
      provider_id					INTEGER			NULL , 
      visit_occurrence_id			INTEGER			NULL ,  
-     measurement_source_value		VARCHAR(50)		NULL , 
+     measurement_source_value		VARCHAR(511)		NULL ,
 	 measurement_source_concept_id	INTEGER			NULL ,
      unit_source_value				VARCHAR(50)		NULL ,
 	 value_source_value				VARCHAR(50)		NULL

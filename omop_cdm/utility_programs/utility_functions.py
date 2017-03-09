@@ -8,6 +8,7 @@ import os
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
                            lower_case_keys=True, i_print_update=1000, truncate=False):
+
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()
 
@@ -93,6 +94,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
         split_sql = indices_ddl.split(";")
         for sql_statement in split_sql:
             db_connection.execute(sql_statement)
+
 
 def generate_db_dict(output_directory):
     load_pairs = [("condition_occurrence", "condition_occurrence_dx_cdm.csv"),

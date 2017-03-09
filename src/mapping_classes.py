@@ -9,6 +9,7 @@ import csv
 import logging
 from timeit import default_timer as timer
 
+
 class InputClass(object):
     """Superclass representing the abstract input source"""
     def fields(self):
@@ -511,7 +512,7 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
                 mapping_results[output_class] = 1
 
             if output_class == NoOutputClass().__class__:
-                pass#logger("Row not mapped" + str(row_dict))
+                pass  # logger("Row not mapped" + str(row_dict))
             else:
                 output_class_instance = self.output_directory_obj[output_class]
 
