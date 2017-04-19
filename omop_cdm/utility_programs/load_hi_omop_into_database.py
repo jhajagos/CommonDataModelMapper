@@ -12,7 +12,7 @@ def main(output_directory, connection_string, schema):
 
 if __name__ == "__main__":
 
-    with open("../hi_config.json") as f:
+    with open("../hi_config_mother_child.json") as f:
         config = json.load(f)
 
     main(config["csv_output_directory"], config["connection_uri"], schema=config["schema"])

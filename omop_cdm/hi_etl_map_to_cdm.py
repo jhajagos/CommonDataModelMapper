@@ -549,7 +549,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     output_obs_per_csv = os.path.join(output_csv_directory, "observation_period_cdm.csv")
 
-    input_obs_per_csv = os.path.join(input_csv_directory, "EMPI_ID_Oberservation_Period.csv")
+    input_obs_per_csv = os.path.join(input_csv_directory, "EMPI_ID_Observation_Period.csv")
 
     def obs_router_obj(input_dict):
         return ObservationPeriodObject()
