@@ -23,7 +23,11 @@ class DateSplit(MapperClass):
     def map(self, date_dict):
         key = date_dict.keys()[0]
         date_string = date_dict[key]
-        year, month, day = date_string.split("-")
+
+        try:
+            year, month, day = date_string.split("-")
+        except:
+            return {"year": None, "month": None, "day": None}
         try:
             int_year = int(year)
         except ValueError:

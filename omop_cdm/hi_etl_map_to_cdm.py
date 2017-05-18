@@ -1040,7 +1040,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
 
 if __name__ == "__main__":
-    with open("hi_config.json", "r") as f:
+    with open("hi_config_mother_child.json", "r") as f:
         config_dict = json.load(f)
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
