@@ -190,20 +190,10 @@ def create_visit_rules(json_map_directory, empi_id_mapper):
     return visit_rules
 
 
-def generate_value_as_concept_mapper(snomed_mapper):
-    value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["norm_codified_value_primary_display", "norm_text_value"]),
-                                          TransformMapper(capitalize_words_and_normalize_spacing),
-                                          ReplacementMapper({"Implant": "implant", "A": "Blood group A", "Ab": "Blood group AB", "O": "Blood group O",
-                                                             "B": "Blood group B"
-                                                             }),
-                                          snomed_mapper)
-    return value_as_concept_mapper
-
-
 def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Result to Measurement"""
 
-    unit_measurement_mapper = ChainMapper(ReplacementMapper({"s": "__s__"}), snomed_mapper) # TODO: Switch to UCUM coding
+    unit_measurement_mapper = snomed_code_mapper
 
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CoderMapperJSONClass(loinc_json)
@@ -211,12 +201,22 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
     measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
 
     # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
-    # TODO: Add value_as_concept_id -  Add more cases where value matches a SNOMED concept
+
+    # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
 
     measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
     measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
 
-    value_as_concept_mapper = generate_value_as_concept_mapper(snomed_mapper)
+    value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["norm_codified_value_code", "interpretation_primary_display", "norm_text_value"]),
+        CascadeMapper(snomed_code_mapper, ChainMapper(ReplacementMapper({"Abnormal": "Abnormal",
+                           "Above absolute high-off instrument scale": "High",
+                           "Above high normal": "High",
+                           "Below absolute low-off instrument scale": "Low",
+                           "Negative": "Negative",
+                           "Normal": "Normal",
+                           "Positive": "Positive",
+                           "Very abnormal": "Abnormal"
+                           }), snomed_mapper)))
 
     measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
                                                                  ReplacementMapper({"Lab Test": "Lab result"}),
@@ -224,6 +224,7 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
 
     # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
     # "CONCEPT_CLASS_ID": "Lab Test"
+
     numeric_coded_mapper = FilterHasKeyValueMapper(["norm_numeric_value", "norm_codified_value_primary_display", "norm_text_value", "result_primary_display"])
 
     measurement_rules = [(":row_id", "measurement_id"),
@@ -235,9 +236,10 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                          ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
                          ("result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
                          ("norm_numeric_value", FloatMapper(), "value_as_number"),
-                         (("norm_text_value", "norm_codified_value_primary_display"), value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
+                         (("norm_codified_value_code", "interpretation_primary_display", "norm_text_value"),
+                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
                          ("norm_unit_of_measure_primary_display", "unit_source_value"),
-                         ("norm_unit_of_measure_primary_display", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
+                         ("norm_unit_of_measure_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
                          (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
                             numeric_coded_mapper, #ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
                           {"norm_numeric_value": "value_source_value",
@@ -262,10 +264,10 @@ def create_measurement_and_observation_rules(json_map_directory, empi_id_mapper,
                                      ("result_code", measurement_type_chained_mapper,
                                       {"CONCEPT_ID": "observation_type_concept_id"}),
                                      ("norm_numeric_value", FloatMapper(), "value_as_number"),
-                                     (("norm_text_value", "norm_codified_value_primary_display"),
+                                     (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
                                       value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
                                      ("norm_unit_of_measure_primary_display", "unit_source_value"),
-                                     ("norm_unit_of_measure_primary_display", unit_measurement_mapper,
+                                     ("norm_unit_of_measure_code", unit_measurement_mapper,
                                       {"CONCEPT_ID": "unit_concept_id"}),
                                      (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display",
                                        "norm_text_value"), numeric_coded_mapper,
@@ -1040,7 +1042,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
 
 if __name__ == "__main__":
-    with open("hi_config_mother_child.json", "r") as f:
+    with open("hi_config.json", "r") as f:
         config_dict = json.load(f)
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])

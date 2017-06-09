@@ -259,6 +259,8 @@ class CascadeKeyMapper(MapperClass):
 
 class FilterHasKeyValueMapper(MapperClass):
 
+    """Return only a single key which matches a key"""
+
     def __init__(self, keys_to_track, empty_value=""):
         self.keys_to_track = keys_to_track
         self.empty_value = empty_value
