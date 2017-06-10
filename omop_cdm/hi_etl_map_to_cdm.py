@@ -9,6 +9,49 @@ import os
 from mapping_classes import *
 import logging
 logging.basicConfig(level=logging.INFO)
+import csv
+
+
+def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name, code_field_name, description_field_name,
+                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Ethnic group not given - patient refused", ""], output_directory="./"):
+
+    """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
+
+    master_attribute_dict = {}
+    with open(person_attribute_filename, "rb") as f:
+
+        csv_dict_reader = csv.DictReader(f)
+
+        for row_dict in csv_dict_reader:
+            master_patient_id = row_dict["empi_id"]
+            sequence_id = row_dict[sequence_field_name]
+            code = row_dict[code_field_name]
+            code_description = row_dict[description_field_name]
+
+            if code_description not in descriptions_to_ignore:
+
+                record_attributes = {"sequence_id": sequence_id, "code": code, "description": code_description}
+
+                if master_patient_id in master_attribute_dict:
+                    master_attribute_dict[master_patient_id] += [record_attributes]
+                else:
+                    master_attribute_dict[master_patient_id] = [record_attributes]
+
+
+        final_attribute_dict = {}
+        for master_patient_id in master_attribute_dict:
+
+            attribute_records = master_attribute_dict[master_patient_id]
+
+            attribute_records.sort(key=lambda x: int(x["sequence_id"]))
+
+            final_attribute_dict[master_patient_id] = attribute_records[0]
+
+        full_attribute_json_file_name = os.path.join(output_directory, attribute_json_file_name)
+
+        with open(full_attribute_json_file_name, "w") as fw:
+            json.dump(final_attribute_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
 
 
 #### INPUT OUTPUT ROUTERS ####
@@ -107,13 +150,39 @@ def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_na
 
 
 #### FUNCTIONS FOR RULES ####
-def create_patient_rules(json_map_directory):
+def create_patient_rules(json_map_directory, person_race_mapper, person_ethnicity_mapper):
     """Generate rules for mapping PH_D_Person mapper"""
 
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
     gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+
+    race_json = os.path.join(json_map_directory, "CONCEPT_NAME_Race.json")
+    race_json_mapper = CoderMapperJSONClass(race_json)
+
+    ethnicity_json = os.path.join(json_map_directory, "CONCEPT_NAME_Ethnicity.json")
+    ethnicity_json_mapper = CoderMapperJSONClass(ethnicity_json)
+
+    race_map_dict = {"American Indian or Alaska native": "American Indian or Alaska Native",
+                     "Asian or Pacific islander": "Asian",
+                     "Black, not of hispanic origin": "Black",
+                     "Caucasian": "White",
+                     "Indian": "Asian Indian"
+                    }
+
+    ethnicity_map_dict = {
+        "Hispanic or Latino": "Hispanic or Latino",
+        "Not Hispanic or Latino": "Not Hispanic or Latino"
+    }
+
+    race_mapper = CascadeMapper(ChainMapper(person_race_mapper,
+                              FilterHasKeyValueMapper(["description"]), ReplacementMapper(race_map_dict),
+                              race_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+
+    ethnicity_mapper = CascadeMapper(ChainMapper(person_ethnicity_mapper,
+                              FilterHasKeyValueMapper(["description"]), ReplacementMapper(ethnicity_map_dict),
+                              ethnicity_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
 
     # TODO: Replace :row_id with starting seed that increments
     # Required person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id
@@ -123,7 +192,14 @@ def create_patient_rules(json_map_directory):
                       {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
                      ("gender_display", "gender_source_value"),
                      ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_concept_id"}),
-                     ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"})
+                     ("gender_display", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"}),
+                     ("empi_id", race_mapper, {"CONCEPT_ID": "race_concept_id"}),
+                     ("empi_id", race_mapper, {"CONCEPT_ID": "race_source_concept_id"}),
+                     ("empi_id", person_race_mapper, {"description": "race_source_value"}),
+                     ("empi_id", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_concept_id"}),
+                     ("empi_id", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_source_concept_id"}),
+                     ("empi_id", person_ethnicity_mapper, {"description": "ethnicity_source_value"}),
+
                      ]
 
     return patient_rules
@@ -517,19 +593,27 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_directory_obj = OutputClassDirectory()
 
     #### Person ####
-    patient_rules = create_patient_rules(json_map_directory)
 
     input_person_csv = os.path.join(input_csv_directory, "PH_D_Person.csv")
     output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
 
-    #TODO: Add Race and Ethnicity Mapping
-    def post_map_person_func(map_dict):
-        map_dict["ethnicity_concept_id"] = 0
-        map_dict["race_concept_id"] = 0
-        return map_dict
+    person_race_csv = os.path.join(input_csv_directory, "PH_D_Person_Race.csv")
+    person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographic.csv")
+
+    build_json_person_attribute(person_race_csv, "person_race.json", "person_seq", "race_code", "race_primary_display",
+                                output_directory=input_csv_directory)
+
+    build_json_person_attribute(person_demographic_csv, "person_ethnicity.json", "person_seq", "ethnicity_code", "ethnicity_primary_display",
+                                output_directory=input_csv_directory)
+
+    person_race_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_race.json"))
+
+    person_ethnicity_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_ethnicity.json"))
+
+    patient_rules = create_patient_rules(json_map_directory, person_race_code_mapper, person_ethnicity_code_mapper)
 
     person_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_person_csv, PersonObject(), patient_rules,
-                        output_class_obj, in_out_map_obj, person_router_obj, post_map_func=post_map_person_func)
+                        output_class_obj, in_out_map_obj, person_router_obj)
 
     person_runner_obj.run()
 
@@ -584,7 +668,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_occurrence_id")
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "encounter_id")
 
-    #### MEASUREMENT and OBSERVATIONS dervived from PH_F_Result ####
+    #### MEASUREMENT and OBSERVATION dervived from PH_F_Result ####
     snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
     snomed_code_mapper = CoderMapperJSONClass(snomed_code_json)
     snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["result_code"]), snomed_code_mapper)
@@ -757,6 +841,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # ICD9 and ICD10 codes which map to procedures according to the CDM Vocabulary
     #"Procedure recorded as diagnostic code"
     # TODO: Map procedure_type_concept_id
+
     procedure_rules_dx_encounter = [(":row_id", "procedure_occurrence_id"),
                                       (":row_id", ChainMapper(ConstantMapper({"name": "Procedure recorded as diagnostic code"}),
                                                               procedure_type_mapper),
@@ -1032,8 +1117,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                    post_map_func=drug_post_processing)
 
     drug_exposure_runner_obj.run()
-
-    #  TODO: Add MS-DRGS
 
     # ["observation_id", "person_id", "observation_concept_id", "observation_date", "observation_time",
     #  "observation_type_concept_id", "value_as_number", "value_as_string", "value_as_concept_id", "qualifier_concept_id",
