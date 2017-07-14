@@ -2,15 +2,26 @@
 Mapping data extracted from HealtheIntent Data warehouse into the OMOP CDM
 """
 
-from omop_cdm_functions import *
-from omop_cdm_classes import *
-from hi_classes import *
 import os
-from mapping_classes import *
-import logging
-logging.basicConfig(level=logging.INFO)
-import csv
+import sys
 
+try:
+    from omop_cdm_functions import *
+    from omop_cdm_classes import *
+    from hi_classes import *
+    from mapping_classes import *
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
+    from omop_cdm_functions import *
+    from omop_cdm_classes import *
+    from hi_classes import *
+    from mapping_classes import *
+
+import logging
+import csv
+import argparse
+
+logging.basicConfig(level=logging.INFO)
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name, code_field_name, description_field_name,
                                 descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Ethnic group not given - patient refused", ""], output_directory="./"):
@@ -447,8 +458,7 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
                                                 ChainMapper(CoderMapperJSONClass(multum_gn_json, "drug_raw_code"), KeyTranslator({"RXCUI": "RXNORM_ID"})),
                                                 CoderMapperJSONClass(multum_drug_json, "drug_raw_code")),
                                             CoderMapperJSONClass(multum_drug_mmdc_json, "drug_raw_code"),
-                                            KeyTranslator({"drug_raw_code": "RXNORM_ID"})),
-                                            )
+                                            KeyTranslator({"drug_raw_code": "RXNORM_ID"})))
 
     return drug_code_mapper
 
@@ -1125,7 +1135,14 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
 
 if __name__ == "__main__":
-    with open("hi_config.json", "r") as f:
+
+    arg_parse_obj = argparse.ArgumentParser()
+    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="hi_config.json")
+    arg_obj = arg_parse_obj.parse_args()
+
+
+    print("Reading config file '%s'" % arg_obj.config_file_name)
+    with open(arg_obj.config_file_name, "r") as f:
         config_dict = json.load(f)
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])

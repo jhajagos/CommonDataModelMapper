@@ -32,10 +32,10 @@ def main(directory, glob_pattern, combined_file_name):
 if __name__ == "__main__":
 
     arg_parser_obj = argparse.ArgumentParser()
-    arg_parser_obj.add_argument("-d" "--directory", dest="directory",
+    arg_parser_obj.add_argument("-d", "--directory", dest="directory",
                                 help="Directory")
-    arg_parser_obj.add_argument("-s" "--search-pattern", dest="search_pattern", help="Search pattern for files 'files_*.csv'")
-    arg_parser_obj.add_argument("-o" "--out-filename", dest="outfile_name",
+    arg_parser_obj.add_argument("-s", "--search-pattern", dest="search_pattern", help="Search pattern for files 'files_*.csv'")
+    arg_parser_obj.add_argument("-o", "--out-filename", dest="outfile_name",
                                 help="Combined filename")
 
     arg_obj = arg_parser_obj.parse_args()

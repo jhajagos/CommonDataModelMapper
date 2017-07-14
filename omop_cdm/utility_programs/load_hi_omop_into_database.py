@@ -1,5 +1,8 @@
 import os
+import sys
+import argparse
 import json
+
 from utility_functions import load_csv_files_into_db, generate_db_dict
 
 
@@ -12,7 +15,12 @@ def main(output_directory, connection_string, schema):
 
 if __name__ == "__main__":
 
-    with open("../hi_config_mother_child.json") as f:
+    arg_parse_obj = argparse.ArgumentParser()
+    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="../hi_config.json")
+    arg_obj = arg_parse_obj.parse_args()
+
+    print("Reading config file '%s'" % arg_obj.config_file_name)
+    with open(arg_obj.config_file_name) as f:
         config = json.load(f)
 
     main(config["csv_output_directory"], config["connection_uri"], schema=config["schema"])
