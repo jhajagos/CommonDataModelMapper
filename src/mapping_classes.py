@@ -550,7 +550,10 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         total_time = global_end_time - global_start_time
 
         logging.info("Total time %s seconds" % total_time)
-        logging.info("Rate per %s rows: %s" % (n_rows, n_rows * (total_time * 1.0)/i,))
+        if i:
+            logging.info("Rate per %s rows: %s" % (n_rows, n_rows * (total_time * 1.0)/i,))
+        else:
+            logging.info("No rows")
 
         logging.info("%s" % mapping_results)
 
