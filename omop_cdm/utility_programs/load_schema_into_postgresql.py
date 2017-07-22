@@ -76,7 +76,7 @@ def main(ddl_file_name, connection_string, db_schema,
 
     # Perform post data manipulation
     if post_data_manipulation_file_name:
-        execute_sql_file(connection, constraints_file_name, db_schema)
+        execute_sql_file(connection, post_data_manipulation_file_name, db_schema)
 
 
 def execute_sql_file(connection, file_name, schema):
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     arg_parse_obj.add_argument("--schema-customization-file", dest="schema_customization_file_name", default=None)
     arg_parse_obj.add_argument("--drop-tables", dest="drop_tables", default=False, action="store_true")
     arg_parse_obj.add_argument("--constraints-file", dest="constraints_file_name", default=None)
-    arg_parse_obj.add_argument("--ddl-file-name", dest="ddl_file_name", default=None)
+    arg_parse_obj.add_argument("--ddl-file", dest="ddl_file_name", default=None)
     arg_parse_obj.add_argument("--index-file", dest="index_file_name", default=None)
     arg_parse_obj.add_argument("--post-data-manipulation-file", dest="post_data_manipulation_file_name", default=None)
     arg_parse_obj.add_argument("--vocabulary-schema", dest="vocab_schema")
