@@ -4,9 +4,18 @@ import sqlalchemy as sa
 
 
 def copy_into_table(connection, table_name, source_schema, destination_schema):
-    sql_to_execute = "insert into %s.%s select * from %s.%s" % (destination_schema, table_name, source_schema, table_name)
-    print(sql_to_execute)
-    connection.execute(sql_to_execute)
+
+    trans = connection.begin()
+
+    try:
+        sql_to_execute = "insert into %s.%s select * from %s.%s" % (destination_schema, table_name, source_schema, table_name)
+        print(sql_to_execute)
+        connection.execute(sql_to_execute)
+    except:
+        trans.rollback()
+        raise
+
+    trans.commit()
 
 
 def main(ddl_file_name, connection_string, db_schema,
@@ -55,7 +64,7 @@ def main(ddl_file_name, connection_string, db_schema,
                         "VOCABULARY"]
 
         for vocabulary in vocabularies:
-            copy_into_table(connection, vocabulary, db_schema, vocab_schema)
+            copy_into_table(connection, vocabulary, vocab_schema, db_schema)
 
     # Build indices
     if index_file_name:
