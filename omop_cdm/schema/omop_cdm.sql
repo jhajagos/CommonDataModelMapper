@@ -382,12 +382,12 @@ CREATE TABLE  note
      note_id						INTEGER			NOT NULL , 
      person_id						INTEGER			NOT NULL , 
      note_date						DATE			NOT NULL ,
-	 note_time						VARCHAR(10)		NULL ,
-	 note_type_concept_id			INTEGER			NOT NULL ,
-	 note_text						TEXT	NOT NULL ,
+	   note_time						VARCHAR(10)		NULL ,
+	   note_type_concept_id			INTEGER			NOT NULL ,
+	   note_text						TEXT	NOT NULL ,
      provider_id					INTEGER			NULL ,
-	 visit_occurrence_id			INTEGER			NULL ,
-	 note_source_value				VARCHAR(50)		NULL
+	   visit_occurrence_id			INTEGER			NULL ,
+	   note_source_value				VARCHAR(50)		NULL
     ) 
 ;
 
@@ -420,10 +420,10 @@ CREATE TABLE  observation
 CREATE TABLE  fact_relationship 
     ( 
      domain_concept_id_1			INTEGER			NOT NULL , 
-	 fact_id_1						INTEGER			NOT NULL ,
-	 domain_concept_id_2			INTEGER			NOT NULL ,
-	 fact_id_2						INTEGER			NOT NULL ,
-	 relationship_concept_id		INTEGER			NOT NULL
+	   fact_id_1						INTEGER			NOT NULL ,
+	   domain_concept_id_2			INTEGER			NOT NULL ,
+	   fact_id_2						INTEGER			NOT NULL ,
+	   relationship_concept_id		INTEGER			NOT NULL
 	)
 ;
 
@@ -469,18 +469,18 @@ CREATE TABLE  care_site
 CREATE TABLE  provider 
     ( 
      provider_id					INTEGER			NOT NULL ,
-	 provider_name					VARCHAR(255)	NULL , 
+	   provider_name					VARCHAR(255)	NULL ,
      NPI							VARCHAR(20)		NULL , 
      DEA							VARCHAR(20)		NULL , 
      specialty_concept_id			INTEGER			NULL , 
      care_site_id					INTEGER			NULL , 
-	 year_of_birth					INTEGER			NULL ,
-	 gender_concept_id				INTEGER			NULL ,
+	   year_of_birth					INTEGER			NULL ,
+	   gender_concept_id				INTEGER			NULL ,
      provider_source_value			VARCHAR(50)		NULL , 
      specialty_source_value			VARCHAR(50)		NULL ,
-	 specialty_source_concept_id	INTEGER			NULL , 
-	 gender_source_value			VARCHAR(50)		NULL ,
-	 gender_source_concept_id		INTEGER			NULL
+     specialty_source_concept_id	INTEGER			NULL ,
+     gender_source_value			VARCHAR(50)		NULL ,
+     gender_source_concept_id		INTEGER			NULL
     ) 
 ;
 

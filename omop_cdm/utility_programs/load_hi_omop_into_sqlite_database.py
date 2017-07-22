@@ -52,7 +52,7 @@ def generate_vocabulary_load(vocabulary_directory,  vocabularies=["CONCEPT",
 
 if __name__ == "__main__":
 
-    with open("../hi_config_mother_child.json") as f:
+    with open("../hi_config.json") as f:
         config = json.load(f)
 
-    main(output_directory=config["csv_output_directory"], vocabulary_directory=config["json_map_directory"], load_vocabularies=True)
+    main(output_directory=config["csv_output_directory"], vocabulary_directory=config["json_map_directory"], load_vocabularies=False, load_data=False)
