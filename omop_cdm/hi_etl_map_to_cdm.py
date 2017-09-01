@@ -7,13 +7,13 @@ import sys
 
 try:
     from omop_cdm_functions import *
-    from omop_cdm_classes import *
+    from omop_cdm_classes_5_0 import *
     from hi_classes import *
     from mapping_classes import *
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
     from omop_cdm_functions import *
-    from omop_cdm_classes import *
+    from omop_cdm_classes_5_0 import *
     from hi_classes import *
     from mapping_classes import *
 
@@ -22,6 +22,7 @@ import csv
 import argparse
 
 logging.basicConfig(level=logging.INFO)
+
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name, code_field_name, description_field_name,
                                 descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Ethnic group not given - patient refused", ""], output_directory="./"):
@@ -48,7 +49,6 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
                 else:
                     master_attribute_dict[master_patient_id] = [record_attributes]
 
-
         final_attribute_dict = {}
         for master_patient_id in master_attribute_dict:
 
@@ -62,7 +62,6 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
 
         with open(full_attribute_json_file_name, "w") as fw:
             json.dump(final_attribute_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
-
 
 
 #### INPUT OUTPUT ROUTERS ####

@@ -1,0 +1,5 @@
+s_person_id,s_gender,s_date_of_birth,s_date_of_death
+100,Male,2001-01-01,
+101,Female,1935-01-01,2016-01-01
+102,Female,1951-12-31,
+201,Unknown,2016-05-30
