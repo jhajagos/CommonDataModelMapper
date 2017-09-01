@@ -1,5 +1,10 @@
 """
-Mapping data extracted from HealtheIntent Data warehouse into the OMOP CDM
+Mapping data extracted from a prepared source. A first level mapping from
+the sources file has been completed. Writing ETLs for the OMOP CDM is complex
+bacause of the mappings and that a single source file can map to multiple tables.
+
+Fields in the prepared source start either start with s_  for source or m_ mapped
+to a name part of the OHDSI vocabulary.
 """
 
 import os
