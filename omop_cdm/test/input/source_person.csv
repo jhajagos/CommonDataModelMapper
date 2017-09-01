@@ -1,0 +1,5 @@
+s_person_id,s_gender,s_gender_code,s_gender_code_oid,m_gender,s_date_of_birth,s_date_of_death,s_race,s_race_code,s_race_code_oid,m_race,s_ethnicity,s_ethnicity_code,s_ethncicity_code_oid,m_ethnicity
+100,M,248153007,2.16.840.1.113883.6.96,MALE,2001-01-01,,Caucasian,413773004,2.16.840.1.113883.6.96,White,,,,Not Hispanic or Latino
+101,F,248152002,2.16.840.1.113883.6.96,FEMALE,1935-01-01,2016-01-01,,,,,,,,Hispanic or Latino
+102,F,248152002,2.16.840.1.113883.6.96,FEMALE,1951-12-31,,,,,Black or African American,,,,
+201,,,,UNKNOWN,2016-05-01,,,,,,,,,
