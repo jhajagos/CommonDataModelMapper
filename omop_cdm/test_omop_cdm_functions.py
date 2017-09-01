@@ -1,5 +1,5 @@
 import unittest
-from omop_cdm_functions import *
+from source_to_cdm_functions import *
 import json
 
 from hi_etl_map_to_cdm import generate_rxcui_drug_code_mapper, generate_drug_name_mapper

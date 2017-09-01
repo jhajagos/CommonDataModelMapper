@@ -6,13 +6,13 @@ import os
 import sys
 
 try:
-    from omop_cdm_functions import *
+    from source_to_cdm_functions import *
     from omop_cdm_classes_5_0 import *
     from hi_classes import *
     from mapping_classes import *
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
-    from omop_cdm_functions import *
+    from source_to_cdm_functions import *
     from omop_cdm_classes_5_0 import *
     from hi_classes import *
     from mapping_classes import *

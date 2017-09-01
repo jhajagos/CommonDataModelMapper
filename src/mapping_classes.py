@@ -1,7 +1,5 @@
-
-
 """
-Mapping class
+Mapper classes which a define a method map which has an argument input_dict and returns a dict
 """
 
 import json
@@ -179,8 +177,22 @@ class IdentityMapper(MapperClass):
         return input_dict
 
 
+class HasNonEmptyValue(MapperClass):
+    """Tests whether a field has a value other than ''"""
+
+    def map(self, input_dict):
+        key = input_dict.keys()[0]
+        key_value = input_dict[key]
+
+        if key_value is not None:
+            if len(key_value):
+                return {"non_empty_value": True}
+
+        return {}
+
+
 class TransformMapper(MapperClass):
-    """Applies a translation, for example, lower or upper case"""
+    """Applies a transformation for example, lower or upper case"""
 
     def __init__(self, func):
         self.func = func
@@ -195,7 +207,7 @@ class TransformMapper(MapperClass):
 
 
 class CaseMapper(MapperClass):
-    """Case function returns an integer 0....n where it then evalut"""
+    """Case function returns an integer 0....n where it then evaluates"""
     def __init__(self, case_function, *map_cases):
         self.case_function = case_function
         self.map_cases = map_cases

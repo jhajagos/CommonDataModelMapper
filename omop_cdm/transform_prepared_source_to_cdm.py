@@ -1,7 +1,7 @@
 """
 Mapping data extracted from a prepared source. A first level mapping from
 the sources file has been completed. Writing ETLs for the OMOP CDM is complex
-bacause of the mappings and that a single source file can map to multiple tables.
+because of the mappings and that a single source file can map to multiple tables.
 
 Fields in the prepared source start either start with s_  for source or m_ mapped
 to a name part of the OHDSI vocabulary.
@@ -11,13 +11,13 @@ import os
 import sys
 
 try:
-    from omop_cdm_functions import *
+    from source_to_cdm_functions import *
     from omop_cdm_classes_5_2 import *
     from prepared_source_classes import *
     from mapping_classes import *
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
-    from omop_cdm_functions import *
+    from source_to_cdm_functions import *
     from omop_cdm_classes_5_2 import *
     from prepared_source_classes import *
     from mapping_classes import *
@@ -34,7 +34,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: Handle End Dates
 
     output_class_obj = OutputClassDirectory()
-
     in_out_map_obj = InputOutputMapperDirectory()
     output_directory_obj = OutputClassDirectory()
 
@@ -50,6 +49,21 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                             output_class_obj, in_out_map_obj, person_router_obj)
 
     person_runner_obj.run()
+
+
+    #### Death ####
+
+    # Generate look up for s_person_id
+    output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
+    person_json_file_name = create_json_map_from_csv_file(output_person_csv, "person_source_value", "person_id")
+    s_person_id_mapper = CoderMapperJSONClass(person_json_file_name)
+
+    death_rules = create_death_person_rules(json_map_directory, s_person_id_mapper)
+
+    output_death_csv = os.path.join(output_csv_directory, "death_cdm.csv")
+    death_runner_obj = generate_mapper_obj(input_person_csv, SourcePersonObject(), output_death_csv, DeathObject(),
+                                           death_rules, output_class_obj, in_out_map_obj, death_router_obj)
+    death_runner_obj.run()
 
 
 def create_person_rules(json_map_directory):
@@ -90,9 +104,9 @@ def create_person_rules(json_map_directory):
     # Required person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id
     patient_rules = [(":row_id", row_map_offset("person_id", 0), {"person_id": "person_id"}),
                      ("s_person_id", "person_source_value"),
-                     ("s_date_of_birth", DateSplit(),
+                     ("s_birth_datetime", DateSplit(),
                       {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
-                     ("s_date_of_birth", "birth_datetime"),
+                     ("s_birth_datetime", "birth_datetime"),
                      ("s_gender", "gender_source_value"),
                      ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_concept_id"}),
                      ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"}),
@@ -105,6 +119,23 @@ def create_person_rules(json_map_directory):
                     ]
 
     return patient_rules
+
+
+def create_death_person_rules(json_map_directory, s_person_id_mapper):
+    """Generate rules for mapping death"""
+
+    death_concept_mapper = ChainMapper(HasNonEmptyValue(), ReplacementMapper({True: 'EHR record patient status "Deceased"'}),
+                                       CoderMapperJSONClass(os.path.join(json_map_directory,
+                                                                         "CONCEPT_NAME_Death_Type.json")))
+    # Required person_id, death_date, death_type_concept_id
+    death_rules = [("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                   ("s_death_datetime", death_concept_mapper, {"CONCEPT_ID": "death_type_concept_id"}),
+                   ("s_death_datetime", SplitDateTimeWithTZ(), {"date": "death_date"}),
+                   ("s_death_datetime", DateTimeWithTZ(), {"datetime": "death_datetime"})
+                   ]
+
+    return death_rules
+
 
 
 def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
@@ -133,7 +164,7 @@ def person_router_obj(input_dict):
 
 def death_router_obj(input_dict):
     """Determines if a row_dict codes a death"""
-    if input_dict["deceased"] == "true":
+    if len(input_dict["s_death_datetime"]):
         return DeathObject()
     else:
         return NoOutputClass()

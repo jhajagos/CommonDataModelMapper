@@ -57,12 +57,27 @@ def convert_datetime_with_tz(datetime_tz):
     dt_dts_tuple = time.strptime(dt_dts, "%Y-%m-%dT%H:%M:%S")
     try:
         dt_dts_epoch = time.mktime(dt_dts_tuple) + dt_h * 60.0 * 60
-    except: #ValueError, time.OverflowError
+    except: # ValueError, time.OverflowError
         logging.error("Invalid date '%s'" % datetime_tz)
         return null_date
     localized_datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dt_dts_epoch))
     return localized_datetime
 
+
+def convert_datetime(datetime_str):
+    null_date = "1900-01-01 00:00:00"
+    if datetime_str == '':
+        return null_date
+    else:
+        if " " in datetime_str:
+            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+        else:
+            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d')
+
+        return time.strftime('%Y-%m-%d %H:%M:%S', localized_datetime)
+
+
+        return datetime_str
 
 def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value_field_name, json_file_name=None):
 
@@ -85,12 +100,30 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
 
 
 class SplitDateTimeWithTZ(MapperClass):
+    """Split datetime into two parts and convert time to local time"""
     def map(self, input_dict):
         datetime_value = input_dict[input_dict.keys()[0]]
-        datetime_local  = convert_datetime_with_tz(datetime_value)
+
+        if "T" in datetime_value:
+            datetime_local = convert_datetime_with_tz(datetime_value)
+        else:
+            datetime_local = convert_datetime(datetime_value)
+
         date_part, time_part = datetime_local.split(" ")
 
         return {"date": date_part, "time": time_part}
+
+
+class DateTimeWithTZ(MapperClass):
+
+    def map(self, input_dict):
+        datetime_value = input_dict[input_dict.keys()[0]]
+        if "T" in datetime_value:
+            datetime_local = convert_datetime_with_tz(datetime_value)
+        else:
+            datetime_local = convert_datetime(datetime_value)
+
+        return {"datetime_local": datetime_local}
 
 
 class FloatMapper(MapperClass):
