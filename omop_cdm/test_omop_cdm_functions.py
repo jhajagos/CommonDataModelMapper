@@ -5,6 +5,7 @@ import json
 from hi_etl_map_to_cdm import generate_rxcui_drug_code_mapper, generate_drug_name_mapper
 import mapping_classes as mc
 
+
 class TestMappers(unittest.TestCase):
     def test_date_split(self):
 
@@ -48,7 +49,7 @@ class TestDrugCodeMapper(unittest.TestCase):
 
         mapping_result_2 = drug_code_mapper.map(dict_to_map_2)
 
-        #self.assertFalse(len(mapping_result_2))
+        self.assertTrue(len(mapping_result_2))
 
         rxnorm_code_mapper_json = os.path.join(self.load_json_directory, "CONCEPT_CODE_RxNorm.json")
 
@@ -68,10 +69,7 @@ class TestDrugCodeMapper(unittest.TestCase):
         dict_to_map_1 = {"drug_primary_display": "Toprol-XL"}
         print(drug_name_mapper.map(dict_to_map_1))
 
-        raise
-
-
-
+        self.assertTrue(0)
 
 
 if __name__ == '__main__':

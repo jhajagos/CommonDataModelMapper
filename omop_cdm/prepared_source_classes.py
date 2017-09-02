@@ -8,7 +8,14 @@ class SourcePersonObject(InputClass):
 
 
 class SourceObservationPeriodObject(InputClass):
-    """An observation period"""
+    """An observation period for the person"""
+
+    def fields(self):
+        return []
+
+
+class SourceEncounterObject(InputClass):
+    """An encounter"""
 
     def fields(self):
         return []

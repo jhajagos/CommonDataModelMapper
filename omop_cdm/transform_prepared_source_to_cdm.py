@@ -64,7 +64,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                            death_rules, output_class_obj, in_out_map_obj, death_router_obj)
     death_runner_obj.run()
 
-    #### Observation Period ####
+    #### Observation_Period ####
 
     obs_per_rules = create_observation_period_rules(json_map_directory, s_person_id_mapper)
 
@@ -79,6 +79,31 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                              ObservationPeriodObject(),
                                              obs_per_rules, output_class_obj, in_out_map_obj, obs_router_obj)
     obs_per_runner_obj.run()
+
+    #### Visit_Occurrence ###
+    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper)
+    input_encounter_csv = os.path.join(input_csv_directory, "source_encounter.csv")
+    output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
+
+    def visit_router_obj(input_dict):
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            if input_dict["s_visit_type"] not in ("Inbox Message"):
+                return VisitOccurrenceObject()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    visit_runner_obj = generate_mapper_obj(input_encounter_csv, SourceEncounterObject(), output_visit_occurrence_csv,
+                                           VisitOccurrenceObject(), visit_rules,
+                                           output_class_obj, in_out_map_obj, visit_router_obj)
+
+    visit_runner_obj.run()
+
+    # Visit ID Map
+    encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
+                                                             "visit_occurrence_id")
+    encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "encounter_id")
 
 
 #### RULES ####
@@ -193,6 +218,38 @@ def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_na
                                                             input_router_func, pre_map_func, post_map_func)
 
     return map_runner_obj
+
+
+def create_visit_rules(json_map_directory, s_person_id_mapper):
+    """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
+
+    visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
+    visit_concept_mapper = ChainMapper(
+        ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit",
+                           "Outpatient": "Outpatient Visit", "Observation": "Emergency Room Visit",
+                           "Recurring": "Outpatient Visit", "Preadmit": "Outpatient Visit", "": "Outpatient Visit"
+                           }), # Note: there are no observation type
+        CoderMapperJSONClass(visit_concept_json))
+
+    visit_concept_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit_Type.json")
+    visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
+                                            CoderMapperJSONClass(visit_concept_type_json))
+
+    # TODO: Add care site id
+
+    # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
+    visit_rules = [("s_encounter_id", IdentityMapper(), {"encounter_id": "visit_source_value"}),
+                   ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                   (":row_id", "visit_occurrence_id"),
+                   ("m_visit_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID": 0})),
+                    {"CONCEPT_ID": "visit_concept_id"}),
+                   (":row_id", visit_concept_type_mapper, {"CONCEPT_ID": "visit_type_concept_id"}),
+                   ("s_visit_start_datetime", SplitDateTimeWithTZ(),
+                    {"date": "visit_start_date", "time": "visit_start_time"}),
+                   ("s_visit_end_datetime", SplitDateTimeWithTZ(),
+                    {"date": "visit_end_date", "time": "visit_end_time"})]
+
+    return visit_rules
 
 
 #### Routers #####
