@@ -800,8 +800,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                       ("condition_code", "measurement_source_value"),
                                       (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
                                        {"CONCEPT_ID": "measurement_source_concept_id",
-                                        "MAPPED_CONCEPT_ID": "measurement_concept_id"})
-                                      ]
+                                        "MAPPED_CONCEPT_ID": "measurement_concept_id"})]
 
     measurement_rules_dx_class = build_input_output_mapper(measurement_rules_dx)
     in_out_map_obj.register(PHFConditionObject(), MeasurementObject(), measurement_rules_dx_class)
@@ -831,8 +830,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                       {"CONCEPT_ID": "observation_source_concept_id",
                                        "MAPPED_CONCEPT_ID": "observation_concept_id"}),
                                       (("rank_type",), condition_claim_type_map,
-                                       {"CONCEPT_ID": "condition_type_concept_id"})
-                                      ]
+                                       {"CONCEPT_ID": "condition_type_concept_id"})]
 
     observation_rules_dx_class = build_input_output_mapper(observation_rules_dx)
 
@@ -863,8 +861,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                       ("condition_code", "procedure_source_value"),
                                       (("condition_raw_code", "condition_coding_system_id"), ICDMapper,
                                        {"CONCEPT_ID": "procedure_source_concept_id",
-                                        "MAPPED_CONCEPT_ID": "procedure_concept_id"})
-                                    ]
+                                        "MAPPED_CONCEPT_ID": "procedure_concept_id"})]
 
     procedure_rules_dx_encounter_class = build_input_output_mapper(procedure_rules_dx_encounter)
 

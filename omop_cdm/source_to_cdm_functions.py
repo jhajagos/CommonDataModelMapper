@@ -77,7 +77,6 @@ def convert_datetime(datetime_str):
         return time.strftime('%Y-%m-%d %H:%M:%S', localized_datetime)
 
 
-        return datetime_str
 
 def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value_field_name, json_file_name=None):
 
@@ -123,11 +122,11 @@ class DateTimeWithTZ(MapperClass):
         else:
             datetime_local = convert_datetime(datetime_value)
 
-        return {"datetime_local": datetime_local}
+        return {"datetime": datetime_local}
 
 
 class FloatMapper(MapperClass):
-
+    """Convert value to float"""
     def map(self, input_dict):
         resulting_map = {}
         for key in input_dict:

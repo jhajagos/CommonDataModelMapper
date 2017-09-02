@@ -1,7 +1,6 @@
 """
     The goal is to build JSON dictionaries that can be used to search for codes in
     sources and map to elements in the CDM vocabulary.
-
 """
 
 import csv

@@ -50,7 +50,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     person_runner_obj.run()
 
-
     #### Death ####
 
     # Generate look up for s_person_id
@@ -65,6 +64,24 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                            death_rules, output_class_obj, in_out_map_obj, death_router_obj)
     death_runner_obj.run()
 
+    #### Observation Period ####
+
+    obs_per_rules = create_observation_period_rules(json_map_directory, s_person_id_mapper)
+
+    output_obs_per_csv = os.path.join(output_csv_directory, "observation_period_cdm.csv")
+
+    input_obs_per_csv = os.path.join(input_csv_directory, "source_observation_period.csv")
+
+    def obs_router_obj(input_dict):
+        return ObservationPeriodObject()
+
+    obs_per_runner_obj = generate_mapper_obj(input_obs_per_csv, SourceObservationPeriodObject(), output_obs_per_csv,
+                                             ObservationPeriodObject(),
+                                             obs_per_rules, output_class_obj, in_out_map_obj, obs_router_obj)
+    obs_per_runner_obj.run()
+
+
+#### RULES ####
 
 def create_person_rules(json_map_directory):
     """Generate rules for mapping source_patient.csv"""
@@ -115,8 +132,7 @@ def create_person_rules(json_map_directory):
                      ("m_race", race_mapper, {"CONCEPT_ID": "race_source_concept_id"}),
                      ("s_ethnicity", "ethnicity_source_value"),
                      ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_concept_id"}),
-                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_source_concept_id"})
-                    ]
+                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_source_concept_id"})]
 
     return patient_rules
 
@@ -127,15 +143,38 @@ def create_death_person_rules(json_map_directory, s_person_id_mapper):
     death_concept_mapper = ChainMapper(HasNonEmptyValue(), ReplacementMapper({True: 'EHR record patient status "Deceased"'}),
                                        CoderMapperJSONClass(os.path.join(json_map_directory,
                                                                          "CONCEPT_NAME_Death_Type.json")))
+
+    # TODO: cause_concept_id, cause_source_value, cause_source_concept_id
+    # Valid Concepts for the cause_concept_id have domain_id='Condition'.
+
     # Required person_id, death_date, death_type_concept_id
     death_rules = [("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                    ("s_death_datetime", death_concept_mapper, {"CONCEPT_ID": "death_type_concept_id"}),
                    ("s_death_datetime", SplitDateTimeWithTZ(), {"date": "death_date"}),
-                   ("s_death_datetime", DateTimeWithTZ(), {"datetime": "death_datetime"})
-                   ]
+                   ("s_death_datetime", DateTimeWithTZ(), {"datetime": "death_datetime"})]
 
     return death_rules
 
+
+def create_observation_period_rules(json_map_directory, s_person_id_mapper):
+    """Generate observation rules"""
+    observation_period_mapper = CoderMapperJSONClass(
+        os.path.join(json_map_directory, "CONCEPT_NAME_Obs_Period_Type.json"))
+    observation_period_constant_mapper = ChainMapper(
+        ConstantMapper({"observation_period_type_name": "Period covering healthcare encounters"}),
+        observation_period_mapper)
+
+    observation_period_rules = [(":row_id", "observation_period_id"),
+                                ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                                ("s_start_observation_datetime", SplitDateTimeWithTZ(),
+                                 {"date": "observation_period_start_date"}),
+                                ("s_end_observation_datetime", SplitDateTimeWithTZ(),
+                                 {"date": "observation_period_end_date"}),
+                                (":row_id", observation_period_constant_mapper,
+                                 {"CONCEPT_ID": "period_type_concept_id"})
+                                ]
+
+    return observation_period_rules
 
 
 def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
@@ -156,7 +195,8 @@ def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_na
     return map_runner_obj
 
 
-### Routers ####
+#### Routers #####
+
 def person_router_obj(input_dict):
     """Route a person"""
     return PersonObject()
