@@ -4,6 +4,7 @@ import csv
 import os
 import json
 import logging
+import re
 
 
 class LeftMapperString(MapperClass):
@@ -66,16 +67,22 @@ def convert_datetime_with_tz(datetime_tz):
 
 def convert_datetime(datetime_str):
     null_date = "1900-01-01 00:00:00"
+
+    re_odbc_date = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$")
+    re_odbc_date_time_1 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}$")
+    re_odbc_date_time_2 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}$")
+
     if datetime_str == '':
         return null_date
     else:
-        if " " in datetime_str:
-            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
-        else:
+        if re_odbc_date_time_1.match(datetime_str):
+            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M')
+        elif re_odbc_date.match(datetime_str):
             localized_datetime = time.strptime(datetime_str, '%Y-%m-%d')
+        elif re_odbc_date_time_2:
+            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
 
         return time.strftime('%Y-%m-%d %H:%M:%S', localized_datetime)
-
 
 
 def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value_field_name, json_file_name=None):
