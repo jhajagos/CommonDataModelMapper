@@ -87,7 +87,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     def visit_router_obj(input_dict):
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
-            if input_dict["s_visit_type"] not in ("Inbox Message"):
+            if input_dict["i_exclude"] != '1':
                 return VisitOccurrenceObject()
             else:
                 return NoOutputClass()
@@ -121,7 +121,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def measurement_router_obj(input_dict):
         """Determine if the result contains a LOINC code"""
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
-            if input_dict["s_measurement_datetime"] != '1899-12-29T23:00:00-06:00' and input_dict["s_measurement_datetime"] != "":
+            if input_dict["i_exclude"] != "1":
                 if len(input_dict["s_measurement_result_code"]):
                     mapped_result_code = snomed_code_result_mapper.map(input_dict)
                     if "CONCEPT_CLASS_ID" in mapped_result_code:
@@ -147,7 +147,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, encounter_id_mapper, snomed_mapper,
                                                  snomed_code_mapper)
 
-    input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
+    input_result_csv = os.path.join(input_csv_directory, "source_result.csv")
     output_measurement_csv = os.path.join(output_csv_directory, "measurement_encounter_cdm.csv")
 
     measurement_runner_obj = generate_mapper_obj(input_result_csv, SourceResultObject(), output_measurement_csv,
@@ -159,7 +159,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     register_to_mapper_obj(input_result_csv, SourceResultObject(), output_observation_csv,
                            ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
 
-    measurement_runner_obj.run()
+    #measurement_runner_obj.run()
 
 
 #### RULES ####
