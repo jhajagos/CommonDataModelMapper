@@ -3,6 +3,7 @@ import os
 from mapping_classes import *
 logging.basicConfig(level=logging.INFO)
 
+
 class Object1(InputClass):
     def fields(self):
         return ["id", "object_name", "object_code"]
@@ -60,7 +61,6 @@ class TestMappers(unittest.TestCase):
         result_dict = FilterHasKeyValueMapper(["wwww", "2", "3"]).map({"1": "z", "2": "x", "3": "y"})
         self.assertEquals({"2": "x"},result_dict)
 
-
     def test_concatenate_mapper(self):
 
         map_dict = {'a': '123', 'b': '456', 'c': '789'}
@@ -114,7 +114,6 @@ class TestTranslators(unittest.TestCase):
         mapped_code = cdx_obj.map({"code": "101"})
 
         self.assertEquals({"code_id": 702}, mapped_code)
-
 
     def test_dict_translator(self):
 
@@ -200,10 +199,10 @@ class TestRunMapper(unittest.TestCase):
 
         output_realization.close()
 
-        with open("./test/input_object1.csv", "rb") as f:
+        with open("./test/input_object1.csv", "r") as f:
             t1 = f.read()
 
-        with open("./test/output_obj1.csv", "rb") as f:
+        with open("./test/output_obj1.csv", "r") as f:
             t2 = f.read()
 
         self.assertEquals(t1, t2)
@@ -227,10 +226,10 @@ class TestRunMapper(unittest.TestCase):
         map_runner_obj.run()
         output_realization.close()
 
-        with open("./test/input_object1.csv", "rb") as f:
+        with open("./test/input_object1.csv", "r") as f:
             t1 = f.read()
 
-        with open("./test/output_obj1_caps.csv", "rb") as f:
+        with open("./test/output_obj1_caps.csv", "r") as f:
             t2 = f.read()
 
         t1_split = t1.split("\n")

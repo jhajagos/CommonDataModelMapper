@@ -2,7 +2,7 @@ import unittest
 import os
 
 from generate_io_classes_file_from_source import *
-from mapping_classes import *
+from mapping_classes import OutputClass
 import sqlalchemy as sa
 
 
@@ -23,7 +23,7 @@ class TestClassGeneration(unittest.TestCase):
             connection.execute(statement)
 
     def test_class_generate(self):
-        simple_class = input_output_class_generate_string("Object1", "OutputClass", ["id", "test_name", "code_name"])
+        simple_class = input_output_class_generate_string("Object1", "OutputClass", ["id", "test_name", "code_name"], "my_table")
 
         exec(simple_class)
         self.assertTrue(len(simple_class))
@@ -31,8 +31,8 @@ class TestClassGeneration(unittest.TestCase):
     def test_generate_from_db(self):
         generated_classes_py = generate_sql_from_connection_string("sqlite:///./test/test.db3")
 
-        print(generated_classes_py)
-        self.assertEquals(True, False)
+        #print(generated_classes_py)
+        self.assertTrue(len(generated_classes_py))
 
 
 if __name__ == '__main__':

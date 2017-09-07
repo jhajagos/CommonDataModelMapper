@@ -13,6 +13,9 @@ class InputClass(object):
     def fields(self):
         return []
 
+    def required_fields(self):
+        return []
+
 
 class OutputClass(object):
     """Superclass representing the abstract source that the input source will be transformed into"""
@@ -471,7 +474,8 @@ class DirectoryClass(object):
 
 
 class InputOutputMapperDirectory(DirectoryClass):
-    """"""
+    """Defines method for registering an imput and output connection"""
+
     def register(self, input_class_obj, output_class_obj, mapper_class_obj):
         self.directory_dict[(input_class_obj.__class__, output_class_obj.__class__)] = mapper_class_obj
 
@@ -487,6 +491,8 @@ class RunMapper(object):
 
 
 class RunMapperAgainstSingleInputRealization(RunMapper):
+    """Main class for running a mapping process"""
+
     def __init__(self, input_class_realization_obj, input_output_directory_obj, output_directory_obj, output_class_func,
                  pre_map_func=None, post_map_func=None):
         self.input_class_realization_obj = input_class_realization_obj
@@ -506,7 +512,7 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
         i = 0
         j = 0
 
-        mapping_results = {} # Stores counts of how many rows are mapped to specific classes
+        mapping_results = {}  # Stores counts of how many rows are mapped to specific classes
         input_class = self.input_class_realization_obj.input_class.__class__
 
         global_start_time = timer()
