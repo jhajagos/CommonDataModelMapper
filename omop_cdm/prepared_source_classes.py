@@ -19,3 +19,9 @@ class SourceEncounterObject(InputClass):
 
     def fields(self):
         return []
+
+class SourceResultObject(InputClass):
+    """Result"""
+
+    def fields(self):
+        return []

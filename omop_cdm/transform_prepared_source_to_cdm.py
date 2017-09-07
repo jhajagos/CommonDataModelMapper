@@ -103,7 +103,63 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     # Visit ID Map
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
                                                              "visit_occurrence_id")
+
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "encounter_id")
+
+    visit_runner_obj.run()
+
+    # Visit ID Map
+    encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
+                                                             "visit_occurrence_id")
+    encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
+
+    #### MEASUREMENT and OBSERVATION dervived from PH_F_Result ####
+    snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
+    snomed_code_mapper = CoderMapperJSONClass(snomed_code_json)
+    snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["s_measurement_result_code"]), snomed_code_mapper)
+
+    def measurement_router_obj(input_dict):
+        """Determine if the result contains a LOINC code"""
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            if input_dict["s_measurement_datetime"] != '1899-12-29T23:00:00-06:00' and input_dict["s_measurement_datetime"] != "":
+                if len(input_dict["s_measurement_result_code"]):
+                    mapped_result_code = snomed_code_result_mapper.map(input_dict)
+                    if "CONCEPT_CLASS_ID" in mapped_result_code:
+                        if mapped_result_code["DOMAIN_ID"] == "Measurement":
+                            return MeasurementObject()
+                        elif mapped_result_code["DOMAIN_ID"] == "Observation":
+                            return ObservationObject()
+                        else:
+                            return NoOutputClass()
+                    else:
+                        return MeasurementObject()
+                else:
+                    return NoOutputClass()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    snomed_json = os.path.join(json_map_directory, "CONCEPT_NAME_SNOMED.json")  # We don't need the entire SNOMED
+    snomed_mapper = CoderMapperJSONClass(snomed_json)
+
+    measurement_rules, observation_measurement_rules = \
+        create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, encounter_id_mapper, snomed_mapper,
+                                                 snomed_code_mapper)
+
+    input_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
+    output_measurement_csv = os.path.join(output_csv_directory, "measurement_encounter_cdm.csv")
+
+    measurement_runner_obj = generate_mapper_obj(input_result_csv, SourceResultObject(), output_measurement_csv,
+                                                 MeasurementObject(),
+                                                 measurement_rules, output_class_obj, in_out_map_obj,
+                                                 measurement_router_obj)
+
+    output_observation_csv = os.path.join(output_csv_directory, "observation_measurement_encounter_cdm.csv")
+    register_to_mapper_obj(input_result_csv, SourceResultObject(), output_observation_csv,
+                           ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
+
+    measurement_runner_obj.run()
 
 
 #### RULES ####
@@ -220,6 +276,21 @@ def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_na
     return map_runner_obj
 
 
+def register_to_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj,
+                           map_rules_list,
+                           output_obj, in_out_map_obj):
+
+    input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
+
+    output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)
+
+    map_rules_obj = build_input_output_mapper(map_rules_list)
+
+    output_obj.register(output_class_obj, output_csv_class_obj)
+
+    in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)
+
+
 def create_visit_rules(json_map_directory, s_person_id_mapper):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
@@ -250,6 +321,96 @@ def create_visit_rules(json_map_directory, s_person_id_mapper):
                     {"date": "visit_end_date", "time": "visit_end_time"})]
 
     return visit_rules
+
+
+def create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
+    """Generate rules for mapping PH_F_Result to Measurement"""
+
+    unit_measurement_mapper = snomed_code_mapper
+
+    loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
+    loinc_mapper = CoderMapperJSONClass(loinc_json)
+
+    measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
+
+    # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
+
+    # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
+
+    measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
+    measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
+
+    value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["norm_codified_value_code", "interpretation_primary_display", "norm_text_value"]),
+        CascadeMapper(snomed_code_mapper, ChainMapper(ReplacementMapper({"Abnormal": "Abnormal",
+                           "Above absolute high-off instrument scale": "High",
+                           "Above high normal": "High",
+                           "Below absolute low-off instrument scale": "Low",
+                           "Negative": "Negative",
+                           "Normal": "Normal",
+                           "Positive": "Positive",
+                           "Very abnormal": "Abnormal"
+                           }), snomed_mapper)))
+
+    measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
+                                                                 ReplacementMapper({"Lab Test": "Lab result"}),
+                                                                 measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+
+    # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
+    # "CONCEPT_CLASS_ID": "Lab Test"
+
+    numeric_coded_mapper = FilterHasKeyValueMapper(["norm_numeric_value", "norm_codified_value_primary_display", "norm_text_value", "result_primary_display"])
+
+    measurement_rules = [(":row_id", "measurement_id"),
+                         ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                         ("s_encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                         ("s_measurement_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
+                         ("result_code", "measurement_source_value"),
+                         ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
+                         ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
+                         ("result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
+                         ("norm_numeric_value", FloatMapper(), "value_as_number"),
+                         (("norm_codified_value_code", "interpretation_primary_display", "norm_text_value"),
+                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
+                         ("norm_unit_of_measure_primary_display", "unit_source_value"),
+                         ("norm_unit_of_measure_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
+                         (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
+                            numeric_coded_mapper, #ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
+                          {"norm_numeric_value": "value_source_value",
+                           "norm_codified_value_primary_display": "value_source_value",
+                           "result_primary_display": "value_source_value",
+                           "norm_text_value": "value_source_value"}),
+                         ("norm_ref_range_low", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
+                         ("norm_ref_range_high", FloatMapper(), "range_high")]
+
+    #TODO: observation_type_concept_id <- "Observation recorded from EHR"
+    measurement_observation_rules = [(":row_id", "observation_id"),
+                                     ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                                     ("s_encounter_id", encounter_id_mapper,
+                                      {"visit_occurrence_id": "visit_occurrence_id"}),
+                                     ("service_date", SplitDateTimeWithTZ(),
+                                      {"date": "observation_date", "time": "observation_time"}),
+                                     ("result_code", "observation_source_value"),
+                                     ("result_code", measurement_code_mapper,
+                                      {"CONCEPT_ID": "observation_source_concept_id"}),
+                                     ("result_code", measurement_code_mapper,
+                                      {"CONCEPT_ID": "observation_concept_id"}),
+                                     ("result_code", measurement_type_chained_mapper,
+                                      {"CONCEPT_ID": "observation_type_concept_id"}),
+                                     ("norm_numeric_value", FloatMapper(), "value_as_number"),
+                                     (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
+                                      value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
+                                     ("norm_unit_of_measure_primary_display", "unit_source_value"),
+                                     ("norm_unit_of_measure_code", unit_measurement_mapper,
+                                      {"CONCEPT_ID": "unit_concept_id"}),
+                                     (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display",
+                                       "norm_text_value"), numeric_coded_mapper,
+                                      {"norm_numeric_value": "value_source_value",
+                                       "norm_codified_value_primary_display": "value_source_value",
+                                       "result_primary_display": "value_source_value",
+                                       "norm_text_value": "value_source_value"})
+                                     ]
+
+    return measurement_rules, measurement_observation_rules
 
 
 #### Routers #####
