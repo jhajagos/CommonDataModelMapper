@@ -21,6 +21,7 @@ class LeftMapperString(MapperClass):
 
 class DateSplit(MapperClass):
     """Split a date"""
+
     def map(self, date_dict):
         key = date_dict.keys()[0]
         date_string = date_dict[key]
@@ -110,7 +111,7 @@ class SplitDateTimeWithTZ(MapperClass):
     def map(self, input_dict):
         datetime_value = input_dict[input_dict.keys()[0]]
 
-        if "T" in datetime_value:
+        if "T" in datetime_value: # Has a time zone embedded
             datetime_local = convert_datetime_with_tz(datetime_value)
         else:
             datetime_local = convert_datetime(datetime_value)
