@@ -1,3 +1,3 @@
-s_person_id,s_encounter_id,s_obtained_datetime,s_type_name,s_type_code,m_type_code_oid,s_result_text,s_result_numeric,s_result_datetime,s_result_code,m_result_code_oid,s_result_unit,s_result_unit_code,s_result_unit_code_oid,s_result_numeric_lower,s_result_numeric_upper,i_exclude
+s_person_id,s_encounter_id,s_obtained_datetime,s_type_name,s_type_code,m_type_code_oid,s_result_text,s_result_numeric,s_result_datetime,s_result_code,m_result_code_oid,s_result_unit,s_result_unit_code,m_result_unit_code_oid,s_result_numeric_lower,s_result_numeric_upper,i_exclude
 101,10,2016-01-02 07:45:45,Hemoglobin A1c/Hemoglobin.total in Blood,4548-4,2.16.840.1.113883.6.1,Above high normal,6.9,,,,Percent,258984001,2.16.840.1.113883.6.96,4.8,5.9,
 101,10,2016-01-02 12:32,Respiratory rate,86290005,2.16.840.1.113883.6.96,Normal,18,,,,br/min,118582008,2.16.840.1.113883.6.96,14,50,

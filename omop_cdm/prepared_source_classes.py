@@ -42,11 +42,19 @@ class SourceEncounterObject(PreparedSourceObject):
         return ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
                 "m_visit_type", "i_exclude"]
 
+
 class SourceResultObject(PreparedSourceObject):
     """Result"""
 
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
                 "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
-                "s_result_unit", "s_result_unit_oid", "s_result_numeric_lower", "s_result_numeric_upper",
-                "i_exclude"]
+                "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
+                "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
+
+
+class SourceConditionObject(PreparedSourceObject):
+
+    def _fields(self):
+        return ["s_person_id", "s_encounter_id", "s_condition_datetime", "s_condition_code", "m_condition_code_oid",
+                "s_sequence_id", "m_rank", "s_condition_type", "s_present_on_admission_indicator"]
