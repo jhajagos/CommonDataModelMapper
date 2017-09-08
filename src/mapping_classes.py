@@ -43,6 +43,11 @@ class InputClassCSVRealization(InputClassRealization):
 
         self.input_class = input_class_obj
 
+        if len(self.input_class.fields()):
+            self.input_class_has_fields = True
+        else:
+            self.input_class_has_fields = False
+
         f = open(csv_file_name, "rb")
         self.csv_dict = csv.DictReader(f)
 
@@ -51,6 +56,13 @@ class InputClassCSVRealization(InputClassRealization):
     def next(self):
         row_dict = self.csv_dict.next()
         row_dict[":row_id"] = self.i
+
+        if self.input_class_has_fields:
+            fields = self.input_class.fields()
+            for field in fields:
+                if field not in row_dict:
+                    row_dict[field] = ""
+
         self.i += 1
         return row_dict
 
