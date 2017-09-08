@@ -382,7 +382,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("norm_ref_range_low", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
                          ("norm_ref_range_high", FloatMapper(), "range_high")]
 
-    #TODO: observation_type_concept_id <- "Observation recorded from EHR"
+    # TODO: observation_type_concept_id <- "Observation recorded from EHR"
     measurement_observation_rules = [(":row_id", "observation_id"),
                                      ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                      ("s_encounter_id", encounter_id_mapper,

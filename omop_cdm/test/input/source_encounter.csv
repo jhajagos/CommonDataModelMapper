@@ -1,2 +1,2 @@
-s_encounter_id,s_person_id,s_visit_start_datetime,s_visit_end_datetime,s_visit_type,m_visit_type,i_exclude
+s_encounter_id,s_person_id,s_visit_start_datetime,s_visit_end_datetime,s_visit_type,m_visit_type
 10,101,2016-01-01 05:53,2016-01-15,Inpatient,Inpatient Visit

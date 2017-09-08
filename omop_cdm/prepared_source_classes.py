@@ -24,24 +24,29 @@ class SourcePersonObject(PreparedSourceObject):
     """A person"""
 
     def _fields(self):
-        return []
+        return ["s_person_id", "s_gender", "m_gender", "s_birth_datetime", "s_death_datetime", "s_race",
+                "m_race", "s_ethnicity", "m_ethnicity", "k_location"]
 
 
 class SourceObservationPeriodObject(PreparedSourceObject):
     """An observation period for the person"""
 
     def _fields(self):
-        return []
+        return ["s_person_id", "s_start_observation_datetime", "s_end_observation_datetime"]
 
 
 class SourceEncounterObject(PreparedSourceObject):
     """An encounter"""
 
     def _fields(self):
-        return []
+        return ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
+                "m_visit_type", "i_exclude"]
 
 class SourceResultObject(PreparedSourceObject):
     """Result"""
 
     def _fields(self):
-        return []
+        return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
+                "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
+                "s_result_unit", "s_result_unit_oid", "s_result_numeric_lower", "s_result_numeric_upper",
+                "i_exclude"]
