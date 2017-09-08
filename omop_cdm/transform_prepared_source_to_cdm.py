@@ -335,7 +335,8 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
 
     # TODO: Currently only map "Lab result" add other measurement types "measurement_type_concept_id"
 
-    # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
+    # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies
+    # reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
 
     measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
     measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
@@ -363,16 +364,16 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     measurement_rules = [(":row_id", "measurement_id"),
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                          ("s_encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                         ("s_measurement_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
-                         ("result_code", "measurement_source_value"),
-                         ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
-                         ("result_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
-                         ("result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
-                         ("norm_numeric_value", FloatMapper(), "value_as_number"),
-                         (("norm_codified_value_code", "interpretation_primary_display", "norm_text_value"),
+                         ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
+                         ("s_type_name", "measurement_source_value"),
+                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
+                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
+                         ("s_type_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
+                         ("s_result_numeric", FloatMapper(), "value_as_number"),
+                         (("s_result_text", "s_result_numeric"),
                           value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
-                         ("norm_unit_of_measure_primary_display", "unit_source_value"),
-                         ("norm_unit_of_measure_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
+                         ("s_result_unit", "unit_source_value"),
+                         ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
                          (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display", "norm_text_value"),
                             numeric_coded_mapper, #ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
                           {"norm_numeric_value": "value_source_value",
