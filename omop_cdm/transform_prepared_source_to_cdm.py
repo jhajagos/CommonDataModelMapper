@@ -891,6 +891,7 @@ def drug_code_coding_system(input_dict, field="m_drug_code_oid"):
     else:
         return False
 
+
 def case_mapper_drug_code(input_dict, field="m_drug_code_oid"):
     drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
 
