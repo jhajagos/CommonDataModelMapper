@@ -56,5 +56,12 @@ class SourceResultObject(PreparedSourceObject):
 class SourceConditionObject(PreparedSourceObject):
 
     def _fields(self):
-        return ["s_person_id", "s_encounter_id", "s_condition_datetime", "s_condition_code", "m_condition_code_oid",
-                "s_sequence_id", "m_rank", "s_condition_type", "s_present_on_admission_indicator"]
+        return ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
+                "s_condition_code", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type", "s_present_on_admission_indicator"]
+
+
+class SourceProcedureObject(PreparedSourceObject):
+
+    def _fields(self):
+        return ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
+                "s_procedure_code", "m_procedure_code_oid", "s_sequence_id", "s_rank"]

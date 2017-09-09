@@ -761,7 +761,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return 1
 
-    #TODO: condition_type_concept_id
+    # TODO: condition_type_concept_id
     condition_encounter_mapper = ChainMapper(ConstantMapper({"diagnosis_type_name": "Observation recorded from EHR"}), condition_type_name_map)
 
     condition_type_concept_mapper = CascadeMapper(condition_claim_type_map, condition_encounter_mapper)

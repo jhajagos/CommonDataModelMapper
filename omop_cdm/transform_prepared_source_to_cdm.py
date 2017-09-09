@@ -171,14 +171,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         )
 
     # Claim IDs
-    # map_claim_id_encounter = os.path.join(input_csv_directory, "Map_Between_Claim_Id_Encounter_Id.csv")
-    # map_claim_id_encounter_json = create_json_map_from_csv_file(map_claim_id_encounter, "claim_uid", "encounter_id")
-    # claim_id_encounter_id_mapper = CoderMapperJSONClass(map_claim_id_encounter_json, "claim_id")
 
-    # claim_id_visit_occurrence_id_mapper = ChainMapper(claim_id_encounter_id_mapper, encounter_id_mapper)
-    #
-    # encounter_id_claim_id_mapper = CascadeKeyMapper("visit_occurrence_id", claim_id_visit_occurrence_id_mapper,
-    #                                                 encounter_id_mapper)
 
     input_condition_csv = os.path.join(input_csv_directory, "source_condition.csv")
     hi_condition_csv_obj = InputClassCSVRealization(input_condition_csv, SourceConditionObject())
@@ -217,7 +210,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                            {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                           ("s_condition_code", "condition_source_value"),
                           ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
-                          ("s_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
+                          ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
 
     condition_rules_dx_class = build_input_output_mapper(condition_rules_dx)
 
@@ -233,7 +226,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                             ("s_encounter_id", s_encounter_id_mapper,
                              {"visit_occurrence_id": "visit_occurrence_id"}),
-                            ("s_condition_datetime", SplitDateTimeWithTZ(),
+                            ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                              {"date": "measurement_date", "time": "measurement_time"}),
                             ("s_condition_code", "measurement_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
@@ -261,7 +254,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             (("s_encounter_id",),
                              s_encounter_id_mapper,
                              {"visit_occurrence_id": "visit_occurrence_id"}),
-                            ("s_condition_datetime", SplitDateTimeWithTZ(),
+                            ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                              {"date": "observation_date", "time": "observation_time"}),
                             ("s_condition_code", "observation_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
@@ -294,7 +287,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                     ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                     ("s_encounter_id", encounter_id_mapper,
                                      {"visit_occurrence_id": "visit_occurrence_id"}),
-                                    ("s_condition_datetime", SplitDateTimeWithTZ(),
+                                    ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                                      {"date": "procedure_date"}),
                                     ("s_condition_code", "procedure_source_value"),
                                     (("s_condition_code", "m_condition_code_oid"), ICDMapper,
@@ -356,6 +349,162 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     condition_row_offset = condition_runner_obj.rows_run
     procedure_row_offset = condition_runner_obj.rows_run
     measurement_row_offset += condition_row_offset
+
+    procedure_rules_encounter = create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper,
+                                                       procedure_row_offset)
+    procedure_rule = procedure_rules_encounter[0]
+    procedure_code_map = procedure_rule[1]
+
+    procedure_rules_encounter_class = build_input_output_mapper(procedure_rules_encounter)
+
+    input_proc_csv = os.path.join(input_csv_directory, "source_procedure.csv")
+    hi_proc_csv_obj = InputClassCSVRealization(input_proc_csv, SourceProcedureObject())
+
+    in_out_map_obj.register(SourceProcedureObject(), ProcedureOccurrenceObject(), procedure_rules_encounter_class)
+
+    output_proc_encounter_csv = os.path.join(output_csv_directory, "procedure_cdm.csv")
+    output_proc_encounter_csv_obj = OutputClassCSVRealization(output_proc_encounter_csv,
+                                                              ProcedureOccurrenceObject())
+
+    output_directory_obj.register(ProcedureOccurrenceObject(), output_proc_encounter_csv_obj)
+
+    #### Measurements from Procedures #####
+    measurement_rules_proc_encounter = [(":row_id", row_map_offset("measurement_id", measurement_row_offset),
+                                         {"measurement_id": "measurement_id"}),
+                                        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                                        (":row_id", ConstantMapper({"measurement_type_concept_id": 0}),
+                                         # TODO: Add measurement_type_concept_id
+                                         {"measurement_type_concept_id": "measurement_type_concept_id"}),
+                                        ("s_encounter_id", s_encounter_id_mapper,
+                                         {"visit_occurrence_id": "visit_occurrence_id"}),
+                                        ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                                         {"date": "measurement_date", "time": "measurement_time"}),
+                                        ("s_procedure_code", "measurement_source_value"),
+                                        (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
+                                         {"CONCEPT_ID": "measurement_source_concept_id",
+                                          "MAPPED_CONCEPT_ID": "measurement_concept_id"})]
+
+    measurement_rules_proc_encounter_class = build_input_output_mapper(measurement_rules_proc_encounter)
+
+    output_measurement_proc_encounter_csv = os.path.join(output_csv_directory, "measurement_proc_cdm.csv")
+    output_measurement_proc_encounter_csv_obj = OutputClassCSVRealization(output_measurement_proc_encounter_csv,
+                                                                          MeasurementObject())
+    output_directory_obj.register(MeasurementObject(), output_measurement_proc_encounter_csv_obj)
+
+    in_out_map_obj.register(SourceProcedureObject(), MeasurementObject(), measurement_rules_proc_encounter_class)
+
+    #### Observations from Procedures #####
+    observation_rules_proc = [(":row_id", row_map_offset("observation_id", observation_row_offset),
+                               {"observation_id": "observation_id"}),
+                              (":row_id", ConstantMapper({"observation_type_concept_id": 0}),
+                               {"observation_type_concept_id": "observation_type_concept_id"}),
+                              ("s_person_id_id", s_person_id_mapper, {"person_id": "person_id"}),
+                              ("s_encounter_id",
+                               s_encounter_id_mapper,
+                               {"visit_occurrence_id": "visit_occurrence_id"}),
+                              ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                               {"date": "observation_date", "time": "observation_time"}),
+                              ("s_procedure_code", "observation_source_value"),
+                              (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
+                               {"CONCEPT_ID": "observation_source_concept_id",
+                                "MAPPED_CONCEPT_ID": "observation_concept_id"})
+                              ]
+
+    observation_rules_proc_class = build_input_output_mapper(observation_rules_proc)
+    output_observation_proc_csv = os.path.join(output_csv_directory, "observation_proc_cdm.csv")
+    output_observation_proc_csv_obj = OutputClassCSVRealization(output_observation_proc_csv,
+                                                                ObservationObject())
+
+    output_directory_obj.register(ObservationObject(), output_observation_proc_csv_obj)
+    in_out_map_obj.register(SourceProcedureObject(), ObservationObject(), observation_rules_proc_class)
+
+    ##### DrugExposure from Procedures ####
+    drug_rules_proc = [(":row_id", "dru_exposure_id"),
+                       (":row_id", ConstantMapper({"drug_type_concept_id": 0}),
+                        {"drug_type_concept_id": "drug_type_concept_id"}),
+                       ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                       ("s_encounter_id", s_encounter_id_mapper,
+                        {"visit_occurrence_id": "visit_occurrence_id"}),
+                       ("procedure_start_datetime", SplitDateTimeWithTZ(),
+                        {"date": "drug_exposure_start_date"}),
+                       ("s_procedure_code", "drug_source_value"),
+                       (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
+                        {"CONCEPT_ID": "drug_source_concept_id",
+                         "MAPPED_CONCEPT_ID": "drug_concept_id"})]
+
+    drug_rules_proc_class = build_input_output_mapper(drug_rules_proc)
+    output_drug_proc_csv = os.path.join(output_csv_directory, "drug_exposure_proc_cdm.csv")
+    output_drug_proc_csv_obj = OutputClassCSVRealization(output_drug_proc_csv,
+                                                         DrugExposureObject())
+
+    output_directory_obj.register(DrugExposureObject(), output_drug_proc_csv_obj)
+    in_out_map_obj.register(ProcedureOccurrenceObject(), DrugExposureObject(), drug_rules_proc_class)
+
+    #### Device Exposure from Procedures ####
+
+    device_rules_proc = [(":row_id", "device_exposure_id"),
+                         (":row_id", ConstantMapper({"device_type_concept_id": 0}),
+                          {"device_type_concept_id": "device_type_concept_id"}),
+                         ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                         ("s_encounter_id",
+                          s_encounter_id_mapper,
+                          {"visit_occurrence_id": "visit_occurrence_id"}),
+                         ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                          {"date": "device_exposure_start_date"}),
+                         ("s_procedure_code", "device_source_value"),
+                         (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
+                          {"CONCEPT_ID": "device_source_concept_id",
+                           "MAPPED_CONCEPT_ID": "device_concept_id"})]
+
+    device_rules_proc_class = build_input_output_mapper(device_rules_proc)
+    output_device_proc_csv = os.path.join(output_csv_directory, "device_exposure_proc_cdm.csv")
+    output_device_proc_csv_obj = OutputClassCSVRealization(output_device_proc_csv,
+                                                           DeviceExposureObject())
+
+    output_directory_obj.register(DeviceExposureObject(), output_device_proc_csv_obj)
+    in_out_map_obj.register(SourceProcedureObject(), DeviceExposureObject(), device_rules_proc_class)
+
+    def procedure_router_obj(input_dict):
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+
+            if "m_procedure_code_oid" in input_dict:
+
+                if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes", "HCPCS"):
+                    result_dict = procedure_code_map.map(input_dict)
+
+                    if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
+                        if "MAPPED_CONCEPT_DOMAIN" in result_dict:
+                            domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                        else:
+                            domain = result_dict["DOMAIN_ID"]
+
+                        if domain == "Procedure":
+                            return ProcedureOccurrenceObject()
+                        elif domain == "Measurement":
+                            return MeasurementObject()
+                        elif domain == "Observation":
+                            return ObservationObject()
+                        elif domain == "Drug":
+                            return DrugExposureObject()
+                        elif domain == "Device":
+                            return DeviceExposureObject()
+                        else:
+                            return NoOutputClass()
+                    else:
+                        return NoOutputClass()
+                else:
+                    return NoOutputClass()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_proc_csv_obj, in_out_map_obj,
+                                                                  output_directory_obj,
+                                                                  procedure_router_obj)
+
+    procedure_runner_obj.run()
+
 
 
 #### RULES ####
@@ -467,6 +616,89 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
     return observation_period_rules
 
 
+def procedure_coding_system(input_dict, field="m_procedure_code_oid"):
+    """Determine from the OID in procedure coding system"""
+    coding_system_oid = input_dict[field]
+
+    if coding_system_oid == '2.16.840.1.113883.6.104':
+        return 'ICD9 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.12':
+        return 'CPT Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.14':
+        return 'HCFA Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.4':
+        return 'ICD10 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.96':
+        return 'SNOMED'
+    elif coding_system_oid == '2.16.840.1.113883.6.285':
+        return 'HCPCS'
+    else:
+        return False
+
+
+def case_mapper_procedures(input_dict, field="m_procedure_code_oid"):
+    proc_code_oid = procedure_coding_system(input_dict, field=field)
+
+    if proc_code_oid == "ICD9 Procedure Codes":
+        return 0
+    elif proc_code_oid == "ICD10 Procedure Codes":
+        return 1
+    elif proc_code_oid == "CPT Codes":
+        return 2
+    elif proc_code_oid == "HCPCS":
+        return 3
+
+
+def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, procedure_id_start):
+    # Maps the DXs linked by the claims
+    # procedure
+    # 2.16.840.1.113883.6.104 -- ICD9 Procedure Codes
+    # 2.16.840.1.113883.6.12  -- CPT Codes
+    # 2.16.840.1.113883.6.14  -- HCFA Procedure Codes
+    # 2.16.840.1.113883.6.4 -- ICD10 Procedure Codes
+    # 2.16.840.1.113883.6.96 -- SNOMED
+
+    icd9proc_json = os.path.join(json_map_directory, "ICD9Proc_with_parent.json")
+    icd10proc_json = os.path.join(json_map_directory, "ICD10PCS_with_parent.json")
+    cpt_json = os.path.join(json_map_directory, "CPT4_with_parent.json")
+    hcpcs_json = os.path.join(json_map_directory, "HCPCS_with_parent.json")
+    procedure_type_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
+
+    procedure_type_map = \
+        CascadeMapper(ChainMapper(
+                ReplacementMapper({"PRIMARY": "Primary Procedure", "SECONDARY": "Secondary Procedure"}),
+                CoderMapperJSONClass(procedure_type_name_json)),
+            ConstantMapper({"CONCEPT_ID": 0})
+        )
+
+    # TODO: Add SNOMED Codes to the Mapping
+    ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
+                                     CoderMapperJSONClass(icd9proc_json, "s_procedure_code"),
+                                     CoderMapperJSONClass(icd10proc_json, "s_procedure_code"),
+                                     CoderMapperJSONClass(cpt_json, "s_procedure_code"),
+                                     CoderMapperJSONClass(hcpcs_json, "s_procedure_code"),
+                                      ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
+
+    # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
+    procedure_rules_encounter = [
+                                (("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
+                                 {"CONCEPT_ID": "procedure_source_concept_id",
+                                  "MAPPED_CONCEPT_ID": "procedure_concept_id"},
+                                 ),
+                                (":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
+                                  {"procedure_occurrence_id": "procedure_occurrence_id"}),
+                                 ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                                 ("s_encounter_id", s_encounter_id_mapper,
+                                  {"visit_occurrence_id": "visit_occurrence_id"}),
+                                 ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                                  {"date": "procedure_date"}),
+                                 ("s_procedure_code", "procedure_source_value"),
+                                 ("s_rank", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})
+                                 ]
+
+    return procedure_rules_encounter
+
+
 def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
                         output_obj, in_out_map_obj, input_router_func, pre_map_func=None, post_map_func=None):
 
@@ -565,8 +797,6 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                                                  ReplacementMapper({"Lab Test": "Lab result"}),
                                                                  measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
 
-    # "Derived value" "From physical examination"  "Lab result"  "Pathology finding"   "Patient reported value"   "Test ordered through EHR"
-    # "CONCEPT_CLASS_ID": "Lab Test"
 
     numeric_coded_mapper = FilterHasKeyValueMapper(["s_result_numeric", "s_result_text"])
 
@@ -580,11 +810,11 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_type_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
                          ("s_result_numeric", FloatMapper(), "value_as_number"),
                          (("s_result_code", "s_result_text"),
-                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}), #norm_codified_value_primary_display",
+                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
                          ("s_result_unit", "unit_source_value"),
                          ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
                          (("s_result_numeric", "s_result_text", "s_result_datetime", "s_result_code"),
-                            numeric_coded_mapper, #ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
+                            numeric_coded_mapper,
                           {"s_result_numeric": "value_source_value",
                            "s_result_text": "value_source_value",
                            "s_result_datetime": "value_source_value",
