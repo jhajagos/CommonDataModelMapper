@@ -170,9 +170,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             condition_type_name_map
         )
 
-    # Claim IDs
-
-
     input_condition_csv = os.path.join(input_csv_directory, "source_condition.csv")
     hi_condition_csv_obj = InputClassCSVRealization(input_condition_csv, SourceConditionObject())
 
@@ -504,6 +501,33 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                                   procedure_router_obj)
 
     procedure_runner_obj.run()
+
+    drug_row_offset = procedure_runner_obj.rows_run
+
+    #### DRUG EXPOSURE ####
+    def drug_exposure_router_obj(input_dict):
+        """Route mapping of drug_exposure"""
+
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            if input_dict["i_exclude"] != "1":
+                return DrugExposureObject()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    input_med_csv = os.path.join(input_csv_directory, "source_encounter.csv")
+    output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
+
+    medication_rules = create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper,
+                                               snomed_mapper, drug_row_offset)  # TODO: add drug_row_offset
+
+    drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, SourceMedicationObject(), output_drug_exposure_csv,
+                                                   DrugExposureObject(),
+                                                   medication_rules, output_class_obj, in_out_map_obj,
+                                                   drug_exposure_router_obj)
+
+    drug_exposure_runner_obj.run()
 
 
 
@@ -850,6 +874,190 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                      ]
 
     return measurement_rules, measurement_observation_rules
+
+
+def drug_code_coding_system(input_dict, field="m_drug_code_oid"):
+    """Determine from the OID the coding system for medication"""
+    coding_system_oid = input_dict[field]
+
+    if coding_system_oid == "2.16.840.1.113883.6.311":
+        return "Multum Main Drug Code (MMDC)"
+    elif coding_system_oid == "2.16.840.1.113883.6.312": # | MMSL - Multum drug synonym MMDC | BN - Fully specified drug brand name that can not be prescribed
+        return "Multum drug synonym"
+    elif coding_system_oid == "2.16.840.1.113883.6.314": # MMSL - GN - d04373 -- Generic drug name
+        return "Multum drug identifier (dNUM)"
+    elif coding_system_oid == "2.16.840.1.113883.6.88":
+        return "RxNorm (RXCUI)"
+    else:
+        return False
+
+def case_mapper_drug_code(input_dict, field="m_drug_code_oid"):
+    drug_coding_system_name = drug_code_coding_system(input_dict, field=field)
+
+    if drug_coding_system_name == "Multum drug synonym":
+        return 0
+    elif drug_coding_system_name == "Multum drug identifier (dNUM)":
+        return 1
+    elif drug_coding_system_name == "Multum Main Drug Code (MMDC)":
+        return 2
+    elif drug_coding_system_name == "RxNorm (RxCUI)":
+        return 3
+    else:
+        return False
+
+
+def generate_rxcui_drug_code_mapper(json_map_directory):
+
+    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
+    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.MULDRUG_ID.json")
+    multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
+    multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.MULDRUG_ID.json")
+
+    drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
+                                            CoderMapperJSONClass(multum_json, "s_drug_code"),
+                                            CascadeMapper(
+                                                ChainMapper(CoderMapperJSONClass(multum_gn_json, "s_drug_code"),
+                                                            KeyTranslator({"RXCUI": "RXNORM_ID"})),
+                                                CoderMapperJSONClass(multum_drug_json, "s_drug_code")),
+                                            CoderMapperJSONClass(multum_drug_mmdc_json, "s_drug_code"),
+                                            KeyTranslator({"s_drug_code": "RXNORM_ID"})))
+
+    return drug_code_mapper
+
+
+def generate_drug_name_mapper(json_map_directory):
+    rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
+    rxnorm_name_mapper = CoderMapperJSONClass(rxnorm_name_json, "drug_primary_display")
+
+    def string_to_cap_first_letter(raw_string):
+        if len(raw_string):
+            return raw_string[0].upper() + raw_string[1:].lower()
+        else:
+            return raw_string
+
+    rxnorm_name_mapper_chained = CascadeMapper(rxnorm_name_mapper,
+                                               ChainMapper(
+                                                   TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper))
+
+    return rxnorm_name_mapper_chained
+
+
+def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, row_offset):
+
+    #TODO: Increase mapping coverage of drugs - while likely need manual overrides
+
+    rxnorm_rxcui_mapper = generate_rxcui_drug_code_mapper(json_map_directory)
+    rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)
+
+    # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
+    # TODO: Increase coverage of "Map route_source_value -> route_source_value"
+
+    drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
+    drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
+
+    rxnorm_code_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
+    rxnorm_code_concept_mapper = CoderMapperJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
+    drug_source_concept_mapper = ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
+                                                           rxnorm_name_mapper_chained))
+
+    rxnorm_bn_in_mapper_json = os.path.join(json_map_directory, "select_n_in__ot___from___select_bn_rxcui.csv.bn_rxcui.json")
+    rxnorm_bn_sbdf_mapper_json = os.path.join(json_map_directory, "select_tt_n_sbdf__ott___from___select_bn.csv.bn_rxcui.json")
+
+    rxnorm_bn_in_mapper = CoderMapperJSONClass(rxnorm_bn_in_mapper_json,"RXNORM_ID")
+    rxnorm_bn_sbdf_mapper = CoderMapperJSONClass(rxnorm_bn_sbdf_mapper_json, "RXNORM_ID")
+
+    rxnorm_str_bn_in_mapper_json = os.path.join(json_map_directory,
+                                            "select_n_in__ot___from___select_bn_rxcui.csv.bn_str.json")
+    rxnorm_str_bn_sbdf_mapper_json = os.path.join(json_map_directory,
+                                              "select_tt_n_sbdf__ott___from___select_bn.csv.bn_str.json")
+
+    rxnorm_str_bn_in_mapper = CoderMapperJSONClass(rxnorm_str_bn_in_mapper_json)
+    rxnorm_str_bn_sbdf_mapper = CoderMapperJSONClass(rxnorm_str_bn_sbdf_mapper_json)
+
+    rxnorm_concept_mapper = CascadeMapper(ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper,
+                                                                                ChainMapper(rxnorm_bn_sbdf_mapper,
+                                                                                            KeyTranslator({"sbdf_rxcui": "RXNORM_ID"}))),
+                                          ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_in_mapper,
+                                                                                       KeyTranslator({"in_rxcui": "RXNORM_ID"}))),
+                                          rxnorm_rxcui_mapper), rxnorm_code_concept_mapper),
+                                          CascadeMapper(ChainMapper(rxnorm_str_bn_sbdf_mapper, rxnorm_name_mapper_chained),
+                                                        ChainMapper(rxnorm_str_bn_in_mapper, rxnorm_name_mapper_chained),
+                                          rxnorm_name_mapper_chained))
+
+    drug_type_mapper = ChainMapper(ReplacementMapper({"HOSPITAL_PHARMACY": "Inpatient administration",
+                                                      "INPATIENT_FLOOR_STOCK": "Inpatient administration",
+                                                      "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
+                                                      "UNKNOWN": "Prescription dispensed in pharmacy",
+                                                      "_NOT_VALUED": "Prescription written",
+                                                      "OFFICE": "Physician administered drug (identified from EHR observation)"
+                                                      },
+                                                     ),
+                                   drug_type_code_mapper)
+
+
+    # TODO: Rework this mapper not to be static code
+    # Source: http://forums.ohdsi.org/t/route-standard-concepts-not-standard-anymore/1300/7
+    routes_to_concept_id_dict = {
+        "Gastroenteral": "4186834",
+        "Cutaneous": "4263689",
+        "Ocular": "4184451",
+        "Intramuscular": "4302612",
+        "Buccal": "4181897",
+        "Nasal": "4262914",
+        "Transdermal": "4262099",
+        "Body cavity use": "4222254",
+        "Vaginal": "4057765",
+        "Intradermal": "4156706",
+        "Epidural": "4225555",
+        "Auricular": "4023156",
+        "Intralesional": "4157758",
+        "Intrauterine": "4269621",
+        "Intraarticular": "4006860",
+        "Intravesical": "4186838",
+        "Dental": "4163765",
+        "Intraperitoneal": "4243022",
+        "Intravitreal": "4302785",
+        "Intrapleural": "4156707",
+        "Intrabursal": "4163768",
+        "Intraosseous": "4213522",
+        "Intravenous": "4112421",
+        "Rectal": "4115462",
+        "Inhaling": "4120036",
+        "Oral": "4128794",
+        "Subcutaneous": "4139962",
+        "Intravaginal": "4136280",
+        "Topical": "4231622",
+        "Intraocular": "4157760",
+        "Intrathecal": "4217202",
+        "Urethral": "4233974"
+    }
+
+    route_mapper = ChainMapper(ReplacementMapper({"SubCutaneous": "Subcutaneous", "IV Push": "Intravenous",
+                                                  "Continuous IV": "Intravenous", "IntraMuscular": "Intramuscular"}),
+                               CodeMapperDictClass(routes_to_concept_id_dict))
+
+    # Required # drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_type_concept_id
+    medication_rules = [(":row_id", row_map_offset("drug_exposure_id", row_offset),
+                                      {"drug_exposure_id": "drug_exposure_id"}),
+                        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+                        ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                        ("s_drug_code", "drug_source_value"),
+                        ("s_route", "route_source_value"),
+                        ("s_status", "stop_reason"),
+                        ("s_route", route_mapper, {"mapped_value": "route_concept_id"}),
+                        ("s_dose", "dose_source_value"),
+                        ("s_start_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
+                        ("s_end_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
+                        ("s_quantity", "quantity"),
+                        ("s_dose_unit", "dose_unit_source_value"),
+                        ("s_dose_unit", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
+                        (("m_drug_code_oid", "s_drug_code", "s_drug_text"), drug_source_concept_mapper,
+                         {"CONCEPT_ID": "drug_source_concept_id"}),
+                        (("m_drug_code_oid", "s_drug_code", "s_drug_text"), rxnorm_concept_mapper,
+                         {"CONCEPT_ID": "drug_concept_id"}),  # TODO: Make sure map maps to standard concept
+                        ("s_drug_type", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})]
+
+    return medication_rules
 
 
 #### Routers #####

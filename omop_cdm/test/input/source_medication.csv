@@ -1,0 +1,1 @@
+s_person_id,s_encounter_id,s_drug_code,m_drug_code_oid,s_drug_text,s_start_medication_datetime,s_end_medication_datetime,s_route,s_dose_quantity,s_dose_unit,s_status,s_drug_type

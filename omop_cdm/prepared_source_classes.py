@@ -65,3 +65,10 @@ class SourceProcedureObject(PreparedSourceObject):
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
                 "s_procedure_code", "m_procedure_code_oid", "s_sequence_id", "s_rank"]
+
+class SourceMedicationObject(PreparedSourceObject):
+
+    def _fields(self):
+        return ["s_person_id", "s_encounter_id", "s_drug_code", "m_drug_code_oid", "s_drug_text",
+                "s_start_medication_datetime", "s_end_medication_datetime",
+                "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
