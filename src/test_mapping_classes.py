@@ -124,6 +124,25 @@ class TestTranslators(unittest.TestCase):
 
         self.assertEquals({"mapped_value": "1"}, mapper_result)
 
+class TestCodeMapperClassSqliteJSONClass(unittest.TestCase):
+
+    def setUp(self):
+        if os.path.exists("./test/code_mapper.json.db3"):
+            os.remove("./test/code_mapper.json.db3")
+
+    def test_lookup_and_build(self):
+
+        cdx_obj = CodeMapperClassSqliteJSONClass("./test/code_mapper.json")
+        mapped_code_1 = cdx_obj.map({"code": "101"})
+
+        self.assertEquals({"code_id": 702}, mapped_code_1)
+
+        mapped_code_2 = cdx_obj.map({"code": "101"})
+        self.assertEquals({"code_id": 702}, mapped_code_2)
+
+        mapped_code_3 = cdx_obj.map({"code": "ZZZZZ"})
+        self.assertEquals({}, mapped_code_3)
+
 
 class TestInputSourceRealizations(unittest.TestCase):
 

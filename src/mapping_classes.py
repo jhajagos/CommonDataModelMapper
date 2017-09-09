@@ -6,7 +6,8 @@ import json
 import csv
 import logging
 from timeit import default_timer as timer
-
+import os
+import sqlalchemy as sa
 
 class InputClass(object):
     """Superclass representing the abstract input source"""
@@ -178,6 +179,110 @@ class CoderMapperJSONClass(CodeMapperClass):
                 return mapped_dict_instance
             else:
                 return {}
+        else:
+            return {}
+
+class CodeMapperClassSqliteJSONClass(CodeMapperClass):
+
+    """For large JSON files we build a SQLite database and only store in memory what we access"""
+
+    def __init__(self, json_file_name, field_name=None):
+        self.field_name = field_name
+
+        self.db_file_name = json_file_name + ".db3"
+        self.json_file_name = json_file_name
+
+        if os.path.exists(self.db_file_name):
+            self.connection, self.meta_data = self._create_connection()
+        else:
+            self.connection, self.meta_data = self._build_sqlite_db()
+
+        self.mapper_dict_cache = {}
+
+    def _create_connection(self):
+        connection_string = "sqlite:///" + self.db_file_name
+        engine = sa.create_engine(connection_string)
+        connection = engine.connect()
+        meta_data = sa.MetaData(connection, reflect=True)
+        return connection, meta_data
+
+    def _build_sqlite_db(self):
+
+        if os.path.exists(self.db_file_name):
+            os.remove(self.db_file_name)
+
+        connection,  meta_data = self._create_connection()
+
+        lookup_table = sa.Table("lookup_table", meta_data,
+                                sa.Column("key_string", sa.String(255), index=True, unique=True),
+                                sa.Column("json_value_text", sa.Text))
+
+        meta_data.create_all()
+
+        transaction = connection.begin()
+        logging.info("Building SQLite database for '%s'" % self.json_file_name)
+        try:
+            with open(self.json_file_name, "r") as f:
+                json_dict = json.load(f)
+
+                for key in json_dict:
+
+                    key_value = json_dict[key]
+                    key_dict = {"key_string": key, "json_value_text": json.dumps(key_value)}
+                    connection.execute(lookup_table.insert(key_dict))
+
+        except:
+            transaction.commit()
+            raise
+
+        transaction.commit()
+
+        return connection, meta_data
+
+    def _look_up_value(self, key):
+
+        lookup_table = self.meta_data.tables["lookup_table"]
+        sql_expression = lookup_table.select().where(lookup_table.c.key_string == key)
+        cursor = self.connection.execute(sql_expression)
+        rows = list(cursor)
+        if len(rows):
+            key_value = json.loads(rows[0].json_value_text)
+            return key_value
+        else:
+            return None
+
+    def map(self, input_dict):
+
+        if len(input_dict):
+            if self.field_name is None:
+                key = input_dict.keys()[0]
+            else:
+                key = self.field_name
+
+            if key in input_dict:
+                value = input_dict[key]
+            else:
+                return {}
+
+            if value in self.mapper_dict_cache:
+                mapped_dict_instance = self.mapper_dict_cache[value]
+                if mapped_dict_instance.__class__ == [].__class__:
+                    mapped_dict_instance = mapped_dict_instance[0]
+                    logging.error("Map '%s' to non-unique value selecting the first item" % value)
+
+                return mapped_dict_instance
+            else:
+
+                read_from_db_value = self._look_up_value(value)
+                if read_from_db_value is None:
+                    return {}
+                else:
+                    self.mapper_dict_cache[value] = read_from_db_value
+                    mapped_dict_instance = read_from_db_value
+                    if mapped_dict_instance.__class__ == [].__class__:
+                        mapped_dict_instance = mapped_dict_instance[0]
+                        logging.error("Map '%s' to non-unique value selecting the first item" % value)
+                    return mapped_dict_instance
         else:
             return {}
 

@@ -1,5 +1,6 @@
 from mapping_classes import InputClass
 
+
 class PreparedSourceObject(InputClass):
 
     def _parent_class_fields(self):
@@ -65,6 +66,7 @@ class SourceProcedureObject(PreparedSourceObject):
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
                 "s_procedure_code", "m_procedure_code_oid", "s_sequence_id", "s_rank"]
+
 
 class SourceMedicationObject(PreparedSourceObject):
 
