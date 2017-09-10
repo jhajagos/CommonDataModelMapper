@@ -515,7 +515,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
-    input_med_csv = os.path.join(input_csv_directory, "source_encounter.csv")
+    input_med_csv = os.path.join(input_csv_directory, "source_medication.csv")
     output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
 
     medication_rules = create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper,

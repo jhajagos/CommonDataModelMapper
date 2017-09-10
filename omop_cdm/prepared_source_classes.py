@@ -69,8 +69,23 @@ class SourceProcedureObject(PreparedSourceObject):
 
 
 class SourceMedicationObject(PreparedSourceObject):
-
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_drug_code", "m_drug_code_oid", "s_drug_text",
                 "s_start_medication_datetime", "s_end_medication_datetime",
                 "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
+
+
+class SourcePayerEncounterObject(PreparedSourceObject):
+    def _fields(self):
+        return ["s_person_id", "s_encounter_id", "s_start_payer_period", "s_end_payer_period",
+                "s_payer_name"]
+
+
+class SourceCareSite(PreparedSourceObject):
+    def _fields(self):
+        return ["k_care_site", "s_care_site_name"]
+
+
+class SourceProvider(PreparedSourceObject):
+    def _fields(self):
+        return ["k_provider", "s_provider_name", "s_npi"]
