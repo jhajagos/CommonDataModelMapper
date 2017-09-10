@@ -75,7 +75,7 @@ class SourceMedicationObject(PreparedSourceObject):
                 "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
 
 
-class SourcePayerEncounterObject(PreparedSourceObject):
+class SourceCoverageObject(PreparedSourceObject):
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_payer_period", "s_end_payer_period",
                 "s_payer_name"]

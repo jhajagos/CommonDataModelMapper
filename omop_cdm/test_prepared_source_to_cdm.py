@@ -61,7 +61,7 @@ class TestMapping(unittest.TestCase):
         # TODO: Add procedures that map to other domains
 
         result_drug_exposure = read_csv_file_as_dict("./test/output/drug_exposure_cdm.csv")
-        self.assertTrue(len(result_drug_exposure) == 0)
+        self.assertTrue(len(result_drug_exposure))
 
 
 if __name__ == '__main__':
