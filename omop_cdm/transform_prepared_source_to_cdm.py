@@ -106,12 +106,29 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     s_encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "encounter_id")
 
-    visit_runner_obj.run()
-
     # Visit ID Map
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
                                                              "visit_occurrence_id")
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
+
+    ### Benefit coverage period ###
+
+    payer_plan_period_rules = create_payer_plan_period_rules(s_person_id_mapper)
+
+    output_ppp_csv = os.path.join(output_csv_directory, "payer_plan_period_cdm.csv")
+
+    input_ppp_csv = os.path.join(input_csv_directory, "source_encounter_coverage.csv")
+
+    def payer_plan_period_router_obj(input_dict):
+        return PayerPlanPeriodObject()
+
+    payer_plan_period_runner_obj = generate_mapper_obj(input_ppp_csv, SourceEncounterCoverageObject(), output_ppp_csv,
+                                                       PayerPlanPeriodObject(),
+                                                       payer_plan_period_rules, output_class_obj, in_out_map_obj,
+                                                       payer_plan_period_router_obj
+                                                       )
+    payer_plan_period_runner_obj.run()
+
 
     #### MEASUREMENT and OBSERVATION dervived from 'source_observation.csv' ####
     snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
@@ -638,6 +655,18 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
 
     return observation_period_rules
 
+
+def create_payer_plan_period_rules(s_person_id_mapper):
+
+    payer_plan_period_rules = [
+        (":row_id", "payer_plan_period_id"),
+        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+        ("s_start_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_start_date"}),
+        ("s_end_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_end_date"}),
+        ("s_payer_name", "payer_source_value")
+    ]
+
+    return payer_plan_period_rules
 
 def procedure_coding_system(input_dict, field="m_procedure_code_oid"):
     """Determine from the OID in procedure coding system"""

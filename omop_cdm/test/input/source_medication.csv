@@ -1,2 +1,3 @@
 s_person_id,s_encounter_id,s_drug_code,m_drug_code_oid,s_drug_text,s_start_medication_datetime,s_end_medication_datetime,s_route,s_dose_quantity,s_dose_unit,s_status,s_drug_type
 101,10,352393,"2.16.840.1.113883.6.88",Abilify,2016-01-01,2016-02-01,,,,,
+101,10,00065853302,"2.16.840.1.113883.6.69",Ciprodex,2016-01-02,2016-01-22,,,,,

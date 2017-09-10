@@ -40,11 +40,15 @@ class TestMapping(unittest.TestCase):
         self.assertEquals(1, len(results_death))
 
         # TODO: Add different visit types inpatient, outpatient, and ED
+        # TODO: Add support for 5.2 added datetime
         results_observation_period = read_csv_file_as_dict("./test/output/observation_period_cdm.csv")
         self.assertEquals(4, len(results_observation_period))
 
         results_visit_occurrence = read_csv_file_as_dict("./test/output/visit_occurrence_cdm.csv")
         self.assertEquals(1, len(results_visit_occurrence))
+
+        result_payer_plan_period = read_csv_file_as_dict("./test/output/payer_plan_period_cdm.csv")
+        self.assertEquals(1, len(result_payer_plan_period))
 
         result_measurement = read_csv_file_as_dict("./test/output/measurement_encounter_cdm.csv")
         self.assertTrue(len(result_measurement))
