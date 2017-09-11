@@ -9,6 +9,7 @@ def read_csv_file_as_dict(csv_file_name):
     with open(csv_file_name) as f:
         return list(csv.DictReader(f))
 
+
 class TestMapping(unittest.TestCase):
 
     def setUp(self):

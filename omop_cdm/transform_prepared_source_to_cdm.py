@@ -31,7 +31,6 @@ logging.basicConfig(level=logging.INFO)
 def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: Add Provider
     # TODO: Add Patient Location
-    # TODO: Handle End Dates
 
     output_class_obj = OutputClassDirectory()
     in_out_map_obj = InputOutputMapperDirectory()
@@ -80,8 +79,35 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                              obs_per_rules, output_class_obj, in_out_map_obj, obs_router_obj)
     obs_per_runner_obj.run()
 
+
+    #### Care Sites ####
+
+    care_site_rules = [
+        (":row_id", "care_site_id"),
+        ("s_care_site_name", "care_site_name"),
+        ("k_care_site", "care_site_source_value")
+    ]
+
+    input_care_site_csv = os.path.join(input_csv_directory, "source_care_site.csv")
+    output_care_site_csv = os.path.join(output_csv_directory, "care_site_cdm.csv")
+
+    def care_site_router_obj(input_dict):
+        return CareSiteObject()
+
+    care_site_runner_obj = generate_mapper_obj(input_care_site_csv, SourceCareSiteObject(), output_care_site_csv,
+                                           CareSiteObject(), care_site_rules,
+                                           output_class_obj, in_out_map_obj, care_site_router_obj)
+
+    care_site_runner_obj.run()
+
+
+    care_site_json_file_name = create_json_map_from_csv_file(output_care_site_csv, "care_site_source_value",
+                                                             "care_site_id")
+
+    k_care_site_mapper = CoderMapperJSONClass(care_site_json_file_name, "k_care_site")
+
     #### Visit_Occurrence ###
-    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper)
+    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper)
     input_encounter_csv = os.path.join(input_csv_directory, "source_encounter.csv")
     output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
 
@@ -784,7 +810,7 @@ def register_to_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file
     in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)
 
 
-def create_visit_rules(json_map_directory, s_person_id_mapper):
+def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
     visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
@@ -811,7 +837,9 @@ def create_visit_rules(json_map_directory, s_person_id_mapper):
                    ("s_visit_start_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_start_date", "time": "visit_start_time"}),
                    ("s_visit_end_datetime", SplitDateTimeWithTZ(),
-                    {"date": "visit_end_date", "time": "visit_end_time"})]
+                    {"date": "visit_end_date", "time": "visit_end_time"}),
+                   ("k_care_site", k_care_site_mapper, "care_site_id")
+                   ]
 
     return visit_rules
 

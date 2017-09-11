@@ -83,11 +83,11 @@ class SourceEncounterCoverageObject(PreparedSourceObject):
                 "s_payer_name"]
 
 
-class SourceCareSite(PreparedSourceObject):
+class SourceCareSiteObject(PreparedSourceObject):
     def _fields(self):
         return ["k_care_site", "s_care_site_name"]
 
 
-class SourceProvider(PreparedSourceObject):
+class SourceProviderObject(PreparedSourceObject):
     def _fields(self):
         return ["k_provider", "s_provider_name", "s_npi"]
