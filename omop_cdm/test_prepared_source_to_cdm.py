@@ -37,6 +37,10 @@ class TestMapping(unittest.TestCase):
         results_person = read_csv_file_as_dict("./test/output/person_cdm.csv")
         self.assertEquals(4, len(results_person))
 
+        first_person = results_person[0]
+
+        self.assertNotEquals("", first_person["birth_datetime"])
+
         results_death = read_csv_file_as_dict("./test/output/death_cdm.csv")
         self.assertEquals(1, len(results_death))
 
@@ -52,14 +56,20 @@ class TestMapping(unittest.TestCase):
 
         self.assertEqual("1", first_visit["care_site_id"])
 
+        self.assertNotEquals("", first_visit["visit_start_datetime"])
+        self.assertNotEquals("", first_visit["visit_end_datetime"])
+
         result_payer_plan_period = read_csv_file_as_dict("./test/output/payer_plan_period_cdm.csv")
         self.assertEquals(1, len(result_payer_plan_period))
 
         result_measurement = read_csv_file_as_dict("./test/output/measurement_encounter_cdm.csv")
         self.assertTrue(len(result_measurement))
 
+        first_measurement = result_measurement[0]
+        self.assertNotEquals("", first_measurement["measurement_datetime"])
+
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")
-        self.assertTrue(len(result_observation) == 0)
+        self.assertTrue(len(result_observation))
 
         result_condition = read_csv_file_as_dict("./test/output/condition_occurrence_dx_cdm.csv")
         self.assertTrue(len(result_condition))

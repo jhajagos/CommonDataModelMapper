@@ -572,7 +572,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     drug_exposure_runner_obj.run()
 
 
-
 #### RULES ####
 
 def create_person_rules(json_map_directory):
@@ -615,7 +614,7 @@ def create_person_rules(json_map_directory):
                      ("s_person_id", "person_source_value"),
                      ("s_birth_datetime", DateSplit(),
                       {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
-                     ("s_birth_datetime", "birth_datetime"),
+                     ("s_birth_datetime", DateTimeWithTZ(), {"datetime": "birth_datetime"}),
                      ("s_gender", "gender_source_value"),
                      ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_concept_id"}),
                      ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"}),
@@ -825,8 +824,6 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
                                             CoderMapperJSONClass(visit_concept_type_json))
 
-    # TODO: Add care site id
-
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("s_encounter_id", IdentityMapper(), {"encounter_id": "visit_source_value"}),
                    ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
@@ -836,8 +833,10 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                    (":row_id", visit_concept_type_mapper, {"CONCEPT_ID": "visit_type_concept_id"}),
                    ("s_visit_start_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_start_date", "time": "visit_start_time"}),
+                   ("s_visit_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
                    ("s_visit_end_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_end_date", "time": "visit_end_time"}),
+                   ("s_visit_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
                    ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"})]
 
     return visit_rules
@@ -882,6 +881,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                          ("s_encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
+                         ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
                          ("s_type_name", "measurement_source_value"),
                          ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
                          ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
