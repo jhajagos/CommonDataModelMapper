@@ -48,6 +48,10 @@ class TestMapping(unittest.TestCase):
         results_visit_occurrence = read_csv_file_as_dict("./test/output/visit_occurrence_cdm.csv")
         self.assertEquals(1, len(results_visit_occurrence))
 
+        first_visit = results_visit_occurrence[0]
+
+        self.assertEqual("1", first_visit["care_site_id"])
+
         result_payer_plan_period = read_csv_file_as_dict("./test/output/payer_plan_period_cdm.csv")
         self.assertEquals(1, len(result_payer_plan_period))
 

@@ -838,8 +838,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                     {"date": "visit_start_date", "time": "visit_start_time"}),
                    ("s_visit_end_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_end_date", "time": "visit_end_time"}),
-                   ("k_care_site", k_care_site_mapper, "care_site_id")
-                   ]
+                   ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"})]
 
     return visit_rules
 
