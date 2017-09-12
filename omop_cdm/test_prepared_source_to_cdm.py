@@ -71,13 +71,20 @@ class TestMapping(unittest.TestCase):
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")
         self.assertTrue(len(result_observation))
 
+        first_observation = result_observation[0]
+        self.assertNotEqual("", first_observation["observation_datetime"])
+
         result_condition = read_csv_file_as_dict("./test/output/condition_occurrence_dx_cdm.csv")
         self.assertTrue(len(result_condition))
         # TODO: Add conditions that map to other domains
 
+        self.assertNotEquals("", result_condition[0]["condition_start_datetime"])
+
         result_procedure = read_csv_file_as_dict("./test/output/procedure_cdm.csv")
         self.assertTrue(len(result_procedure))
         # TODO: Add procedures that map to other domains
+
+        self.assertNotEquals("", result_procedure[0]["procedure_datetime"])
 
         result_drug_exposure = read_csv_file_as_dict("./test/output/drug_exposure_cdm.csv")
         self.assertTrue(len(result_drug_exposure))

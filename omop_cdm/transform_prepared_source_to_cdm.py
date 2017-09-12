@@ -249,7 +249,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                            {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                           ("s_condition_code", "condition_source_value"),
                           ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
-                          ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
+                          ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"}),
+                          ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"})]
 
     condition_rules_dx_class = build_input_output_mapper(condition_rules_dx)
 
@@ -508,7 +509,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
             if "m_procedure_code_oid" in input_dict:
 
-                if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes", "HCPCS"):
+                if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes",
+                                                           "HCPCS"):
                     result_dict = procedure_code_map.map(input_dict)
 
                     if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
@@ -568,7 +570,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                    DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj,
                                                    drug_exposure_router_obj)
-
     drug_exposure_runner_obj.run()
 
 
@@ -693,6 +694,7 @@ def create_payer_plan_period_rules(s_person_id_mapper):
 
     return payer_plan_period_rules
 
+
 def procedure_coding_system(input_dict, field="m_procedure_code_oid"):
     """Determine from the OID in procedure coding system"""
     coding_system_oid = input_dict[field]
@@ -754,7 +756,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                      CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
                                      CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
                                      CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
-                                      ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
+                                     ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
 
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [
@@ -769,9 +771,9 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                   {"visit_occurrence_id": "visit_occurrence_id"}),
                                  ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                                   {"date": "procedure_date"}),
+                                 ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "procedure_datetime"}),
                                  ("s_procedure_code", "procedure_source_value"),
-                                 ("s_rank", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})
-                                 ]
+                                 ("s_rank", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})]
 
     return procedure_rules_encounter
 
@@ -907,6 +909,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                       {"visit_occurrence_id": "visit_occurrence_id"}),
                                      ("s_obtained_datetime", SplitDateTimeWithTZ(),
                                       {"date": "observation_date", "time": "observation_time"}),
+                                     ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
                                      ("s_type_code", "observation_source_value"),
                                      ("s_type_code", measurement_code_mapper,
                                       {"CONCEPT_ID": "observation_source_concept_id"}),
@@ -924,8 +927,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                       {"norm_numeric_value": "value_source_value",
                                        "norm_codified_value_primary_display": "value_source_value",
                                        "result_primary_display": "value_source_value",
-                                       "norm_text_value": "value_source_value"})
-                                     ]
+                                       "norm_text_value": "value_source_value"})]
 
     return measurement_rules, measurement_observation_rules
 
@@ -976,13 +978,13 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
 
     drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
                                               CodeMapperClassSqliteJSONClass(multum_json, "s_drug_code"),  # MULTUM
-                                            CascadeMapper(
+                                               CascadeMapper(
                                                 ChainMapper(CodeMapperClassSqliteJSONClass(multum_gn_json, "s_drug_code"),
                                                             KeyTranslator({"RXCUI": "RXNORM_ID"})),
                                                 CodeMapperClassSqliteJSONClass(multum_drug_json, "s_drug_code")),
-                                              CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"),
-                                            KeyTranslator({"s_drug_code": "RXNORM_ID"}),
-                                              CodeMapperClassSqliteJSONClass(ndc_code_mapper_json)
+                                                CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"),
+                                               KeyTranslator({"s_drug_code": "RXNORM_ID"}),
+                                               CodeMapperClassSqliteJSONClass(ndc_code_mapper_json)
                                               ))
 
     return drug_code_mapper
@@ -1023,16 +1025,18 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     drug_source_concept_mapper = ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
                                                            rxnorm_name_mapper_chained))
 
-    rxnorm_bn_in_mapper_json = os.path.join(json_map_directory, "select_n_in__ot___from___select_bn_rxcui.csv.bn_rxcui.json")
-    rxnorm_bn_sbdf_mapper_json = os.path.join(json_map_directory, "select_tt_n_sbdf__ott___from___select_bn.csv.bn_rxcui.json")
+    rxnorm_bn_in_mapper_json = os.path.join(json_map_directory,
+                                            "select_n_in__ot___from___select_bn_rxcui.csv.bn_rxcui.json")
+    rxnorm_bn_sbdf_mapper_json = os.path.join(json_map_directory,
+                                              "select_tt_n_sbdf__ott___from___select_bn.csv.bn_rxcui.json")
 
     rxnorm_bn_in_mapper = CodeMapperClassSqliteJSONClass(rxnorm_bn_in_mapper_json,"RXNORM_ID")
     rxnorm_bn_sbdf_mapper = CodeMapperClassSqliteJSONClass(rxnorm_bn_sbdf_mapper_json, "RXNORM_ID")
 
     rxnorm_str_bn_in_mapper_json = os.path.join(json_map_directory,
-                                            "select_n_in__ot___from___select_bn_rxcui.csv.bn_str.json")
+                                                "select_n_in__ot___from___select_bn_rxcui.csv.bn_str.json")
     rxnorm_str_bn_sbdf_mapper_json = os.path.join(json_map_directory,
-                                              "select_tt_n_sbdf__ott___from___select_bn.csv.bn_str.json")
+                                                  "select_tt_n_sbdf__ott___from___select_bn.csv.bn_str.json")
 
     rxnorm_str_bn_in_mapper = CodeMapperClassSqliteJSONClass(rxnorm_str_bn_in_mapper_json)
     rxnorm_str_bn_sbdf_mapper = CodeMapperClassSqliteJSONClass(rxnorm_str_bn_sbdf_mapper_json)
@@ -1111,6 +1115,8 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("s_dose", "dose_source_value"),
                         ("s_start_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
                         ("s_end_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
+                        ("s_start_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
+                        ("s_end_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                         ("s_quantity", "quantity"),
                         ("s_dose_unit", "dose_unit_source_value"),
                         ("s_dose_unit", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
