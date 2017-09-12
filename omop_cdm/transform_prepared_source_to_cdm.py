@@ -79,7 +79,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                              obs_per_rules, output_class_obj, in_out_map_obj, obs_router_obj)
     obs_per_runner_obj.run()
 
-
     #### Care Sites ####
 
     care_site_rules = [
@@ -99,7 +98,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                            output_class_obj, in_out_map_obj, care_site_router_obj)
 
     care_site_runner_obj.run()
-
 
     care_site_json_file_name = create_json_map_from_csv_file(output_care_site_csv, "care_site_source_value",
                                                              "care_site_id")
@@ -137,7 +135,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                              "visit_occurrence_id")
     encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
 
-    ### Benefit coverage period ###
+    #### Benefit Coverage Period ####
 
     payer_plan_period_rules = create_payer_plan_period_rules(s_person_id_mapper)
 
@@ -154,7 +152,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                        payer_plan_period_router_obj
                                                        )
     payer_plan_period_runner_obj.run()
-
 
     #### MEASUREMENT and OBSERVATION dervived from 'source_observation.csv' ####
     snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
@@ -180,7 +177,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
-    snomed_json = os.path.join(json_map_directory, "CONCEPT_NAME_SNOMED.json")  # We don't need the entire SNOMED
+    snomed_json = os.path.join(json_map_directory, "CONCEPT_NAME_SNOMED.json")
     snomed_mapper = CodeMapperClassSqliteJSONClass(snomed_json)
 
     measurement_rules, observation_measurement_rules = \
@@ -560,6 +557,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
+
+    def drug_post_processing(output_dict):
+        """For concept_id"""
+        fields = ["drug_concept_id", "drug_source_concept_id"]
+        for field in fields:
+            if field not in output_dict:
+                output_dict[field] = 0
+            else:
+                if output_dict[field] is not None:
+                    if not len(output_dict[field]):
+                        output_dict[field] = 0
+        return output_dict
+
     input_med_csv = os.path.join(input_csv_directory, "source_medication.csv")
     output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
 
@@ -569,7 +579,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, SourceMedicationObject(), output_drug_exposure_csv,
                                                    DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj,
-                                                   drug_exposure_router_obj)
+                                                   drug_exposure_router_obj, post_map_func=drug_post_processing)
     drug_exposure_runner_obj.run()
 
 

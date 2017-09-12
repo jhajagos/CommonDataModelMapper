@@ -89,6 +89,9 @@ class TestMapping(unittest.TestCase):
         result_drug_exposure = read_csv_file_as_dict("./test/output/drug_exposure_cdm.csv")
         self.assertTrue(len(result_drug_exposure))
 
+        first_drug_exposure = result_drug_exposure[0]
+        self.assertNotEquals("0", first_drug_exposure["drug_concept_id"])
+
 
 if __name__ == '__main__':
     unittest.main()
