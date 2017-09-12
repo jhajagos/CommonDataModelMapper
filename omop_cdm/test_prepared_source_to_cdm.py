@@ -93,5 +93,32 @@ class TestMapping(unittest.TestCase):
         self.assertNotEquals("0", first_drug_exposure["drug_concept_id"])
 
 
+class TestCodeMappers(unittest.TestCase):
+    def setUp(self):
+
+        with open("./test/test_config.json") as f:
+            self.config = json.load(f)
+
+    def test_rxnorm_code_mapper(self):
+        rxcui_mapper = tpsc.generate_rxcui_drug_code_mapper(self.config["json_map_directory"])
+
+        input_dict_1 = {"s_drug_text": "Ciptodex", "s_drug_code": "00065853302",
+                        "m_drug_code_oid": "2.16.840.1.113883.6.69"}
+
+        output_dict_1 = rxcui_mapper.map(input_dict_1)
+
+        #self.assertTrue("RXNORM_ID" in output_dict_1)
+
+
+        input_dict_2 = {"s_drug_text": "Abilify", "s_drug_code": "352393", "m_drug_code_oid": "2.16.840.1.113883.6.88"}
+
+        output_dict_2 = rxcui_mapper.map(input_dict_2)
+
+        print(output_dict_2)
+
+        self.assertTrue("RXNORM_ID" in output_dict_2)
+
+
+
 if __name__ == '__main__':
     unittest.main()

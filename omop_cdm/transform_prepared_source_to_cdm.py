@@ -969,7 +969,7 @@ def case_mapper_drug_code(input_dict, field="m_drug_code_oid"):
         return 1
     elif drug_coding_system_name == "Multum Main Drug Code (MMDC)":
         return 2
-    elif drug_coding_system_name == "RxNorm (RxCUI)":
+    elif drug_coding_system_name == "RxNorm (RXCUI)":
         return 3
     elif drug_coding_system_name == "NDC":
         return 4
@@ -979,6 +979,8 @@ def case_mapper_drug_code(input_dict, field="m_drug_code_oid"):
 
 def generate_rxcui_drug_code_mapper(json_map_directory):
 
+    """Maps drug concepts to RxNorm CUIs"""
+
     multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
     multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.MULDRUG_ID.json")
     multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
@@ -987,14 +989,14 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
     ndc_code_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_NDC.json")
 
     drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
-                                              CodeMapperClassSqliteJSONClass(multum_json, "s_drug_code"),  # MULTUM
+                                              CodeMapperClassSqliteJSONClass(multum_json, "s_drug_code"),  # 0
                                                CascadeMapper(
                                                 ChainMapper(CodeMapperClassSqliteJSONClass(multum_gn_json, "s_drug_code"),
                                                             KeyTranslator({"RXCUI": "RXNORM_ID"})),
-                                                CodeMapperClassSqliteJSONClass(multum_drug_json, "s_drug_code")),
-                                                CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"),
-                                               KeyTranslator({"s_drug_code": "RXNORM_ID"}),
-                                               CodeMapperClassSqliteJSONClass(ndc_code_mapper_json)
+                                                CodeMapperClassSqliteJSONClass(multum_drug_json, "s_drug_code")), #1
+                                                CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"), #2
+                                               KeyTranslator({"s_drug_code": "RXNORM_ID"}), #3
+                                               CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code") #4
                                               ))
 
     return drug_code_mapper

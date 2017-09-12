@@ -532,6 +532,10 @@ class InputOutputMapper(object):
             for key in mapped_dict_instance:
                 mapped_dict[key] = mapped_dict_instance[key]
 
+        #
+        # logging.debug(input_dict)
+        # logging.debug(mapped_dict)
+
         return mapped_dict
 
     def __len__(self):
