@@ -265,6 +265,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                              {"visit_occurrence_id": "visit_occurrence_id"}),
                             ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                              {"date": "measurement_date", "time": "measurement_time"}),
+                            ("s_start_condition_datetime", DateTimeWithTZ(),
+                             {"datetime": "measurement_datetime"}),
                             ("s_condition_code", "measurement_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
                              {"CONCEPT_ID": "measurement_source_concept_id",
@@ -293,6 +295,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                              {"visit_occurrence_id": "visit_occurrence_id"}),
                             ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                              {"date": "observation_date", "time": "observation_time"}),
+                            ("s_start_condition_datetime", DateTimeWithTZ(),
+                             {"datetime": "observation_datetime"}),
                             ("s_condition_code", "observation_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
                              {"CONCEPT_ID": "observation_source_concept_id",
@@ -326,6 +330,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                      {"visit_occurrence_id": "visit_occurrence_id"}),
                                     ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                                      {"date": "procedure_date"}),
+                                    ("s_start_condition_datetime", DateTimeWithTZ(),
+                                     {"datetime": "procedure_datetime"}),
                                     ("s_condition_code", "procedure_source_value"),
                                     (("s_condition_code", "m_condition_code_oid"), ICDMapper,
                                      {"CONCEPT_ID": "procedure_source_concept_id",
@@ -416,6 +422,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                          {"visit_occurrence_id": "visit_occurrence_id"}),
                                         ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                                          {"date": "measurement_date", "time": "measurement_time"}),
+                                        ("s_start_procedure_datetime", DateTimeWithTZ(),
+                                         {"datetime": "measurement_datetime"}),
                                         ("s_procedure_code", "measurement_source_value"),
                                         (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                                          {"CONCEPT_ID": "measurement_source_concept_id",
@@ -443,6 +451,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                               ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                                {"date": "observation_date", "time": "observation_time"}),
                               ("s_procedure_code", "observation_source_value"),
+                              ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
                               (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                                {"CONCEPT_ID": "observation_source_concept_id",
                                 "MAPPED_CONCEPT_ID": "observation_concept_id"})]
@@ -464,6 +473,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                         {"visit_occurrence_id": "visit_occurrence_id"}),
                        ("procedure_start_datetime", SplitDateTimeWithTZ(),
                         {"date": "drug_exposure_start_date"}),
+                       ("procedure_start_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
                        ("s_procedure_code", "drug_source_value"),
                        (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                         {"CONCEPT_ID": "drug_source_concept_id",
@@ -488,6 +498,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                           {"date": "device_exposure_start_date"}),
+                         ("s_start_procedure_datetime", DateTimeWithTZ(),
+                          {"datetime": "device_exposure_start_datetime"}),
                          ("s_procedure_code", "device_source_value"),
                          (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                           {"CONCEPT_ID": "device_source_concept_id",
@@ -556,7 +568,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                 return NoOutputClass()
         else:
             return NoOutputClass()
-
 
     def drug_post_processing(output_dict):
         """For concept_id"""
@@ -1002,9 +1013,9 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
     return drug_code_mapper
 
 
-def generate_drug_name_mapper(json_map_directory):
+def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text"):
     rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
-    rxnorm_name_mapper = CodeMapperClassSqliteJSONClass(rxnorm_name_json, "drug_primary_display")
+    rxnorm_name_mapper = CodeMapperClassSqliteJSONClass(rxnorm_name_json, drug_field_name)
 
     def string_to_cap_first_letter(raw_string):
         if len(raw_string):
@@ -1014,7 +1025,7 @@ def generate_drug_name_mapper(json_map_directory):
 
     rxnorm_name_mapper_chained = CascadeMapper(rxnorm_name_mapper,
                                                ChainMapper(
-                                                   TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper))
+                                                           TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper))
 
     return rxnorm_name_mapper_chained
 
@@ -1072,7 +1083,6 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                                                       },
                                                      ),
                                    drug_type_code_mapper)
-
 
     # TODO: Rework this mapper not to be static code
     # Source: http://forums.ohdsi.org/t/route-standard-concepts-not-standard-anymore/1300/7

@@ -106,18 +106,22 @@ class TestCodeMappers(unittest.TestCase):
                         "m_drug_code_oid": "2.16.840.1.113883.6.69"}
 
         output_dict_1 = rxcui_mapper.map(input_dict_1)
-
         #self.assertTrue("RXNORM_ID" in output_dict_1)
-
 
         input_dict_2 = {"s_drug_text": "Abilify", "s_drug_code": "352393", "m_drug_code_oid": "2.16.840.1.113883.6.88"}
 
         output_dict_2 = rxcui_mapper.map(input_dict_2)
 
-        print(output_dict_2)
-
         self.assertTrue("RXNORM_ID" in output_dict_2)
 
+    def test_rxnorm_name_mapper(self):
+        rxnorm_name_mapper = tpsc.generate_drug_name_mapper(self.config["json_map_directory"])
+
+        input_dict_1 = {"s_drug_text": "Abilify"}
+
+        output_dict_1 = rxnorm_name_mapper.map(input_dict_1)
+
+        self.assertTrue("CONCEPT_ID" in output_dict_1)
 
 
 if __name__ == '__main__':
