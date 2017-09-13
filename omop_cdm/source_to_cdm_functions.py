@@ -1,4 +1,5 @@
-from mapping_classes import MapperClass
+from mapping_classes import MapperClass, InputClassCSVRealization, OutputClassCSVRealization, \
+    build_input_output_mapper, RunMapperAgainstSingleInputRealization
 import time
 import csv
 import os
@@ -174,3 +175,35 @@ def capitalize_words_and_normalize_spacing(input_string):
         capitalized_input_string += token[0].upper() + token[1:].lower() + " "
     return capitalized_input_string.strip()
 
+
+def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
+                        output_obj, in_out_map_obj, input_router_func, pre_map_func=None, post_map_func=None):
+
+    input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
+    output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)
+
+    map_rules_obj = build_input_output_mapper(map_rules_list)
+
+    output_obj.register(output_class_obj, output_csv_class_obj)
+
+    in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)
+
+    map_runner_obj = RunMapperAgainstSingleInputRealization(input_csv_class_obj, in_out_map_obj, output_obj,
+                                                            input_router_func, pre_map_func, post_map_func)
+
+    return map_runner_obj
+
+
+def register_to_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj,
+                           map_rules_list,
+                           output_obj, in_out_map_obj):
+
+    input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
+
+    output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)
+
+    map_rules_obj = build_input_output_mapper(map_rules_list)
+
+    output_obj.register(output_class_obj, output_csv_class_obj)
+
+    in_out_map_obj.register(input_class_obj, output_class_obj, map_rules_obj)

@@ -123,6 +123,33 @@ class TestCodeMappers(unittest.TestCase):
 
         self.assertTrue("CONCEPT_ID" in output_dict_1)
 
+    def test_d_code(self):
+        drug_code_mapper = tpsc.generate_rxcui_drug_code_mapper(self.config["json_map_directory"])
+
+        dict_to_map_1 = {"s_drug_code": "d00313", "m_drug_code_oid": "2.16.840.1.113883.6.314"}
+
+        mapping_result_1 = drug_code_mapper.map(dict_to_map_1)
+        #print(mapping_result_1)
+        self.assertTrue(len(mapping_result_1))
+
+        dict_to_map_2 = {"s_drug_code": "d03431", "m_drug_code_oid": "2.16.840.1.113883.6.314"}
+
+        mapping_result_2 = drug_code_mapper.map(dict_to_map_2)
+
+        self.assertTrue(len(mapping_result_2))
+
+        rxnorm_code_mapper_json = os.path.join(self.config["json_map_directory"], "CONCEPT_CODE_RxNorm.json")
+
+        rxnorm_code_mapper = tpsc.CoderMapperJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
+
+        rxnorm_code_mapper_concept = tpsc.ChainMapper(drug_code_mapper, rxnorm_code_mapper)
+
+        mapping_result3 = rxnorm_code_mapper_concept.map(dict_to_map_1)
+
+        #print(mapping_result3)
+
+        self.assertTrue('S', mapping_result3["STANDARD_CONCEPT"])
+
 
 if __name__ == '__main__':
     unittest.main()
