@@ -1,4 +1,8 @@
 """
+
+Build JSON maps from a vocabulary to an RxNorm RXCUI
+
+File layout of RXNCONSO.RRF file
 [('2', 0), #RXCUI
  ('ENG', 1),
  ('', 2),
@@ -19,7 +23,6 @@
  ('', 17),
  ('', 18)]
 """
-
 import csv
 import json
 import os
@@ -43,7 +46,7 @@ def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RX
     output_json_file_name = os.path.join(output_directory, "RxNorm_" + sab + "_" + tty + ".json")
 
     with open(output_json_file_name, "w") as fw:
-        json.dump(lookup_dict, fw, sort_keys = True, indent = 4, separators = (',', ': '))
+        json.dump(lookup_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 if __name__ == "__main__":
@@ -54,5 +57,3 @@ if __name__ == "__main__":
          "E:\\data\\RxNorm_full_09062016\\rrf\\")
     main("E:\\data\\RxNorm_full_09062016\\rrf\\RXNCONSO.RRF", "MMSL", "BD", "CODE",
          "E:\\data\\RxNorm_full_09062016\\rrf\\")
-
-

@@ -177,7 +177,10 @@ def capitalize_words_and_normalize_spacing(input_string):
 
 
 def generate_mapper_obj(input_csv_file_name, input_class_obj, output_csv_file_name, output_class_obj, map_rules_list,
-                        output_obj, in_out_map_obj, input_router_func, pre_map_func=None, post_map_func=None):
+                        output_obj, in_out_map_obj, input_router_func=None, pre_map_func=None, post_map_func=None):
+
+    if input_router_func is None:
+        input_router_func = lambda x: output_class_obj
 
     input_csv_class_obj = InputClassCSVRealization(input_csv_file_name, input_class_obj)
     output_csv_class_obj = OutputClassCSVRealization(output_csv_file_name, output_class_obj)

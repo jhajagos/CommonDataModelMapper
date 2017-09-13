@@ -2,12 +2,15 @@ from hi_classes import *
 from prepared_source_classes import *
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
     CoderMapperJSONClass
-from source_to_cdm_functions import build_input_output_mapper
+from source_to_cdm_functions import generate_mapper_obj
 
 import argparse
 import json
 import csv
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 def main(input_csv_directory, output_csv_directory):
@@ -33,14 +36,34 @@ def main(input_csv_directory, output_csv_directory):
 
     person_ethnicity_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_ethnicity.json"))
 
-    ph_f_person_map = [("empi_id", "s_person_id"),
-                       ("birth_date", "s_"),
-                       ("gender", "s_gender"),
+    ["s_person_id", "s_gender", "m_gender", "s_birth_datetime", "s_death_datetime", "s_race",
+     "m_race", "s_ethnicity", "m_ethnicity", "k_location"]
+
+    ph_f_person_rules = [("empi_id", "s_person_id"),
+                         ("birth_date", "s_birth_datetime"),
+                         ("gender_display", "s_gender"),
+                         ("gender_display", "m_gender"),
+                         ("empi_id", person_race_code_mapper, {"description": "m_race"}),
+                         ("empi_id", person_race_code_mapper, {"code": "s_race"}),
+                         ("empi_id", person_ethnicity_code_mapper, {"description": "m_ethnicity"}),
+                         ("empi_id", person_ethnicity_code_mapper, {"code": "s_ethnicity"}),
+                         ("deceased_dt_tm", "s_death_datetime")
                        ]
 
+    source_person_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_person_csv,
+                                                   SourcePersonObject(), ph_f_person_rules,
+                                                   output_class_obj, in_out_map_obj)
 
-def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name, code_field_name, description_field_name,
-                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Ethnic group not given - patient refused", ""], output_directory="./"):
+    source_person_runner_obj.run()
+
+    # Extract care sites
+
+
+def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name,
+                                code_field_name, description_field_name,
+                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown",
+                                                        "Ethnic group not given - patient refused", ""],
+                                output_directory="./"):
 
     """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
 
