@@ -1,5 +1,6 @@
-from hi_classes import PHDPersonObject, PHFEncounterObject
-from prepared_source_classes import SourcePersonObject
+from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod
+from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+    SourceObservationPeriodObject
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
     CoderMapperJSONClass, TransformMapper, FunctionMapper
 from source_to_cdm_functions import generate_mapper_obj
@@ -9,6 +10,7 @@ import json
 import csv
 import os
 import logging
+import hashlib
 
 logging.basicConfig(level=logging.INFO)
 
@@ -36,9 +38,6 @@ def main(input_csv_directory, output_csv_directory):
 
     person_ethnicity_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_ethnicity.json"))
 
-    ["s_person_id", "s_gender", "m_gender", "s_birth_datetime", "s_death_datetime", "s_race",
-     "m_race", "s_ethnicity", "m_ethnicity", "k_location"]
-
     ph_f_person_rules = [("empi_id", "s_person_id"),
                          ("birth_date", "s_birth_datetime"),
                          ("gender_display", "s_gender"),
@@ -57,15 +56,65 @@ def main(input_csv_directory, output_csv_directory):
     source_person_runner_obj.run()
 
     # Extract care sites
-
     encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
-    lookup_csv = os.path.join(input_csv_directory, "hi_care_location.csv")
+    care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
-    build_name_lookup_csv(encounter_csv, lookup_csv, ["facility", "hospital_service_code", "hospital_service_display",
+    md5_func = lambda x: hashlib.md5(x).hexdigest()
+
+    key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv, ["facility", "hospital_service_code",
+                                                                                "hospital_service_display",
                                                       "hospital_service_coding_system_id"],
-                          ["facility", "hospital_service_display"])
+                                         ["facility", "hospital_service_display"], hashing_func=md5_func)
 
+    care_site_name_mapper = FunctionMapper(build_key_func_dict(["hospital_service_display", "facility"], separator=" - "))
 
+    care_site_rules = [("key_name","k_care_site"),
+                       (("hospital_service_display", "hospital_service_code","facility"),
+                        care_site_name_mapper,
+                        {"mapped_value": "s_care_site_name"})]
+
+    source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
+
+    care_site_runner_obj = generate_mapper_obj(care_site_csv, HiCareSite(), source_care_site_csv,
+                                               SourceCareSiteObject(), care_site_rules,
+                                               output_class_obj, in_out_map_obj)
+
+    care_site_runner_obj.run()
+
+    hi_observation_period_csv = os.path.join(input_csv_directory, "EMPI_ID_Observation_Period.csv")
+
+    observation_period_rules = [("empi_id", "s_person_id"),
+                                ("min_service_dt_tm", "s_start_observation_datetime"),
+                                ("max_service_dt_tm", "s_end_observation_datetime")]
+
+    source_observation_period_csv = os.path.join(output_csv_directory, "source_observation_period.csv")
+
+    observation_runner_obj = generate_mapper_obj(hi_observation_period_csv, EmpIdObservationPeriod(), source_observation_period_csv,
+                                SourceObservationPeriodObject(), observation_period_rules,
+                                output_class_obj, in_out_map_obj)
+
+    observation_runner_obj.run()
+
+    ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type", "m_visit_type",
+     "k_care_site", "i_exclude"]
+
+    ph_f_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
+    source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
+
+    encounter_rules = [("encounter_id", "s_encounter_id"),
+                       ("empi_id", "s_person_id"),
+                       ("service_dt_tm", "s_visit_start_datetime"),
+                       ("discharge_dt_tm", "s_visit_end_datetime"),
+                       ("classification_display", "s_visit_type"),
+                       ("classification_display", "m_visit_type"),
+                       (("facility", "hospital_service_code", "hospital_service_display", "hospital_service_coding_system_id"),
+                        key_care_site_mapper, {"mapped_value": "k_care_site"})
+                      ]
+
+    visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv, SourceEncounterObject(),
+                                           encounter_rules, output_class_obj, in_out_map_obj)
+
+    visit_runner_obj.run()
 
 
 
@@ -113,32 +162,31 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
             json.dump(final_attribute_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def build_key_func_dict(fields, hash_func=None, separator="|"):
+def build_key_func_dict(fields, hashing_func=None, separator="|"):
     if fields.__class__ not in ([].__class__, ().__class__):
         fields = [fields]
 
     def hash_func(input_dict):
-        key_string = ""
+        key_list = []
         for field in fields:
-            key_string += input_dict[field] + separator
+            key_list += [input_dict[field]]
 
-        key_string = key_string[:-1 * len(separator)]
-        if key_string[0:len(separator)] == separator:
-            key_string = key_string[len(separator):]
+        key_list = [kl for kl in key_list if len(kl)]
+        key_string = separator.join(key_list)
 
-        if hash_func is None:
-            key_string = hash_func(key_string)
+        if hashing_func is not None:
+            key_string = hashing_func(key_string)
 
         return key_string
 
     return hash_func
 
 
-def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields):
+def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields, hashing_func=None):
 
     lookup_dict = {}
 
-    key_func = build_key_func_dict(key_fields)
+    key_func = build_key_func_dict(key_fields, hashing_func=hashing_func)
 
     with open(input_csv_file_name, "rb") as f:
         csv_dict = csv.DictReader(f)
@@ -148,6 +196,9 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
             new_dict = {}
             for field_name in field_names:
                 new_dict[field_name] = row_dict[field_name]
+
+            if hashing_func is not None:
+                key_str = hashing_func(key_str)
 
             lookup_dict[key_str] = new_dict
 
@@ -164,11 +215,12 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
 
                 csv_writer.writerow(header)
 
-            row_to_write = [key_name]
-            for field_name in field_names:
-                row_to_write += [row_dict[field_name]]
+            if len(key_name):
+                row_to_write = [key_name]
+                for field_name in row_field_names:
+                    row_to_write += [row_dict[field_name]]
 
-            csv_writer.writerow(row_to_write)
+                csv_writer.writerow(row_to_write)
 
             i += 1
 
@@ -186,4 +238,4 @@ if __name__ == "__main__":
     with open(arg_obj.config_file_name, "r") as f:
         config_dict = json.load(f)
 
-    main(config_dict["csv_input_directory"], config_dict["csv_output_directory"])
+    main(config_dict["csv_input_directory"], config_dict["csv_input_directory"])

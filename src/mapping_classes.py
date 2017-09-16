@@ -325,12 +325,15 @@ class TransformMapper(MapperClass):
 
         return mapped_dict
 
+
 class FunctionMapper(MapperClass):
-    def __init__(self, mapper_func):
-        self.mapper_func
+    def __init__(self, mapper_func, key_name="mapped_value"):
+        self.mapper_func = mapper_func
+        self.key_name = key_name
 
     def map(self, input_dict):
-        return self.mapper_func(input_dict)
+        return {self.key_name: self.mapper_func(input_dict)}
+
 
 class CaseMapper(MapperClass):
     """Case function returns an integer 0....n where it then evaluates"""
