@@ -710,7 +710,8 @@ def create_payer_plan_period_rules(s_person_id_mapper):
         ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
         ("s_start_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_start_date"}),
         ("s_end_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_end_date"}),
-        ("s_payer_name", "payer_source_value")
+        ("m_payer_name", "plan_source_value"),
+        ("m_plan_name", "plan_source_value")
     ]
 
     return payer_plan_period_rules
@@ -815,7 +816,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                                             CoderMapperJSONClass(visit_concept_type_json))
 
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
-    visit_rules = [("s_encounter_id", IdentityMapper(), {"encounter_id": "visit_source_value"}),
+    visit_rules = [("s_encounter_id", "visit_source_value"),
                    ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
                    ("m_visit_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID": 0})),

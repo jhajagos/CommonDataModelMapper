@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 import os
 import sqlalchemy as sa
 
+
 class InputClass(object):
     """Superclass representing the abstract input source"""
     def fields(self):

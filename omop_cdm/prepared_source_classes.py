@@ -80,7 +80,7 @@ class SourceEncounterCoverageObject(PreparedSourceObject):
 
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_payer_date", "s_end_payer_date",
-                "s_payer_name"]
+                "s_payer_name", "m_payer_name", "s_plan_name", "m_plan_name"]
 
 
 class SourceCareSiteObject(PreparedSourceObject):

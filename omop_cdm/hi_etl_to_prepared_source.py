@@ -1,8 +1,9 @@
-from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod
+from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
+    PHFEncounterBenefitCoverage
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject
+    SourceObservationPeriodObject, SourceEncounterCoverageObject
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
-    CoderMapperJSONClass, TransformMapper, FunctionMapper
+    CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper
 from source_to_cdm_functions import generate_mapper_obj
 
 import argparse
@@ -60,13 +61,14 @@ def main(input_csv_directory, output_csv_directory):
     care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
     md5_func = lambda x: hashlib.md5(x).hexdigest()
+    md5_func = None
 
-    key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv, ["facility", "hospital_service_code",
-                                                                                "hospital_service_display",
-                                                      "hospital_service_coding_system_id"],
-                                         ["facility", "hospital_service_display"], hashing_func=md5_func)
+    key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv,
+                                                 ["facility", "hospital_service_code", "hospital_service_display",
+                                                  "hospital_service_coding_system_id"],
+                                                 ["facility", "hospital_service_display"], hashing_func=md5_func)
 
-    care_site_name_mapper = FunctionMapper(build_key_func_dict(["hospital_service_display", "facility"], separator=" - "))
+    care_site_name_mapper = FunctionMapper(build_key_func_dict(["facility", "hospital_service_display"], separator=" - "))
 
     care_site_rules = [("key_name","k_care_site"),
                        (("hospital_service_display", "hospital_service_code","facility"),
@@ -107,7 +109,7 @@ def main(input_csv_directory, output_csv_directory):
                        ("discharge_dt_tm", "s_visit_end_datetime"),
                        ("classification_display", "s_visit_type"),
                        ("classification_display", "m_visit_type"),
-                       (("facility", "hospital_service_code", "hospital_service_display", "hospital_service_coding_system_id"),
+                       (("facility", "hospital_service_display"),
                         key_care_site_mapper, {"mapped_value": "k_care_site"})
                       ]
 
@@ -115,6 +117,33 @@ def main(input_csv_directory, output_csv_directory):
                                            encounter_rules, output_class_obj, in_out_map_obj)
 
     visit_runner_obj.run()
+
+    # Benefit Coverage
+
+    ph_f_encounter_benefit_coverage_csv = os.path.join(input_csv_directory, "PH_F_Encounter_Benefit_Coverage.csv")
+    source_encounter_coverage_csv = os.path.join(output_csv_directory, "source_encounter_coverage.csv")
+
+    encounter_coverage_rules = [("empi_id", "s_person_id"),
+                               ("encounter_id", "s_encounter_id"),
+                               ("begin_dt_tm","s_start_payer_date"),
+                               ("end_dt_tm", FilterHasKeyValueMapper(["end_dt_tm", "begin_dt_tm"], empty_value="0"),
+                                {"end_dt_tm": "s_end_payer_date", "begin_dt_tm": "s_end_payer_date"}),
+                               ("payer_name", "s_payer_name"),
+                               ("payer_name", "m_payer_name"),
+                               ("plan_name", "s_plan_name"),
+                               ("benefit_type_primary_display", "m_plan_name")]
+
+    encounter_benefit_runner_obj = generate_mapper_obj(ph_f_encounter_benefit_coverage_csv, PHFEncounterBenefitCoverage(),
+                                                       source_encounter_coverage_csv, SourceEncounterCoverageObject(),
+                                                       encounter_coverage_rules, output_class_obj, in_out_map_obj)
+
+    encounter_benefit_runner_obj.run()
+
+
+
+
+
+
 
 
 

@@ -48,3 +48,8 @@ class EmpIdObservationPeriod(InputClass):
 class HiCareSite(InputClass):
     def fields(self):
         return []
+
+
+class PHFEncounterBenefitCoverage(InputClass):
+    def fields(self):
+        return []
