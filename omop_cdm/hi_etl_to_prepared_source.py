@@ -1,7 +1,7 @@
-from hi_classes import *
-from prepared_source_classes import *
+from hi_classes import PHDPersonObject, PHFEncounterObject
+from prepared_source_classes import SourcePersonObject
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
-    CoderMapperJSONClass
+    CoderMapperJSONClass, TransformMapper, FunctionMapper
 from source_to_cdm_functions import generate_mapper_obj
 
 import argparse
@@ -58,6 +58,17 @@ def main(input_csv_directory, output_csv_directory):
 
     # Extract care sites
 
+    encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
+    lookup_csv = os.path.join(input_csv_directory, "hi_care_location.csv")
+
+    build_name_lookup_csv(encounter_csv, lookup_csv, ["facility", "hospital_service_code", "hospital_service_display",
+                                                      "hospital_service_coding_system_id"],
+                          ["facility", "hospital_service_display"])
+
+
+
+
+
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name,
                                 code_field_name, description_field_name,
@@ -100,6 +111,69 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
 
         with open(full_attribute_json_file_name, "w") as fw:
             json.dump(final_attribute_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def build_key_func_dict(fields, hash_func=None, separator="|"):
+    if fields.__class__ not in ([].__class__, ().__class__):
+        fields = [fields]
+
+    def hash_func(input_dict):
+        key_string = ""
+        for field in fields:
+            key_string += input_dict[field] + separator
+
+        key_string = key_string[:-1 * len(separator)]
+        if key_string[0:len(separator)] == separator:
+            key_string = key_string[len(separator):]
+
+        if hash_func is None:
+            key_string = hash_func(key_string)
+
+        return key_string
+
+    return hash_func
+
+
+def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields):
+
+    lookup_dict = {}
+
+    key_func = build_key_func_dict(key_fields)
+
+    with open(input_csv_file_name, "rb") as f:
+        csv_dict = csv.DictReader(f)
+
+        for row_dict in csv_dict:
+            key_str = key_func(row_dict)
+            new_dict = {}
+            for field_name in field_names:
+                new_dict[field_name] = row_dict[field_name]
+
+            lookup_dict[key_str] = new_dict
+
+    with open(output_csv_file_name, "wb") as fw:
+        csv_writer = csv.writer(fw)
+
+        i = 0
+        for key_name in lookup_dict:
+
+            row_dict = lookup_dict[key_name]
+            if i == 0:
+                row_field_names = row_dict.keys()
+                header = ["key_name"] + row_field_names
+
+                csv_writer.writerow(header)
+
+            row_to_write = [key_name]
+            for field_name in field_names:
+                row_to_write += [row_dict[field_name]]
+
+            csv_writer.writerow(row_to_write)
+
+            i += 1
+
+    return FunctionMapper(key_func)
+
 
 if __name__ == "__main__":
 
