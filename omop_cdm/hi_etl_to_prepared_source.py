@@ -1,7 +1,7 @@
 from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
-    PHFEncounterBenefitCoverage
+    PHFEncounterBenefitCoverage, PHFResultObject
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject, SourceEncounterCoverageObject
+    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
     CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper
 from source_to_cdm_functions import generate_mapper_obj
@@ -139,9 +139,71 @@ def main(input_csv_directory, output_csv_directory):
 
     encounter_benefit_runner_obj.run()
 
+    ph_f_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
+
+    source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
+
+    """
+    measurement_rules = [(":row_id", "measurement_id"),
+                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                         ("service_date", SplitDateTimeWithTZ(),
+                          {"date": "measurement_date", "time": "measurement_time"}),
+                         ("result_code", "measurement_source_value"),
+                         ("result_code", measurement_code_mapper, {"CONCEPT_ID": "measurement_source_concept_id"}),
+                         ("result_code", measurement_code_mapper, {"CONCEPT_ID": "measurement_concept_id"}),
+                         (
+                         "result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
+                         ("norm_numeric_value", FloatMapper(), "value_as_number"),
+                         (("norm_codified_value_code", "interpretation_primary_display", "norm_text_value"),
+                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
+                         # norm_codified_value_primary_display",
+                         ("norm_unit_of_measure_primary_display", "unit_source_value"),
+                         ("norm_unit_of_measure_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
+                         (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display",
+                           "norm_text_value"),
+                          numeric_coded_mapper,  # ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
+                          {"norm_numeric_value": "value_source_value",
+                           "norm_codified_value_primary_display": "value_source_value",
+                           "result_primary_display": "value_source_value",
+                           "norm_text_value": "value_source_value"}),
+                         ("norm_ref_range_low", FloatMapper(), "range_low"),
+                         # TODO: Some values contain non-numeric elements
+                         ("norm_ref_range_high", FloatMapper(), "range_high")]
+    """
+
+    ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
+    "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
+    "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
+    "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
+
+    result_rules = [("empi_id", "s_person_id"),
+                    ("encounter_id", "s_encounter_id"),
+                    ("service_date", "s_obtained_datetime"),
+                    ("result_display", "s_type_name"),
+                    ("result_code", "s_type_code"),
+                    ("result_coding_system_id", "m_type_code_oid"),
+                    (("norm_codified_value_primary_display", "result_primary_display",
+                           "norm_text_value"), FilterHasKeyValueMapper(["norm_codified_value_primary_display",
+                                                                         "norm_text_value"]),
+                     {"norm_codified_value_primary_display": "s_result_text",
+                      "norm_text_value": "s_result_text"}),
+                    ("norm_numeric_value", "s_result_numeric"),
+                    ("norm_date_value", "s_result_datetime"),
+                    (("norm_codified_value_code", "interpretation_primary_display"),
+                     FilterHasKeyValueMapper(["norm_codified_value_code", "interpretation_primary_display"]),
+                     {"norm_codified_value_code": "s_result_code", "interpretation_primary_display": "s_result_code"}),
+                    ("norm_unit_of_measure_display","s_result_unit"),
+                    ("norm_unit_of_measure_code", "s_result_unit_code"),
+                    ("norm_ref_range_low", "s_result_numeric_lower"),
+                    ("norm_ref_range_high", "s_result_numeric_upper")]
 
 
 
+    result_mapper_obj = generate_mapper_obj(ph_f_result_csv, PHFResultObject(), source_result_csv, SourceResultObject(),
+                                            result_rules,  output_class_obj, in_out_map_obj)
+
+    result_mapper_obj.run()
 
 
 

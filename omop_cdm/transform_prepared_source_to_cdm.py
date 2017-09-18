@@ -833,7 +833,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     return visit_rules
 
 
-def create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, encounter_id_mapper, snomed_mapper, snomed_code_mapper):
+def create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Result to Measurement"""
 
     unit_measurement_mapper = snomed_code_mapper
@@ -870,7 +870,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
 
     measurement_rules = [(":row_id", "measurement_id"),
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
-                         ("s_encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                         ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
                          ("s_type_name", "measurement_source_value"),
@@ -894,7 +894,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     # TODO: observation_type_concept_id <- "Observation recorded from EHR"
     measurement_observation_rules = [(":row_id", "observation_id"),
                                      ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
-                                     ("s_encounter_id", encounter_id_mapper,
+                                     ("s_encounter_id", s_encounter_id_mapper,
                                       {"visit_occurrence_id": "visit_occurrence_id"}),
                                      ("s_obtained_datetime", SplitDateTimeWithTZ(),
                                       {"date": "observation_date", "time": "observation_time"}),
