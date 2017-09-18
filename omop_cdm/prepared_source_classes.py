@@ -41,7 +41,8 @@ class SourceEncounterObject(PreparedSourceObject):
 
     def _fields(self):
         return ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
-                "m_visit_type", "k_care_site", "i_exclude"]
+                "m_visit_type", "k_care_site", "s_discharge_to", "m_discharge_to",
+                "s_admitting_source", "m_admitting_source", "i_exclude"]
 
 
 class SourceResultObject(PreparedSourceObject):

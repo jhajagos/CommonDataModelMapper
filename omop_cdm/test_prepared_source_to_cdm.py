@@ -59,6 +59,9 @@ class TestMapping(unittest.TestCase):
         self.assertNotEquals("", first_visit["visit_start_datetime"])
         self.assertNotEquals("", first_visit["visit_end_datetime"])
 
+        self.assertNotEquals("", first_visit["admitting_source_concept_id"])
+        self.assertNotEquals("", first_visit["discharge_to_concept_id"])
+
         result_payer_plan_period = read_csv_file_as_dict("./test/output/payer_plan_period_cdm.csv")
         self.assertEquals(1, len(result_payer_plan_period))
 
@@ -66,6 +69,7 @@ class TestMapping(unittest.TestCase):
         self.assertTrue(len(result_measurement))
 
         first_measurement = result_measurement[0]
+        self.assertTrue(len(first_measurement["visit_occurrence_id"])) # Has a mapped visit_occurrence_id
         self.assertNotEquals("", first_measurement["measurement_datetime"])
 
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")

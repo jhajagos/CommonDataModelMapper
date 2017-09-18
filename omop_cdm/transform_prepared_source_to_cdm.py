@@ -84,8 +84,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     care_site_rules = [
         (":row_id", "care_site_id"),
         ("s_care_site_name", "care_site_name"),
-        ("k_care_site", "care_site_source_value")
-    ]
+        ("k_care_site", "care_site_source_value")]
 
     input_care_site_csv = os.path.join(input_csv_directory, "source_care_site.csv")
     output_care_site_csv = os.path.join(output_csv_directory, "care_site_cdm.csv")
@@ -105,7 +104,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     k_care_site_mapper = CoderMapperJSONClass(care_site_json_file_name, "k_care_site")
 
     #### Visit_Occurrence ###
-    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper)
+
+    snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
+    snomed_code_mapper = CodeMapperClassSqliteJSONClass(snomed_code_json)
+
+    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper)
     input_encounter_csv = os.path.join(input_csv_directory, "source_encounter.csv")
     output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
 
@@ -128,12 +131,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
                                                              "visit_occurrence_id")
 
-    s_encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "encounter_id")
+    s_encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
 
     # Visit ID Map
     encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
                                                              "visit_occurrence_id")
-    encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
 
     #### Benefit Coverage Period ####
 
@@ -154,8 +156,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     payer_plan_period_runner_obj.run()
 
     #### MEASUREMENT and OBSERVATION dervived from 'source_observation.csv' ####
-    snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
-    snomed_code_mapper = CodeMapperClassSqliteJSONClass(snomed_code_json)
+
     snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["s_type_code"]), snomed_code_mapper)
 
     def measurement_router_obj(input_dict):
@@ -326,7 +327,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                  procedure_type_mapper),
                                      {"CONCEPT_ID": "procedure_type_concept_id"}),
                                     ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
-                                    ("s_encounter_id", encounter_id_mapper,
+                                    ("s_encounter_id", s_encounter_id_mapper,
                                      {"visit_occurrence_id": "visit_occurrence_id"}),
                                     ("s_start_condition_datetime", SplitDateTimeWithTZ(),
                                      {"date": "procedure_date"}),
@@ -800,7 +801,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
     return procedure_rules_encounter
 
 
-def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper):
+def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
     visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
@@ -815,6 +816,12 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
                                             CoderMapperJSONClass(visit_concept_type_json))
 
+    place_of_service_json_name = os.path.join(json_map_directory, "CONCEPT_NAME_Place_of_Service.json")
+    place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
+
+    admit_discharge_source_mapper = ChainMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
+
+
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("s_encounter_id", "visit_source_value"),
                    ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
@@ -828,6 +835,10 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                    ("s_visit_end_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_end_date", "time": "visit_end_time"}),
                    ("s_visit_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
+                   ("s_admitting_source", "admitting_source_concept_id"),
+                   ("m_admitting_source", admit_discharge_source_mapper, {"CONCEPT_ID": "admitting_source_concept_id"}),
+                   ("s_discharge_to", "discharge_to_concept_id"),
+                   ("m_discharge_to", admit_discharge_source_mapper, {"CONCEPT_ID": "discharge_to_concept_id"}),
                    ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"})]
 
     return visit_rules
@@ -871,7 +882,6 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     measurement_rules = [(":row_id", "measurement_id"),
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                          ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                         ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date", "time": "measurement_time"}),
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
                          ("s_type_name", "measurement_source_value"),
                          ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
@@ -883,7 +893,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_result_unit", "unit_source_value"),
                          ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
                          (("s_result_numeric", "s_result_text", "s_result_datetime", "s_result_code"),
-                            numeric_coded_mapper,
+                            numeric_coded_mapper, # Map datetime to unix time
                           {"s_result_numeric": "value_source_value",
                            "s_result_text": "value_source_value",
                            "s_result_datetime": "value_source_value",

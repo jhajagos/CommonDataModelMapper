@@ -1,2 +1,2 @@
-s_encounter_id,s_person_id,s_visit_start_datetime,s_visit_end_datetime,s_visit_type,m_visit_type,k_care_site
-10,101,2016-01-01 05:53,2016-01-15,Inpatient,Inpatient Visit,"e83a806a18051ba04fd4ed6d2a3f7497"
+s_encounter_id,s_person_id,s_visit_start_datetime,s_visit_end_datetime,s_visit_type,m_visit_type,k_care_site,s_discharge_to,m_discharge_to,s_admitting_source,m_admitting_source
+10,101,2016-01-01 05:53,2016-01-15,Inpatient,Inpatient Visit,"e83a806a18051ba04fd4ed6d2a3f7497",ED,Emergency Room - Hospital,Left against medical advice,4021968
