@@ -1,8 +1,8 @@
 s_person_id,s_encounter_id,s_start_condition_datetime,s_condition_code,m_condition_code_oid,s_sequence_id,m_rank,s_condition_type,s_present_on_admission_indicator
-101,10,2016-01-08,110.0,2.16.840.1.113883.6.103,1,PRIMARY,Discharge,
-101,10,2016-01-08, 088.81,2.16.840.1.113883.6.103,2,SECONDARY,Discharge,
-101,10,2016-01-08,A08.4,2.16.840.1.113883.6.90,3,SECONDARY,Discharge,
-100,,2016-05-05,Z11.59,2.16.840.1.113883.6.90,2,SECONDARY,Discharge,
-100,,2016-04-05,Z86.2,2.16.840.1.113883.6.90,2,SECONDARY,Discharge,
-100,,2016-05-01,Z01.818,2.16.840.1.113883.6.90,2,SECONDARY,Discharge,R79.89
-100,,2016-05-01,R79.89,2.16.840.1.113883.6.90,2,SECONDARY,Discharge,
+101,10,2016-01-08,110.0,2.16.840.1.113883.6.103,1,Primary,Final,
+101,10,2016-01-08, 088.81,2.16.840.1.113883.6.103,2,Secondary,Admitting,
+101,10,2016-01-08,A08.4,2.16.840.1.113883.6.90,3,Secondary,Final,
+100,,2016-05-05,Z11.59,2.16.840.1.113883.6.90,2,Secondary,Discharge,
+100,,2016-04-05,Z86.2,2.16.840.1.113883.6.90,2,Secondary,Final,N
+100,,2016-05-01,Z01.818,2.16.840.1.113883.6.90,2,Secondary,Preliminary,Y
+100,,2016-05-01,R79.89,2.16.840.1.113883.6.90,2,Secondary,Discharge,E

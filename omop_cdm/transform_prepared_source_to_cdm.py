@@ -206,7 +206,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_claim_type_map = \
         ChainMapper(
-            ReplacementMapper({"PRIMARY": "Primary Condition", "SECONDARY": "Secondary Condition"}),
+            ReplacementMapper({"Primary": "Primary Condition", "Secondary": "Secondary Condition"}),
             condition_type_name_map
         )
 
@@ -238,6 +238,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     ICDMapper = CaseMapper(case_mapper_icd9_icd10, CodeMapperClassSqliteJSONClass(icd9cm_json, "s_condition_code"),
                            CodeMapperClassSqliteJSONClass(icd10cm_json, "s_condition_code"))
 
+    s_condition_type_dict = {"Admitting": "52870002", "Final": "89100005", "Preliminary": "148006"}
+    condition_status_snomed_mapper = CodeMapperDictClass(s_condition_type_dict, "s_condition_type")
+    condition_status_mapper = ChainMapper(condition_status_snomed_mapper, snomed_code_mapper)
+
+
     # Required: condition_occurrence_id, person_id, condition_concept_id, condition_start_date
     condition_rules_dx = [(":row_id", "condition_occurrence_id"),
                           ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
@@ -247,6 +252,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                            {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
                           ("s_condition_code", "condition_source_value"),
                           ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
+                          ("s_condition_type", condition_status_mapper, {"CONCEPT_ID": "condition_status_concept_id"}),
+                          ("s_condition_type", "condition_status_source_value"),
                           ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"}),
                           ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"})]
 
@@ -445,7 +452,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                {"observation_id": "observation_id"}),
                               (":row_id", ConstantMapper({"observation_type_concept_id": 0}),
                                {"observation_type_concept_id": "observation_type_concept_id"}),
-                              ("s_person_id_id", s_person_id_mapper, {"person_id": "person_id"}),
+                              ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                               ("s_encounter_id",
                                s_encounter_id_mapper,
                                {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -472,9 +479,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                        ("s_encounter_id", s_encounter_id_mapper,
                         {"visit_occurrence_id": "visit_occurrence_id"}),
-                       ("procedure_start_datetime", SplitDateTimeWithTZ(),
+                       ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                         {"date": "drug_exposure_start_date"}),
-                       ("procedure_start_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
+                       ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
                        ("s_procedure_code", "drug_source_value"),
                        (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                         {"CONCEPT_ID": "drug_source_concept_id",
@@ -486,7 +493,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                          DrugExposureObject())
 
     output_directory_obj.register(DrugExposureObject(), output_drug_proc_csv_obj)
-    in_out_map_obj.register(ProcedureOccurrenceObject(), DrugExposureObject(), drug_rules_proc_class)
+    in_out_map_obj.register(SourceProcedureObject(), DrugExposureObject(), drug_rules_proc_class)
 
     #### Device Exposure from Procedures ####
 
@@ -782,8 +789,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                      ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
 
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
-    procedure_rules_encounter = [
-                                (("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
+    procedure_rules_encounter = [(("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
                                  {"CONCEPT_ID": "procedure_source_concept_id",
                                   "MAPPED_CONCEPT_ID": "procedure_concept_id"},
                                  ),
@@ -812,6 +818,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                            }), # Note: there are no observation type
         CoderMapperJSONClass(visit_concept_json))
 
+
     visit_concept_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit_Type.json")
     visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
                                             CoderMapperJSONClass(visit_concept_type_json))
@@ -819,8 +826,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     place_of_service_json_name = os.path.join(json_map_directory, "CONCEPT_NAME_Place_of_Service.json")
     place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
 
-    admit_discharge_source_mapper = ChainMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
-
+    admit_discharge_source_mapper = CascadeMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
 
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("s_encounter_id", "visit_source_value"),
@@ -835,9 +841,9 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                    ("s_visit_end_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_end_date", "time": "visit_end_time"}),
                    ("s_visit_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
-                   ("s_admitting_source", "admitting_source_concept_id"),
+                   ("s_admitting_source", "admitting_source_value"),
                    ("m_admitting_source", admit_discharge_source_mapper, {"CONCEPT_ID": "admitting_source_concept_id"}),
-                   ("s_discharge_to", "discharge_to_concept_id"),
+                   ("s_discharge_to", "discharge_to_source_value"),
                    ("m_discharge_to", admit_discharge_source_mapper, {"CONCEPT_ID": "discharge_to_concept_id"}),
                    ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"})]
 

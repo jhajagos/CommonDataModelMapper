@@ -80,6 +80,9 @@ class TestMapping(unittest.TestCase):
 
         result_condition = read_csv_file_as_dict("./test/output/condition_occurrence_dx_cdm.csv")
         self.assertTrue(len(result_condition))
+
+        self.assertNotEqual("", result_condition[0]["condition_status_concept_id"])
+
         # TODO: Add conditions that map to other domains
 
         self.assertNotEquals("", result_condition[0]["condition_start_datetime"])
@@ -153,6 +156,8 @@ class TestCodeMappers(unittest.TestCase):
         #print(mapping_result3)
 
         self.assertTrue('S', mapping_result3["STANDARD_CONCEPT"])
+
+
 
 
 if __name__ == '__main__':

@@ -124,8 +124,8 @@ class CodeMapperDictClass(CodeMapperClass):
 
     def __init__ (self, mapper_dict, field_name=None, key_to_map_to=None):
         self.mapper_dict = mapper_dict
-        self.key_to_map_to = key_to_map_to
         self.field_name = field_name
+        self.key_to_map_to = key_to_map_to
 
     def map(self, input_dict):
 
@@ -182,6 +182,7 @@ class CoderMapperJSONClass(CodeMapperClass):
                 return {}
         else:
             return {}
+
 
 class CodeMapperClassSqliteJSONClass(CodeMapperClass):
 
@@ -334,6 +335,12 @@ class FunctionMapper(MapperClass):
 
     def map(self, input_dict):
         return {self.key_name: self.mapper_func(input_dict)}
+
+
+class PassThroughFunctionMapper(FunctionMapper):
+
+    def map(self, input_dict):
+        return self.mapper_func(input_dict)
 
 
 class CaseMapper(MapperClass):

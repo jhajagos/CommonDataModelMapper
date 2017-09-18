@@ -1,10 +1,15 @@
 from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
-    PHFEncounterBenefitCoverage, PHFResultObject
+    PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
+
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject
+    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
+    SourceProcedureObject, SourceMedicationObject
+
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
-    CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper
-from source_to_cdm_functions import generate_mapper_obj
+    CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
+    CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+
+from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
 import argparse
 import json
@@ -100,6 +105,66 @@ def main(input_csv_directory, output_csv_directory):
     ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type", "m_visit_type",
      "k_care_site", "i_exclude"]
 
+    discharge_disposition_dict = {
+        "Skilled Nursing": "Skilled Nursing Facility",
+        "Other Death No Autopsy": "397709008",
+        "Rehab Facility/Unit w/ planned readmit": "Comprehensive Inpatient Rehabilitation Facility",
+        "Left Against Medical Advice": "225928004",
+        "Transfer to a Rehabilitation Facility": "Comprehensive Inpatient Rehabilitation Facility",
+        "Acute Hospital": "Inpatient Hospital",
+        "Other Death Autopsy Unknown": "397709008",
+        "Transfer to a Psychiatric Facility": "Inpatient Psychiatric Facility",
+        "Discharged to skilled nursing facility for skilled care (SNF)": "Skilled Nursing Facility",
+        "Home Hospice": "Hospice",
+        "Hospice Facility": "Hospice",
+        "Psych Hospital/Unit w/ planned readmit": "Inpatient Psychiatric Facility",
+        "Rehab": "Comprehensive Inpatient Rehabilitation Facility",
+        "Inpatient Rehabilitation Facility": "Comprehensive Inpatient Rehabilitation Facility",
+        "Transferred to a short term general hospital for inpatient care": "Inpatient Hospital",
+        "Other Death Autopsy Performed": "397709008",
+        "Expired": "397709008",
+        "Non Srg Dth W/In 48h of Adm No Autopsy": "397709008",
+        "Left against medical advice or discontinued care": "225928004",
+        "Transferred to Stony Brook for Inpatient Care": "Inpatient Hospital",
+        "Long Term Care Facility": "Inpatient Long-term Care",
+        "Federal Hospital": "Inpatient Hospital",
+        "Non Srg Dth W/In 48h of Adm Autopsy Unk": "397709008",
+        "Long Term Care": "Inpatient Long-term Care",
+        "Srg Dth W/In 48h Post Srg No Autopsy": "397709008",
+        "Srg Dth W/In 3-10dy Post Srg No Autopsy": "397709008",
+        "Srg Dth W/In 3-10dy Post Srg Autopsy Unk": "397709008",
+        "Discharged home with hospice care": "Hospice",
+        "Srg Dth W/In 48h Post Srg Autopsy Unk": "397709008",
+        "Died in Operating Room No Autopsy": "397709008",
+        "Died in Operating Room Autopsy Unknown": "397709008",
+        "Non Srg Dth W/In 48h of Adm Autopsy Per": "397709008",
+        "Srg Dth W/In 48h Post Srg Autopsy Per": "397709008",
+        "Srg Dth W/In 3-10dy Post Srg Autopsy Per": "397709008"
+    }
+
+    discharge_disposition_mapper = CodeMapperDictClass(discharge_disposition_dict, "discharge_disposition_display", "m_discharge_to")
+
+    admit_source_dict = {"EO:  Emergency OP Unit": "Emergency Room - Hospital",
+"Routine Admission": "3241000175106",
+"Newborn": "3241000175106",
+"Emergency Department": "Emergency Room - Hospital",
+"TH: Transfer From A Hospital": "Inpatient Hospital",
+"ER": "Emergency Room - Hospital",
+"Transfer from a Hospital": "Inpatient Hospital",
+"Transfer from Trans-Skilled Nursing Fac": "Skilled Nursing Facility",
+"NS: Newborn Sick": "3241000175106",
+"Normal Delivery": "3241000175106",
+"NP: Newborn Premature": "3241000175106",
+"Transfer from Long Island Veteran's Home": "Skilled Nursing Facility",
+"Newborn Transfer": "Inpatient Hospital",
+"Transfer from Psychiatric Facility": "Inpatient Psychiatric Facility",
+"Trans from other Hospital": "Inpatient Hospital",
+"Transfer from Hospice": "Hospice",
+"Hospice": "Hospice",
+"Extramural Delivery": "Skilled Nursing Facility"}
+
+    admit_source_mapper = CodeMapperDictClass(admit_source_dict, "admission_source_display", "m_admitting_source")
+
     ph_f_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
 
@@ -110,7 +175,12 @@ def main(input_csv_directory, output_csv_directory):
                        ("classification_display", "s_visit_type"),
                        ("classification_display", "m_visit_type"),
                        (("facility", "hospital_service_display"),
-                        key_care_site_mapper, {"mapped_value": "k_care_site"})
+                        key_care_site_mapper, {"mapped_value": "k_care_site"}),
+                       ("discharge_disposition_display", "s_discharge_to"),
+                       ("discharge_disposition_display", discharge_disposition_mapper,
+                        {"m_discharge_to": "m_discharge_to"}),
+                       ("admission_source_display", "s_admitting_source"),
+                       ("admission_source_display", admit_source_mapper, {"m_admitting_source": "m_admitting_source"})
                       ]
 
     visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv, SourceEncounterObject(),
@@ -205,8 +275,164 @@ def main(input_csv_directory, output_csv_directory):
 
     result_mapper_obj.run()
 
+    #Claim IDs
+    map_claim_id_encounter = os.path.join(input_csv_directory, "Map_Between_Claim_Id_Encounter_Id.csv")
+    map_claim_id_encounter_json = create_json_map_from_csv_file(map_claim_id_encounter, "claim_uid", "encounter_id")
+    claim_id_encounter_id_mapper = CoderMapperJSONClass(map_claim_id_encounter_json, "claim_id")
 
+    encounter_id_claim_id_mapper = CascadeMapper(FilterHasKeyValueMapper(["encounter_id"]),
+                                                 ChainMapper(FilterHasKeyValueMapper(["claim_id"]), claim_id_encounter_id_mapper))
+    """
+        condition_rules_dx = [(":row_id", "condition_occurrence_id"),
+                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                       (("encounter_id", "claim_id"),
+                        encounter_id_claim_id_mapper,
+                        {"visit_occurrence_id": "visit_occurrence_id"}),
+                       (("condition_raw_code", "condition_coding_system_id"),
+                        ICDMapper,
+                        {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
+                       ("condition_raw_code", "condition_source_value"),
+                       ("rank_type", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
+                       ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
+    
+    """
 
+    ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
+     "s_condition_code", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type",
+     "s_present_on_admission_indicator"]
+
+    def s_condition_type_func(input_dict):
+
+        if input_dict["supporting_fact_type"] == "CLAIM":
+            if input_dict["source_description"] == "Siemens":
+                if len(input_dict["present_on_admission_raw_code"]):
+                    return {"s_condition_type": "Final"}
+                else:
+                    return {"s_condition_type": "Admitting"}
+            else:
+                if input_dict["classification_primary_display"] == "Admitting":
+                    return {"s_condition_type": "Admitting"}
+                else:
+                    return {"s_condition_type": "Final"}
+
+        else:
+            if input_dict["classification_primary_display"] == "Final diagnosis (discharge)":
+                return {"s_condition_type": "Final"}
+            else:
+                if input_dict["confirmation_status_display"] == "Confirmed":
+                    return {"s_condition_type": input_dict["classification_primary_display"]}
+                else:
+                    return {"s_condition_type": "Preliminary"}
+
+    def m_rank_func(input_dict):
+        if input_dict["rank_type"] == "PRIMARY":
+            return {"m_rank": "Primary"}
+        elif input_dict["rank_type"] == "SECONDARY":
+            return {"m_rank": "Secondary"}
+        else:
+            return {}
+
+    condition_rules = [("empi_id", "s_person_id"),
+                       (("encounter_id", "claim_id"), encounter_id_claim_id_mapper, {"encounter_id": "s_encounter_id"}),
+                       ("effective_dt_tm", "s_start_condition_datetime"),
+                       ("condition_code", "s_condition_code"),
+                       ("condition_coding_system_id", "m_condition_code_oid"),
+                       ("rank_type", PassThroughFunctionMapper(m_rank_func), {"m_rank": "m_rank"}),
+                       (("supporting_fact_type", "classification_primary_display", "confirmation_status_display",
+                         "present_on_admission_raw_code", "source_description"),
+                        PassThroughFunctionMapper(s_condition_type_func), {"s_condition_type": "s_condition_type"}),
+                       ("present_on_admission_raw_code", "s_present_on_admission_indicator")]
+
+    ph_f_condition_csv = os.path.join(input_csv_directory, "PH_F_Condition.csv")
+    source_condition_csv = os.path.join(output_csv_directory, "source_condition.csv")
+    condition_mapper_obj = generate_mapper_obj(ph_f_condition_csv, PHFConditionObject(), source_condition_csv, SourceConditionObject(),
+                                               condition_rules, output_class_obj, in_out_map_obj)
+
+    condition_mapper_obj.run()
+
+    """
+    [
+                                (("procedure_code", "procedure_coding_system_id"), ProcedureCodeMapper,
+                                 {"CONCEPT_ID": "procedure_source_concept_id",
+                                  "MAPPED_CONCEPT_ID": "procedure_concept_id"},
+                                 ),
+                                (":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
+                                  {"procedure_occurrence_id": "procedure_occurrence_id"}),
+                                 ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                                 (("encounter_id", "claim_id"), encounter_id_mapper,
+                                  {"visit_occurrence_id": "visit_occurrence_id"}),
+                                 ("service_start_dt_tm", SplitDateTimeWithTZ(),
+                                  {"date": "procedure_date"}),
+                                 ("procedure_code", "procedure_source_value"),
+                                 ("rank_type", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})
+                                 ]
+    """
+
+    ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
+     "s_procedure_code", "m_procedure_code_oid", "s_sequence_id", "s_rank"]
+
+    procedure_rules = [("empi_id", "s_person_id"),
+                       (("encounter_id", "claim_id"), encounter_id_claim_id_mapper, {"encounter_id": "s_encounter_id"}),
+                       ("procedure_code", "s_procedure_code"),
+                       ("procedure_coding_system_id", "m_procedure_code_oid"),
+                       ("service_start_dt_tm", "s_start_procedure_datetime"),
+                       ("rank_type", "s_rank")]
+
+    ph_f_procedure_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
+    source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
+
+    procedure_mapper_obj = generate_mapper_obj(ph_f_procedure_csv, PHFProcedureObject(), source_procedure_csv, SourceProcedureObject(),
+                                               procedure_rules, output_class_obj, in_out_map_obj)
+
+    procedure_mapper_obj.run()
+
+    """
+        medication_rules = [(":row_id", row_map_offset("drug_exposure_id", row_offset),
+                                      {"drug_exposure_id": "drug_exposure_id"}),
+                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
+                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+                        ("drug_raw_code", "drug_source_value"),
+                        ("route_display", "route_source_value"),
+                        ("status_display", "stop_reason"), #TODO: LeftMapperString(20)
+                        ("route_display", route_mapper, {"mapped_value": "route_concept_id"}),
+                        ("dose_quantity", "dose_source_value"),
+                        ("start_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
+                        ("stop_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
+                        ("dose_quantity", "quantity"),
+                        ("dose_unit_display", "dose_unit_source_value"),
+                        ("dose_unit_display", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
+                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_source_concept_mapper,
+                         {"CONCEPT_ID": "drug_source_concept_id"}),
+                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), rxnorm_concept_mapper,
+                         {"CONCEPT_ID": "drug_concept_id"}), # TODO: Make sure map maps to standard concept
+                        ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})]
+    """
+
+    ["s_person_id", "s_encounter_id", "s_drug_code", "m_drug_code_oid", "s_drug_text",
+     "s_start_medication_datetime", "s_end_medication_datetime",
+     "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type", "s_intended_dispenser"]
+
+    medication_rules = [("empi_id", "s_person_id"),
+                        ("encounter_id", "s_encounter_id"),
+                        ("drug_code", "s_drug_code"),
+                        ("drug_raw_coding_system_id", "m_drug_code_oid"),
+                        ("drug_primary_display", "s_drug_text"),
+                        ("start_dt_tm", "s_start_medication_datetime"),
+                        ("stop_dt_tm", "s_end_medication_datetime"),
+                        ("route_display", "s_route"),
+                        ("dose_quantity", "s_quantity"),
+                        ("dose_unit_display", "s_dose_unit"),
+                        ("intended_dispenser", "s_drug_type"),
+                        ("status_display", "s_status")]
+
+    ph_f_medication_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
+    source_medication_csv = os.path.join(output_csv_directory, "source_medication.csv")
+
+    medication_mapper_obj = generate_mapper_obj(ph_f_medication_csv, PHFMedicationObject(), source_medication_csv,
+                                                SourceMedicationObject(), medication_rules,
+                                                output_class_obj, in_out_map_obj)
+
+    medication_mapper_obj.run()
 
 
 
