@@ -146,6 +146,5 @@ if __name__ == "__main__":
     vocabulary_schema = arg_obj.vocab_schema
     drop_tables = arg_obj.drop_tables
 
-
     main(ddl_file_name, connection_uri, schema, schema_customization_file_name, index_file_name,
          constraints_file_name, vocabulary_schema, post_data_manipulation_file_name, drop_tables)

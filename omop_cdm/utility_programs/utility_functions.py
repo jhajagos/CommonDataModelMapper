@@ -55,7 +55,10 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
 
                             if "date" in key or "DATE" in key:
                                 if "-" in dict_row[key]:
-                                    cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
+                                    if " " in dict_row[key]:
+                                        cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
+                                    else:
+                                        cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
                                 else:
                                     cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y%m%d")
                             else:
@@ -111,8 +114,10 @@ def generate_db_dict(output_directory):
                   ("observation", "observation_dx_cdm.csv"),
                   ("observation", "observation_measurement_encounter_cdm.csv"),
                   ("observation", "observation_proc_cdm.csv"),
-                  ("observation_period", "observation_period_cdm.csv")
-                 ]
+                  ("observation_period", "observation_period_cdm.csv"),
+                  ("care_site", "care_site_cdm.csv"),
+                  ("payer_plan_period", "payer_plan_period_cdm.csv")
+                  ]
 
     data_dict = {}
     for pair in load_pairs:

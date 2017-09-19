@@ -66,7 +66,7 @@ def main(input_csv_directory, output_csv_directory):
     care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
     md5_func = lambda x: hashlib.md5(x).hexdigest()
-    md5_func = None
+    #md5_func = None
 
     key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv,
                                                  ["facility", "hospital_service_code", "hospital_service_display",
@@ -76,7 +76,7 @@ def main(input_csv_directory, output_csv_directory):
     care_site_name_mapper = FunctionMapper(build_key_func_dict(["facility", "hospital_service_display"], separator=" - "))
 
     care_site_rules = [("key_name","k_care_site"),
-                       (("hospital_service_display", "hospital_service_code","facility"),
+                       (("hospital_service_display", "hospital_service_code", "facility"),
                         care_site_name_mapper,
                         {"mapped_value": "s_care_site_name"})]
 
@@ -196,7 +196,7 @@ def main(input_csv_directory, output_csv_directory):
     encounter_coverage_rules = [("empi_id", "s_person_id"),
                                ("encounter_id", "s_encounter_id"),
                                ("begin_dt_tm","s_start_payer_date"),
-                               ("end_dt_tm", FilterHasKeyValueMapper(["end_dt_tm", "begin_dt_tm"], empty_value="0"),
+                               (("end_dt_tm", "begin_dt_tm"), FilterHasKeyValueMapper(["end_dt_tm", "begin_dt_tm"], empty_value="0"),
                                 {"end_dt_tm": "s_end_payer_date", "begin_dt_tm": "s_end_payer_date"}),
                                ("payer_name", "s_payer_name"),
                                ("payer_name", "m_payer_name"),
@@ -513,9 +513,6 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
             new_dict = {}
             for field_name in field_names:
                 new_dict[field_name] = row_dict[field_name]
-
-            if hashing_func is not None:
-                key_str = hashing_func(key_str)
 
             lookup_dict[key_str] = new_dict
 

@@ -146,7 +146,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_ppp_csv = os.path.join(input_csv_directory, "source_encounter_coverage.csv")
 
     def payer_plan_period_router_obj(input_dict):
-        return PayerPlanPeriodObject()
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            return PayerPlanPeriodObject()
+        else:
+            return NoOutputClass()
 
     payer_plan_period_runner_obj = generate_mapper_obj(input_ppp_csv, SourceEncounterCoverageObject(), output_ppp_csv,
                                                        PayerPlanPeriodObject(),
@@ -473,7 +476,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     in_out_map_obj.register(SourceProcedureObject(), ObservationObject(), observation_rules_proc_class)
 
     ##### DrugExposure from Procedures ####
-    drug_rules_proc = [(":row_id", "dru_exposure_id"),
+    drug_rules_proc = [(":row_id", "drug_exposure_id"),
                        (":row_id", ConstantMapper({"drug_type_concept_id": 0}),
                         {"drug_type_concept_id": "drug_type_concept_id"}),
                        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
@@ -481,7 +484,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                         {"visit_occurrence_id": "visit_occurrence_id"}),
                        ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
                         {"date": "drug_exposure_start_date"}),
+                       ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                        {"date": "drug_exposure_end_date"}),
                        ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
+                       ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                        ("s_procedure_code", "drug_source_value"),
                        (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
                         {"CONCEPT_ID": "drug_source_concept_id",
@@ -702,8 +708,12 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
                                 ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                 ("s_start_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_start_date"}),
+                                ("s_start_observation_datetime", DateTimeWithTZ(),
+                                 {"datetime": "observation_period_start_datetime"}),
                                 ("s_end_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_end_date"}),
+                                ("s_end_observation_datetime", DateTimeWithTZ(),
+                                 {"datetime": "observation_period_end_datetime"}),
                                 (":row_id", observation_period_constant_mapper,
                                  {"CONCEPT_ID": "period_type_concept_id"})
                                 ]
@@ -889,6 +899,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                          ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
+                         ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date"}),
                          ("s_type_name", "measurement_source_value"),
                          ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
                          ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
