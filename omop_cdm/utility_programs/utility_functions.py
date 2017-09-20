@@ -124,3 +124,20 @@ def generate_db_dict(output_directory):
         data_dict[os.path.join(output_directory, pair[1])] = pair[0]
 
     return data_dict
+
+
+def generate_vocabulary_load(vocabulary_directory,  vocabularies=["CONCEPT",
+                    "CONCEPT_ANCESTOR",
+                    "CONCEPT_CLASS",
+                    "CONCEPT_RELATIONSHIP",
+                    "CONCEPT_SYNONYM",
+                    "DOMAIN",
+                    "DRUG_STRENGTH",
+                    "RELATIONSHIP",
+                    "VOCABULARY"]):
+
+    load_pairs = []
+    for vocabulary in vocabularies:
+        load_pairs += [(vocabulary.lower(), os.path.join(vocabulary_directory, vocabulary + ".csv"))]
+
+    return load_pairs

@@ -34,21 +34,7 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
         load_csv_files_into_db(connection_string, vocab_dict, delimiter="\t", i_print_update=100000)
 
 
-def generate_vocabulary_load(vocabulary_directory,  vocabularies=["CONCEPT",
-                    "CONCEPT_ANCESTOR",
-                    "CONCEPT_CLASS",
-                    "CONCEPT_RELATIONSHIP",
-                    "CONCEPT_SYNONYM",
-                    "DOMAIN",
-                    "DRUG_STRENGTH",
-                    "RELATIONSHIP",
-                    "VOCABULARY"]):
 
-    load_pairs = []
-    for vocabulary in vocabularies:
-        load_pairs += [(vocabulary.lower(), os.path.join(vocabulary_directory, vocabulary + ".csv"))]
-
-    return load_pairs
 
 if __name__ == "__main__":
 
