@@ -37,6 +37,16 @@ class TestUtilityFunctions(unittest.TestCase):
 
         self.assertEqual("2014-02-21 00:00:00", ts3)
 
+    def test_convert_date_time_to_unix_seconds(self):
+
+        ts1 = {"datetime": "2014-02-21 13:33:05"}
+
+        result_ts1 = MapDateTimeToUnixEpochSeconds().map(ts1)
+
+        self.assertTrue("seconds_since_unix_epoch" in result_ts1)
+
+        self.assertEqual(1392989585, result_ts1["seconds_since_unix_epoch"])
+
 
 if __name__ == '__main__':
     unittest.main()

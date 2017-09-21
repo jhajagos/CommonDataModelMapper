@@ -6,6 +6,7 @@ import os
 import json
 import logging
 import re
+import datetime
 
 
 class LeftMapperString(MapperClass):
@@ -124,14 +125,48 @@ class SplitDateTimeWithTZ(MapperClass):
 
 class DateTimeWithTZ(MapperClass):
 
+    def __init__(self, key=None):
+        self.key = None
+
     def map(self, input_dict):
-        datetime_value = input_dict[input_dict.keys()[0]]
+        if self.key is None:
+            datetime_value = input_dict[input_dict.keys()[0]]
+        else:
+            if self.key in input_dict:
+                datetime_value = input_dict[self.key]
+            else:
+                return {}
+
         if "T" in datetime_value:
             datetime_local = convert_datetime_with_tz(datetime_value)
         else:
             datetime_local = convert_datetime(datetime_value)
 
         return {"datetime": datetime_local}
+
+
+class MapDateTimeToUnixEpochSeconds(MapperClass):
+    def map(self, input_dict, field="datetime"):
+        if field in input_dict:
+
+            date_value = input_dict[field]
+
+            try:
+                time_obj = datetime.datetime.strptime(date_value,
+                                                      "%Y-%m-%d %H:%M:%S")  # Seconds since January 1, 1970 Unix time
+            except ValueError:
+                try:
+                    time_obj = datetime.datetime.strptime(date_value,
+                                                          "%Y-%m-%d")  # Seconds since January 1, 1970 Unix time
+                except ValueError:
+                    time_obj = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M")
+
+            seconds_since_unix_epoch = (time_obj - datetime.datetime(1970, 1, 1)).total_seconds()
+
+            return {"seconds_since_unix_epoch": seconds_since_unix_epoch}
+
+        else:
+            return {}
 
 
 class FloatMapper(MapperClass):

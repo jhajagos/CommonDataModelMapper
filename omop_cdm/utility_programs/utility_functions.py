@@ -7,7 +7,7 @@ import os
 
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
-                           lower_case_keys=True, i_print_update=1000, truncate=False):
+                           lower_case_keys=True, i_print_update=1000, truncate=False, truncate_long_fields=True):
 
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()
@@ -33,11 +33,19 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
     meta_data = sa.MetaData(db_connection, reflect=True, schema=schema)
     for data_file in data_dict:
 
+        varchar_fields = {}
         table_name = data_dict[data_file]
         if schema:
             table_name = schema + "." + table_name
 
         table_obj = meta_data.tables[table_name]
+
+        for column in table_obj.columns:
+            column_name = column.name
+            column_type = table_obj.c[column_name].type
+
+            if "CHAR" in str(column_type):
+                varchar_fields[column_name] = table_obj.c[column_name].type.length
 
         print("Loading %s" % table_name)
 
@@ -67,6 +75,12 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                     if lower_case_keys:
                         temp_cleaned_dict = {}
                         for key in cleaned_dict:
+                            if truncate_long_fields:
+                                if key.lower() in varchar_fields:
+                                    field_length = varchar_fields[key]
+                                    if len(cleaned_dict[key]) > field_length:
+                                        print("Truncating: '%s'" % cleaned_dict[key])
+                                        cleaned_dict[key] = cleaned_dict[key][0:field_length]
                             temp_cleaned_dict[key.lower()] = cleaned_dict[key]
                         cleaned_dict = temp_cleaned_dict
 
