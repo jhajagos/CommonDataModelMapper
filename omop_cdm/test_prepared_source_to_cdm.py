@@ -158,7 +158,5 @@ class TestCodeMappers(unittest.TestCase):
         self.assertTrue('S', mapping_result3["STANDARD_CONCEPT"])
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
