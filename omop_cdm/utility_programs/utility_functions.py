@@ -45,7 +45,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
             column_type = table_obj.c[column_name].type
 
             if "CHAR" in str(column_type):
-                varchar_fields[column_name] = table_obj.c[column_name].type.length
+                varchar_fields[column_name.lower()] = table_obj.c[column_name].type.length
 
         print("Loading %s" % table_name)
 
@@ -64,23 +64,23 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                             if "date" in key or "DATE" in key:
                                 if "-" in dict_row[key]:
                                     if " " in dict_row[key]:
-                                        cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
+                                        cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
                                     else:
-                                        cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
+                                        cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
                                 else:
-                                    cleaned_dict[key] = datetime.datetime.strptime(dict_row[key], "%Y%m%d")
+                                    cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y%m%d")
                             else:
-                                cleaned_dict[key] = dict_row[key]
+                                cleaned_dict[key.lower()] = dict_row[key]
 
                     if lower_case_keys:
                         temp_cleaned_dict = {}
                         for key in cleaned_dict:
                             if truncate_long_fields:
                                 if key.lower() in varchar_fields:
-                                    field_length = varchar_fields[key]
-                                    if len(cleaned_dict[key]) > field_length:
-                                        print("Truncating: '%s'" % cleaned_dict[key])
-                                        cleaned_dict[key] = cleaned_dict[key][0:field_length]
+                                    field_length = varchar_fields[key.lower()]
+                                    if len(cleaned_dict[key.lower()]) > field_length:
+                                        print("Truncating: '%s'" % cleaned_dict[key.lower()])
+                                        cleaned_dict[key.lower()] = cleaned_dict[key.lower()][0:field_length]
                             temp_cleaned_dict[key.lower()] = cleaned_dict[key]
                         cleaned_dict = temp_cleaned_dict
 

@@ -1,3 +1,17 @@
+
+import sys, os
+
+try:
+
+    from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
+        CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
+    from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
+        CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+
 from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
     PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
 
@@ -5,9 +19,6 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
-from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
-    CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-    CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
 from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
