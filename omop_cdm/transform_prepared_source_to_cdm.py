@@ -238,8 +238,28 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_type_concept_mapper = CascadeMapper(condition_claim_type_map, condition_encounter_mapper)
 
-    ICDMapper = CaseMapper(case_mapper_icd9_icd10, CodeMapperClassSqliteJSONClass(icd9cm_json, "s_condition_code"),
-                           CodeMapperClassSqliteJSONClass(icd10cm_json, "s_condition_code"))
+    def clean_concept_ids(input_dict):
+
+        if "CONCEPT_ID" in input_dict:
+            if input_dict["CONCEPT_ID"] == "" or input_dict["CONCEPT_ID"] is None:
+                input_dict["CONCEPT_ID"] = 0
+        else:
+            input_dict["CONCEPT_ID"] = 0
+
+        if "MAPPED_CONCEPT_ID" in input_dict:
+
+            if input_dict["MAPPED_CONCEPT_ID"] == "" or input_dict["MAPPED_CONCEPT_ID"] is None:
+                input_dict["MAPPED_CONCEPT_ID"] = 0
+
+        else:
+            input_dict["MAPPED_CONCEPT_ID"] = 0
+
+        return input_dict
+
+
+    ICDMapper = ChainMapper(CaseMapper(case_mapper_icd9_icd10,
+                            CodeMapperClassSqliteJSONClass(icd9cm_json, "s_condition_code"),
+                            CodeMapperClassSqliteJSONClass(icd10cm_json, "s_condition_code")), PassThroughFunctionMapper(clean_concept_ids))
 
     s_condition_type_dict = {"Admitting": "52870002", "Final": "89100005", "Preliminary": "148006"}
     condition_status_snomed_mapper = CodeMapperDictClass(s_condition_type_dict, "s_condition_type")
@@ -867,7 +887,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CodeMapperClassSqliteJSONClass(loinc_json)
 
-    NumericMapperConvertDate = CascadeMapper(ChainMapper(DateTimeWithTZ("s_result_datetime"), MapDateTimeToUnixEpochSeconds()), FloatMapper())
+    NumericMapperConvertDate = CascadeMapper(FloatMapper(), ChainMapper(DateTimeWithTZ("s_result_datetime"), MapDateTimeToUnixEpochSeconds()))
 
     measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
 

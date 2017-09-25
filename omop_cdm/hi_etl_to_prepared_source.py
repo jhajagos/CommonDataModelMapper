@@ -179,6 +179,16 @@ def main(input_csv_directory, output_csv_directory):
     ph_f_encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
 
+    def visit_occurrence_i_exclude(input_dict):
+        if "classification_display" in input_dict:
+            if input_dict["classification_display"] == "Inbox Message":
+                return {"i_exclude": 1}
+            else:
+                return {}
+        else:
+            return {}
+
+
     encounter_rules = [("encounter_id", "s_encounter_id"),
                        ("empi_id", "s_person_id"),
                        ("service_dt_tm", "s_visit_start_datetime"),
@@ -191,7 +201,8 @@ def main(input_csv_directory, output_csv_directory):
                        ("discharge_disposition_display", discharge_disposition_mapper,
                         {"m_discharge_to": "m_discharge_to"}),
                        ("admission_source_display", "s_admitting_source"),
-                       ("admission_source_display", admit_source_mapper, {"m_admitting_source": "m_admitting_source"})
+                       ("admission_source_display", admit_source_mapper, {"m_admitting_source": "m_admitting_source"}),
+                       ("classification_display", PassThroughFunctionMapper(visit_occurrence_i_exclude), {"i_exclude": "i_exclude"})
                       ]
 
     visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv, SourceEncounterObject(),
@@ -423,6 +434,15 @@ def main(input_csv_directory, output_csv_directory):
      "s_start_medication_datetime", "s_end_medication_datetime",
      "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type", "s_intended_dispenser"]
 
+    def active_medications(input_dict):
+        if "status_primary_display" in input_dict:
+            if input_dict["status_primary_display"] not in ('Complete', 'Discontinued', 'Active', 'Suspended'):
+                return {"i_exclude": 1}
+            else:
+                return {}
+        else:
+            return {}
+
     medication_rules = [("empi_id", "s_person_id"),
                         ("encounter_id", "s_encounter_id"),
                         ("drug_code", "s_drug_code"),
@@ -434,7 +454,9 @@ def main(input_csv_directory, output_csv_directory):
                         ("dose_quantity", "s_quantity"),
                         ("dose_unit_display", "s_dose_unit"),
                         ("intended_dispenser", "s_drug_type"),
-                        ("status_display", "s_status")]
+                        ("status_display", "s_status"),
+                        ("status_primary_display", PassThroughFunctionMapper(active_medications), {"i_exclude": "i_exclude"})
+                        ]
 
     ph_f_medication_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
     source_medication_csv = os.path.join(output_csv_directory, "source_medication.csv")
@@ -444,7 +466,6 @@ def main(input_csv_directory, output_csv_directory):
                                                 output_class_obj, in_out_map_obj)
 
     medication_mapper_obj.run()
-
 
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name,

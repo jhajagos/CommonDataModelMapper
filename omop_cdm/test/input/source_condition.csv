@@ -6,3 +6,4 @@ s_person_id,s_encounter_id,s_start_condition_datetime,s_condition_code,m_conditi
 100,,2016-04-05,Z86.2,2.16.840.1.113883.6.90,2,Secondary,Final,N
 100,,2016-05-01,Z01.818,2.16.840.1.113883.6.90,2,Secondary,Preliminary,Y
 100,,2016-05-01,R79.89,2.16.840.1.113883.6.90,2,Secondary,Discharge,E
+100,,2016-05-02,V45.88,2.16.840.1.113883.6.103,2,Secondary,Discharge,E

@@ -74,6 +74,8 @@ class TestMapping(unittest.TestCase):
 
         self.assertNotEqual("", first_measurement["value_as_number"])
 
+        self.assertEqual("6.9", first_measurement["value_as_number"])
+
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")
         self.assertTrue(len(result_observation))
 
@@ -93,6 +95,12 @@ class TestMapping(unittest.TestCase):
 
         # TODO: Add conditions that map to other domains
         self.assertNotEquals("", result_condition[0]["condition_start_datetime"])
+
+        result_observation_dx = read_csv_file_as_dict("./test/output/observation_dx_cdm.csv")
+
+        second_result_observation_dx = result_observation_dx[1]
+
+        self.assertEquals("0", second_result_observation_dx["observation_concept_id"])
 
         result_procedure = read_csv_file_as_dict("./test/output/procedure_cdm.csv")
         self.assertTrue(len(result_procedure))
