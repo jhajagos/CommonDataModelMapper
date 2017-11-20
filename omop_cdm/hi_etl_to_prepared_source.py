@@ -2,7 +2,6 @@
 import sys, os
 
 try:
-
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass

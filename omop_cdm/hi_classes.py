@@ -45,6 +45,7 @@ class EmpIdObservationPeriod(InputClass):
     def fields(self):
         return []
 
+
 class HiCareSite(InputClass):
     def fields(self):
         return []
