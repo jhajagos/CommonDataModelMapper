@@ -1,8 +1,6 @@
-
 import sys, os
 
 try:
-
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
@@ -19,7 +17,6 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
-
 from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
 import argparse
@@ -33,7 +30,6 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main(input_csv_directory, output_csv_directory):
-
     output_class_obj = OutputClassDirectory()
     in_out_map_obj = InputOutputMapperDirectory()
     output_directory_obj = OutputClassDirectory()
@@ -42,7 +38,7 @@ def main(input_csv_directory, output_csv_directory):
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
 
     person_race_csv = os.path.join(input_csv_directory, "PH_D_Person_Race.csv")
-    person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographic.csv")
+    person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographics.csv")
 
     build_json_person_attribute(person_race_csv, "person_race.json", "person_seq", "race_code", "race_primary_display",
                                 output_directory=input_csv_directory)
@@ -55,6 +51,12 @@ def main(input_csv_directory, output_csv_directory):
 
     person_ethnicity_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_ethnicity.json"))
 
+    def has_date_func(input_dict):
+        if input_dict["birth_date"] == "":
+            return {"i_exclude": 1}
+        else:
+            return {}
+
     ph_f_person_rules = [("empi_id", "s_person_id"),
                          ("birth_date", "s_birth_datetime"),
                          ("gender_display", "s_gender"),
@@ -63,8 +65,9 @@ def main(input_csv_directory, output_csv_directory):
                          ("empi_id", person_race_code_mapper, {"code": "s_race"}),
                          ("empi_id", person_ethnicity_code_mapper, {"description": "m_ethnicity"}),
                          ("empi_id", person_ethnicity_code_mapper, {"code": "s_ethnicity"}),
-                         ("deceased_dt_tm", "s_death_datetime")
-                       ]
+                         ("deceased_dt_tm", "s_death_datetime"),
+                         ("birth_date", PassThroughFunctionMapper(has_date_func), {"i_exclude": "i_exclude"})
+                         ]
 
     source_person_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_person_csv,
                                                    SourcePersonObject(), ph_f_person_rules,
@@ -77,16 +80,17 @@ def main(input_csv_directory, output_csv_directory):
     care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
     md5_func = lambda x: hashlib.md5(x).hexdigest()
-    #md5_func = None
+    # md5_func = None
 
     key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv,
                                                  ["facility", "hospital_service_code", "hospital_service_display",
                                                   "hospital_service_coding_system_id"],
                                                  ["facility", "hospital_service_display"], hashing_func=md5_func)
 
-    care_site_name_mapper = FunctionMapper(build_key_func_dict(["facility", "hospital_service_display"], separator=" - "))
+    care_site_name_mapper = FunctionMapper(
+        build_key_func_dict(["facility", "hospital_service_display"], separator=" - "))
 
-    care_site_rules = [("key_name","k_care_site"),
+    care_site_rules = [("key_name", "k_care_site"),
                        (("hospital_service_display", "hospital_service_code", "facility"),
                         care_site_name_mapper,
                         {"mapped_value": "s_care_site_name"})]
@@ -107,9 +111,10 @@ def main(input_csv_directory, output_csv_directory):
 
     source_observation_period_csv = os.path.join(output_csv_directory, "source_observation_period.csv")
 
-    observation_runner_obj = generate_mapper_obj(hi_observation_period_csv, EmpIdObservationPeriod(), source_observation_period_csv,
-                                SourceObservationPeriodObject(), observation_period_rules,
-                                output_class_obj, in_out_map_obj)
+    observation_runner_obj = generate_mapper_obj(hi_observation_period_csv, EmpIdObservationPeriod(),
+                                                 source_observation_period_csv,
+                                                 SourceObservationPeriodObject(), observation_period_rules,
+                                                 output_class_obj, in_out_map_obj)
 
     observation_runner_obj.run()
 
@@ -153,26 +158,27 @@ def main(input_csv_directory, output_csv_directory):
         "Srg Dth W/In 3-10dy Post Srg Autopsy Per": "397709008"
     }
 
-    discharge_disposition_mapper = CodeMapperDictClass(discharge_disposition_dict, "discharge_disposition_display", "m_discharge_to")
+    discharge_disposition_mapper = CodeMapperDictClass(discharge_disposition_dict, "discharge_disposition_display",
+                                                       "m_discharge_to")
 
     admit_source_dict = {"EO:  Emergency OP Unit": "Emergency Room - Hospital",
-"Routine Admission": "3241000175106",
-"Newborn": "3241000175106",
-"Emergency Department": "Emergency Room - Hospital",
-"TH: Transfer From A Hospital": "Inpatient Hospital",
-"ER": "Emergency Room - Hospital",
-"Transfer from a Hospital": "Inpatient Hospital",
-"Transfer from Trans-Skilled Nursing Fac": "Skilled Nursing Facility",
-"NS: Newborn Sick": "3241000175106",
-"Normal Delivery": "3241000175106",
-"NP: Newborn Premature": "3241000175106",
-"Transfer from Long Island Veteran's Home": "Skilled Nursing Facility",
-"Newborn Transfer": "Inpatient Hospital",
-"Transfer from Psychiatric Facility": "Inpatient Psychiatric Facility",
-"Trans from other Hospital": "Inpatient Hospital",
-"Transfer from Hospice": "Hospice",
-"Hospice": "Hospice",
-"Extramural Delivery": "Skilled Nursing Facility"}
+                         "Routine Admission": "3241000175106",
+                         "Newborn": "3241000175106",
+                         "Emergency Department": "Emergency Room - Hospital",
+                         "TH: Transfer From A Hospital": "Inpatient Hospital",
+                         "ER": "Emergency Room - Hospital",
+                         "Transfer from a Hospital": "Inpatient Hospital",
+                         "Transfer from Trans-Skilled Nursing Fac": "Skilled Nursing Facility",
+                         "NS: Newborn Sick": "3241000175106",
+                         "Normal Delivery": "3241000175106",
+                         "NP: Newborn Premature": "3241000175106",
+                         "Transfer from Long Island Veteran's Home": "Skilled Nursing Facility",
+                         "Newborn Transfer": "Inpatient Hospital",
+                         "Transfer from Psychiatric Facility": "Inpatient Psychiatric Facility",
+                         "Trans from other Hospital": "Inpatient Hospital",
+                         "Transfer from Hospice": "Hospice",
+                         "Hospice": "Hospice",
+                         "Extramural Delivery": "Skilled Nursing Facility"}
 
     admit_source_mapper = CodeMapperDictClass(admit_source_dict, "admission_source_display", "m_admitting_source")
 
@@ -188,7 +194,6 @@ def main(input_csv_directory, output_csv_directory):
         else:
             return {}
 
-
     encounter_rules = [("encounter_id", "s_encounter_id"),
                        ("empi_id", "s_person_id"),
                        ("service_dt_tm", "s_visit_start_datetime"),
@@ -202,10 +207,11 @@ def main(input_csv_directory, output_csv_directory):
                         {"m_discharge_to": "m_discharge_to"}),
                        ("admission_source_display", "s_admitting_source"),
                        ("admission_source_display", admit_source_mapper, {"m_admitting_source": "m_admitting_source"}),
-                       ("classification_display", PassThroughFunctionMapper(visit_occurrence_i_exclude), {"i_exclude": "i_exclude"})
-                      ]
+                       ("classification_display", PassThroughFunctionMapper(visit_occurrence_i_exclude),
+                        {"i_exclude": "i_exclude"})]
 
-    visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv, SourceEncounterObject(),
+    visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv,
+                                           SourceEncounterObject(),
                                            encounter_rules, output_class_obj, in_out_map_obj)
 
     visit_runner_obj.run()
@@ -216,16 +222,18 @@ def main(input_csv_directory, output_csv_directory):
     source_encounter_coverage_csv = os.path.join(output_csv_directory, "source_encounter_coverage.csv")
 
     encounter_coverage_rules = [("empi_id", "s_person_id"),
-                               ("encounter_id", "s_encounter_id"),
-                               ("begin_dt_tm","s_start_payer_date"),
-                               (("end_dt_tm", "begin_dt_tm"), FilterHasKeyValueMapper(["end_dt_tm", "begin_dt_tm"], empty_value="0"),
-                                {"end_dt_tm": "s_end_payer_date", "begin_dt_tm": "s_end_payer_date"}),
-                               ("payer_name", "s_payer_name"),
-                               ("payer_name", "m_payer_name"),
-                               ("plan_name", "s_plan_name"),
-                               ("benefit_type_primary_display", "m_plan_name")]
+                                ("encounter_id", "s_encounter_id"),
+                                ("begin_dt_tm", "s_start_payer_date"),
+                                (("end_dt_tm", "begin_dt_tm"),
+                                 FilterHasKeyValueMapper(["end_dt_tm", "begin_dt_tm"], empty_value="0"),
+                                 {"end_dt_tm": "s_end_payer_date", "begin_dt_tm": "s_end_payer_date"}),
+                                ("payer_name", "s_payer_name"),
+                                ("payer_name", "m_payer_name"),
+                                ("plan_name", "s_plan_name"),
+                                ("benefit_type_primary_display", "m_plan_name")]
 
-    encounter_benefit_runner_obj = generate_mapper_obj(ph_f_encounter_benefit_coverage_csv, PHFEncounterBenefitCoverage(),
+    encounter_benefit_runner_obj = generate_mapper_obj(ph_f_encounter_benefit_coverage_csv,
+                                                       PHFEncounterBenefitCoverage(),
                                                        source_encounter_coverage_csv, SourceEncounterCoverageObject(),
                                                        encounter_coverage_rules, output_class_obj, in_out_map_obj)
 
@@ -265,9 +273,9 @@ def main(input_csv_directory, output_csv_directory):
     """
 
     ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
-    "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
-    "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
-    "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
+     "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
+     "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
+     "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
 
     result_rules = [("empi_id", "s_person_id"),
                     ("encounter_id", "s_encounter_id"),
@@ -276,8 +284,8 @@ def main(input_csv_directory, output_csv_directory):
                     ("result_code", "s_type_code"),
                     ("result_coding_system_id", "m_type_code_oid"),
                     (("norm_codified_value_primary_display", "result_primary_display",
-                           "norm_text_value"), FilterHasKeyValueMapper(["norm_codified_value_primary_display",
-                                                                         "norm_text_value"]),
+                      "norm_text_value"), FilterHasKeyValueMapper(["norm_codified_value_primary_display",
+                                                                   "norm_text_value"]),
                      {"norm_codified_value_primary_display": "s_result_text",
                       "norm_text_value": "s_result_text"}),
                     ("norm_numeric_value", "s_result_numeric"),
@@ -285,25 +293,24 @@ def main(input_csv_directory, output_csv_directory):
                     (("norm_codified_value_code", "interpretation_primary_display"),
                      FilterHasKeyValueMapper(["norm_codified_value_code", "interpretation_primary_display"]),
                      {"norm_codified_value_code": "s_result_code", "interpretation_primary_display": "s_result_code"}),
-                    ("norm_unit_of_measure_display","s_result_unit"),
+                    ("norm_unit_of_measure_display", "s_result_unit"),
                     ("norm_unit_of_measure_code", "s_result_unit_code"),
                     ("norm_ref_range_low", "s_result_numeric_lower"),
                     ("norm_ref_range_high", "s_result_numeric_upper")]
 
-
-
     result_mapper_obj = generate_mapper_obj(ph_f_result_csv, PHFResultObject(), source_result_csv, SourceResultObject(),
-                                            result_rules,  output_class_obj, in_out_map_obj)
+                                            result_rules, output_class_obj, in_out_map_obj)
 
     result_mapper_obj.run()
 
-    #Claim IDs
+    # Claim IDs
     map_claim_id_encounter = os.path.join(input_csv_directory, "Map_Between_Claim_Id_Encounter_Id.csv")
     map_claim_id_encounter_json = create_json_map_from_csv_file(map_claim_id_encounter, "claim_uid", "encounter_id")
     claim_id_encounter_id_mapper = CoderMapperJSONClass(map_claim_id_encounter_json, "claim_id")
 
     encounter_id_claim_id_mapper = CascadeMapper(FilterHasKeyValueMapper(["encounter_id"]),
-                                                 ChainMapper(FilterHasKeyValueMapper(["claim_id"]), claim_id_encounter_id_mapper))
+                                                 ChainMapper(FilterHasKeyValueMapper(["claim_id"]),
+                                                             claim_id_encounter_id_mapper))
     """
         condition_rules_dx = [(":row_id", "condition_occurrence_id"),
                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
@@ -316,7 +323,7 @@ def main(input_csv_directory, output_csv_directory):
                        ("condition_raw_code", "condition_source_value"),
                        ("rank_type", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
                        ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
-    
+
     """
 
     ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
@@ -367,7 +374,8 @@ def main(input_csv_directory, output_csv_directory):
 
     ph_f_condition_csv = os.path.join(input_csv_directory, "PH_F_Condition.csv")
     source_condition_csv = os.path.join(output_csv_directory, "source_condition.csv")
-    condition_mapper_obj = generate_mapper_obj(ph_f_condition_csv, PHFConditionObject(), source_condition_csv, SourceConditionObject(),
+    condition_mapper_obj = generate_mapper_obj(ph_f_condition_csv, PHFConditionObject(), source_condition_csv,
+                                               SourceConditionObject(),
                                                condition_rules, output_class_obj, in_out_map_obj)
 
     condition_mapper_obj.run()
@@ -403,7 +411,8 @@ def main(input_csv_directory, output_csv_directory):
     ph_f_procedure_csv = os.path.join(input_csv_directory, "PH_F_Procedure.csv")
     source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
 
-    procedure_mapper_obj = generate_mapper_obj(ph_f_procedure_csv, PHFProcedureObject(), source_procedure_csv, SourceProcedureObject(),
+    procedure_mapper_obj = generate_mapper_obj(ph_f_procedure_csv, PHFProcedureObject(), source_procedure_csv,
+                                               SourceProcedureObject(),
                                                procedure_rules, output_class_obj, in_out_map_obj)
 
     procedure_mapper_obj.run()
@@ -455,7 +464,8 @@ def main(input_csv_directory, output_csv_directory):
                         ("dose_unit_display", "s_dose_unit"),
                         ("intended_dispenser", "s_drug_type"),
                         ("status_display", "s_status"),
-                        ("status_primary_display", PassThroughFunctionMapper(active_medications), {"i_exclude": "i_exclude"})
+                        ("status_primary_display", PassThroughFunctionMapper(active_medications),
+                         {"i_exclude": "i_exclude"})
                         ]
 
     ph_f_medication_csv = os.path.join(input_csv_directory, "PH_F_Medication.csv")
@@ -473,7 +483,6 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
                                 descriptions_to_ignore=["Other", "Patient data refused", "Unknown",
                                                         "Ethnic group not given - patient refused", ""],
                                 output_directory="./"):
-
     """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
 
     master_attribute_dict = {}
@@ -498,7 +507,6 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
 
         final_attribute_dict = {}
         for master_patient_id in master_attribute_dict:
-
             attribute_records = master_attribute_dict[master_patient_id]
 
             attribute_records.sort(key=lambda x: int(x["sequence_id"]))
@@ -532,7 +540,6 @@ def build_key_func_dict(fields, hashing_func=None, separator="|"):
 
 
 def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields, hashing_func=None):
-
     lookup_dict = {}
 
     key_func = build_key_func_dict(key_fields, hashing_func=hashing_func)
@@ -574,7 +581,6 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
 
 
 if __name__ == "__main__":
-
     arg_parse_obj = argparse.ArgumentParser()
     arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file",
                                default="hi_config.json")
