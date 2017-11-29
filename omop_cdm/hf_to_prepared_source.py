@@ -4,17 +4,20 @@ import os
 import csv
 import datetime
 
+from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
+        CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
-
-from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-    SourceProcedureObject, SourceMedicationObject
+from source_to_cdm_functions import generate_mapper_obj
+from hf_classes import HFPatient
 
 
 def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory):
+    """Create a patient CSV file from the encounter patient file"""
 
     patient_fields = ["marital_status", "patient_id", "race", "gender", "patient_sk"]
     
@@ -75,7 +78,29 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     encounter_file_name = os.path.join(input_csv_directory, file_name_dict["encounter"])
     encounter_patient_file_name = os.path.join(input_csv_directory, file_name_dict["encounter_patient"])
 
-    generate_patient_csv_file(encounter_patient_file_name, input_csv_directory)
+    patient_file_name = generate_patient_csv_file(encounter_patient_file_name, input_csv_directory)
+
+    file_name_dict["patient"] = patient_file_name
+    print(file_name_dict)
+
+    output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
+
+    output_class_obj = OutputClassDirectory()
+    in_out_map_obj = InputOutputMapperDirectory()
+
+    hf_patient_rules = [("patient_id", "s_person_id"),
+                        ("gender", "s_gender"),
+                        (("year_of_birth",), FunctionMapper(lambda x: x["year_of_birth"] + '-01-01', "date_of_birth"),
+                        {"date_of_birth": "s_birth_datetime"}),
+                        ("race", "s_race")
+                        ]
+
+    source_person_runner_obj = generate_mapper_obj(file_name_dict["patient"], HFPatient(), output_person_csv,
+                                                   SourcePersonObject(), hf_patient_rules,
+                                                   output_class_obj, in_out_map_obj)
+
+    source_person_runner_obj.run()
+
 
 
 if __name__ == "__main__":

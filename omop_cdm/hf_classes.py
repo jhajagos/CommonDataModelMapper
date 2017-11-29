@@ -26,7 +26,7 @@ class HFObservation(InputClass):
         return []
 
 
-class HFPerson(InputClass):
+class HFPatient(InputClass):
     def fields(self):
         return []
 
