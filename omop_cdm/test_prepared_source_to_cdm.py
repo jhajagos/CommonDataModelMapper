@@ -76,6 +76,8 @@ class TestMapping(unittest.TestCase):
 
         self.assertEqual("6.9", first_measurement["value_as_number"])
 
+        # TODO Create to test this does not appear as a number when the number is blank -2208988800.0;
+
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")
         self.assertTrue(len(result_observation))
 

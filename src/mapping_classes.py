@@ -79,13 +79,15 @@ class OutputClassRealization(object):
 
 class OutputClassCSVRealization(OutputClassRealization):
     """Write output to CSV file"""
-    def __init__(self, csv_file_name, output_class_obj, field_list=None):
+    def __init__(self, csv_file_name, output_class_obj, field_list=None, force_ascii=True):
         self.fw = open(csv_file_name, "wb")
         self.output_class = output_class_obj
         if field_list is None:
             self.field_list = output_class_obj.fields()
         else:
             self.field_list = field_list
+
+        self.force_ascii = force_ascii
 
         self.csv_writer = csv.writer(self.fw)
         self.csv_writer.writerow(self.field_list)
@@ -96,7 +98,11 @@ class OutputClassCSVRealization(OutputClassRealization):
         row_to_write = []
         for field in self.field_list:
             if field in row_dict:
-                row_to_write += [row_dict[field]]
+                value_to_write = row_dict[field]
+                if self.force_ascii:
+                    if value_to_write.__class__ in (u"".__class__, "".__class__):
+                        value_to_write = value_to_write.decode("ascii", "ignore").encode("ascii")
+                row_to_write += [value_to_write]
             else:
                 row_to_write += [""]
         self.csv_writer.writerow(row_to_write)

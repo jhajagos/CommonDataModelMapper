@@ -42,7 +42,7 @@ def main(input_csv_directory, output_csv_directory):
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
 
     person_race_csv = os.path.join(input_csv_directory, "PH_D_Person_Race.csv")
-    person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographic.csv")
+    person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographics.csv")
 
     build_json_person_attribute(person_race_csv, "person_race.json", "person_seq", "race_code", "race_primary_display",
                                 output_directory=input_csv_directory)
@@ -55,6 +55,12 @@ def main(input_csv_directory, output_csv_directory):
 
     person_ethnicity_code_mapper = CoderMapperJSONClass(os.path.join(input_csv_directory, "person_ethnicity.json"))
 
+    def has_date_func(input_dict):
+        if input_dict["birth_date"] == "":
+            return {"i_exclude": 1}
+        else:
+            return {}
+
     ph_f_person_rules = [("empi_id", "s_person_id"),
                          ("birth_date", "s_birth_datetime"),
                          ("gender_display", "s_gender"),
@@ -63,7 +69,8 @@ def main(input_csv_directory, output_csv_directory):
                          ("empi_id", person_race_code_mapper, {"code": "s_race"}),
                          ("empi_id", person_ethnicity_code_mapper, {"description": "m_ethnicity"}),
                          ("empi_id", person_ethnicity_code_mapper, {"code": "s_ethnicity"}),
-                         ("deceased_dt_tm", "s_death_datetime")
+                         ("deceased_dt_tm", "s_death_datetime"),
+                         ("birth_date", PassThroughFunctionMapper(has_date_func), {"i_exclude": "i_exclude"})
                        ]
 
     source_person_runner_obj = generate_mapper_obj(input_person_csv, PHDPersonObject(), output_person_csv,
@@ -188,7 +195,6 @@ def main(input_csv_directory, output_csv_directory):
         else:
             return {}
 
-
     encounter_rules = [("encounter_id", "s_encounter_id"),
                        ("empi_id", "s_person_id"),
                        ("service_dt_tm", "s_visit_start_datetime"),
@@ -202,8 +208,7 @@ def main(input_csv_directory, output_csv_directory):
                         {"m_discharge_to": "m_discharge_to"}),
                        ("admission_source_display", "s_admitting_source"),
                        ("admission_source_display", admit_source_mapper, {"m_admitting_source": "m_admitting_source"}),
-                       ("classification_display", PassThroughFunctionMapper(visit_occurrence_i_exclude), {"i_exclude": "i_exclude"})
-                      ]
+                       ("classification_display", PassThroughFunctionMapper(visit_occurrence_i_exclude), {"i_exclude": "i_exclude"})]
 
     visit_runner_obj = generate_mapper_obj(ph_f_encounter_csv, PHFEncounterObject(), source_encounter_csv, SourceEncounterObject(),
                                            encounter_rules, output_class_obj, in_out_map_obj)

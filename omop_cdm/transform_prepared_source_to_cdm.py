@@ -1171,7 +1171,10 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
 
 def person_router_obj(input_dict):
     """Route a person"""
-    return PersonObject()
+    if input_dict["i_exclude"] == "1":
+        return NoOutputClass()
+    else:
+        return PersonObject()
 
 
 def death_router_obj(input_dict):
