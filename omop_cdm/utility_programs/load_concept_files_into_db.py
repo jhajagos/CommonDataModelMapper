@@ -6,9 +6,9 @@ import json
 from utility_functions import load_csv_files_into_db, generate_vocabulary_load
 
 
-def main(vocab_directory, connection_string, schema):
+def main(vocab_directory, connection_string, schema, vocabularies=["CONCEPT"]):
 
-    vocab_list = generate_vocabulary_load(vocab_directory, vocabularies=["CONCEPT"])
+    vocab_list = generate_vocabulary_load(vocab_directory, vocabularies)
 
     vocab_data_dict = {}
     for pair in vocab_list:
@@ -26,6 +26,8 @@ if __name__ == "__main__":
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)
     arg_parse_obj.add_argument("--schema", dest="schema", default=None)
 
+    arg_parse_obj.add_argument("--full-concept-files", default=False, action="store_true", dest="load_full_concept_files")
+
     arg_obj = arg_parse_obj.parse_args()
 
     print("Reading config file '%s'" % arg_obj.config_file_name)
@@ -42,5 +44,12 @@ if __name__ == "__main__":
     else:
         schema = arg_obj.schema
 
-    main(config["json_map_directory"], connection_uri, schema)
+    if arg_obj.load_full_concept_files:
+        vocabularies = ["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_CLASS", "CONCEPT_RELATIONSHIP", "CONCEPT_SYNONYM",
+                        "DOMAIN", "DRUG_STRENGTH", "RELATIONSHIP", "VOCABULARY"]
+
+    else:
+        vocabularies = ["CONCEPT"]
+
+    main(config["json_map_directory"], connection_uri, schema, vocabularies=vocabularies)
 
