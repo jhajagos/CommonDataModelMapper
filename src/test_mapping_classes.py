@@ -74,7 +74,7 @@ class TestMappers(unittest.TestCase):
     def test_case_mapper(self):
 
         def determine_zero_positive_negative(input_dict):
-            numeric_value = input_dict[input_dict.keys()[0]]
+            numeric_value = input_dict[list(input_dict.keys())[0]]
             if numeric_value == 0:
                 return 0
             elif numeric_value > 0:

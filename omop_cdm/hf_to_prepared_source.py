@@ -24,7 +24,7 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
     file_to_write = os.path.join(output_directory, "hf_patient.csv")
     file_to_read = patient_encounter_csv_file_name
 
-    with open(file_to_read, "rb") as f:
+    with open(file_to_read, "r", newline="") as f:
 
         dict_reader = csv.DictReader(f)
 
@@ -58,7 +58,7 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
                 if year_of_birth < existing_year_of_birth or year_of_birth is None:
                     result_dict[patient_id] = patient_dict
 
-        with open(file_to_write, "wb") as fw:
+        with open(file_to_write, "w", newline="") as fw:
             fields_to_write = patient_fields + ["year_of_birth"]
             csv_writer = csv.writer(fw)
             csv_writer.writerow(fields_to_write)
@@ -100,7 +100,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                    output_class_obj, in_out_map_obj)
 
     source_person_runner_obj.run()
-
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import logging
 from timeit import default_timer as timer
 import os
 import sqlalchemy as sa
+import sys
 
 
 class InputClass(object):
@@ -50,13 +51,13 @@ class InputClassCSVRealization(InputClassRealization):
         else:
             self.input_class_has_fields = False
 
-        f = open(csv_file_name, "rb")
+        f = open(csv_file_name, newline='')
         self.csv_dict = csv.DictReader(f)
 
         self.i = 1
 
-    def next(self):
-        row_dict = self.csv_dict.next()
+    def __next__(self):
+        row_dict = self.csv_dict.__next__()
         row_dict[":row_id"] = self.i
 
         if self.input_class_has_fields:
@@ -80,7 +81,7 @@ class OutputClassRealization(object):
 class OutputClassCSVRealization(OutputClassRealization):
     """Write output to CSV file"""
     def __init__(self, csv_file_name, output_class_obj, field_list=None, force_ascii=True):
-        self.fw = open(csv_file_name, "wb")
+        self.fw = open(csv_file_name, "w", newline="")
         self.output_class = output_class_obj
         if field_list is None:
             self.field_list = output_class_obj.fields()
@@ -99,7 +100,7 @@ class OutputClassCSVRealization(OutputClassRealization):
         for field in self.field_list:
             if field in row_dict:
                 value_to_write = row_dict[field]
-                if self.force_ascii:
+                if self.force_ascii and sys.version_info[0] == 2:
                     if value_to_write.__class__ in (u"".__class__, "".__class__):
                         value_to_write = value_to_write.decode("ascii", "ignore").encode("ascii")
                 row_to_write += [value_to_write]
@@ -136,7 +137,7 @@ class CodeMapperDictClass(CodeMapperClass):
     def map(self, input_dict):
 
         if self.field_name is None:
-            key = input_dict.keys()[0]
+            key = list(input_dict.keys())[0]
         else:
             key = self.field_name
 
@@ -161,14 +162,14 @@ class CoderMapperJSONClass(CodeMapperClass):
 
     def __init__(self, json_file_name, field_name=None):
         self.field_name = field_name
-        with open(json_file_name, "r") as f:
+        with open(json_file_name, newline="") as f:
             self.mapper_dict = json.load(f)
 
     def map(self, input_dict):
 
         if len(input_dict):
             if self.field_name is None:
-                key = input_dict.keys()[0]
+                key = list(input_dict.keys())[0]
             else:
                 key = self.field_name
 
@@ -263,7 +264,7 @@ class CodeMapperClassSqliteJSONClass(CodeMapperClass):
 
         if len(input_dict):
             if self.field_name is None:
-                key = input_dict.keys()[0]
+                key = list(input_dict.keys())[0]
             else:
                 key = self.field_name
 
@@ -309,7 +310,7 @@ class HasNonEmptyValue(MapperClass):
     """Tests whether a field has a value other than ''"""
 
     def map(self, input_dict):
-        key = input_dict.keys()[0]
+        key = list(input_dict.keys())[0]
         key_value = input_dict[key]
 
         if key_value is not None:

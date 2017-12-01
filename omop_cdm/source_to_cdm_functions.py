@@ -25,7 +25,7 @@ class DateSplit(MapperClass):
     """Split a date"""
 
     def map(self, date_dict):
-        key = date_dict.keys()[0]
+        key = list(date_dict.keys())[0]
         date_string = date_dict[key]
 
         try:
@@ -93,7 +93,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
     if json_file_name is None:
         json_file_name = csv_file_name + ".json"
 
-    with open(csv_file_name, "rb") as fc:
+    with open(csv_file_name, "r", newline="") as fc:
         dict_reader = csv.DictReader(fc)
         map_dict = {}
 
@@ -111,7 +111,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
 class SplitDateTimeWithTZ(MapperClass):
     """Split datetime into two parts and convert time to local time"""
     def map(self, input_dict):
-        datetime_value = input_dict[input_dict.keys()[0]]
+        datetime_value = input_dict[list(input_dict.keys())[0]]
 
         if "T" in datetime_value: # Has a time zone embedded
             datetime_local = convert_datetime_with_tz(datetime_value)
@@ -130,7 +130,7 @@ class DateTimeWithTZ(MapperClass):
 
     def map(self, input_dict):
         if self.key is None:
-            datetime_value = input_dict[input_dict.keys()[0]]
+            datetime_value = input_dict[list(input_dict.keys())[0]]
         else:
             if self.key in input_dict:
                 datetime_value = input_dict[self.key]
