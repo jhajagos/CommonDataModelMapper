@@ -43,7 +43,7 @@ class InputClassCSVRealization(InputClassRealization):
     """Class for representing a CSV source to be read from"""
     def __init__(self, csv_file_name, input_class_obj):
         self.csv_file_name = csv_file_name
-
+        self.force_ascii = True
         self.input_class = input_class_obj
 
         if len(self.input_class.fields()):
@@ -51,13 +51,34 @@ class InputClassCSVRealization(InputClassRealization):
         else:
             self.input_class_has_fields = False
 
-        f = open(csv_file_name, newline='')
+        if self.force_ascii and sys.version_info[0] == 2:
+            f = open(csv_file_name, 'rb')
+        else:
+            f = open(csv_file_name, newline='')
         self.csv_dict = csv.DictReader(f)
 
         self.i = 1
 
     def __next__(self):
         row_dict = self.csv_dict.__next__()
+        row_dict[":row_id"] = self.i
+
+        if self.input_class_has_fields:
+            fields = self.input_class.fields()
+            for field in fields:
+                if field not in row_dict:
+                    row_dict[field] = ""
+
+        self.i += 1
+        return row_dict
+
+    def next(self):
+
+        if sys.version_info[0] == 2:
+            row_dict = self.csv_dict.next()
+        else:
+            row_dict = self.csv_dict.__next__()
+
         row_dict[":row_id"] = self.i
 
         if self.input_class_has_fields:
@@ -81,7 +102,14 @@ class OutputClassRealization(object):
 class OutputClassCSVRealization(OutputClassRealization):
     """Write output to CSV file"""
     def __init__(self, csv_file_name, output_class_obj, field_list=None, force_ascii=True):
-        self.fw = open(csv_file_name, "w", newline="")
+
+        self.force_ascii = force_ascii
+
+        if self.force_ascii and sys.version_info[0] == 2:
+            self.fw = open(csv_file_name, "wb")
+        else:
+            self.fw = open(csv_file_name, "w", newline="")
+
         self.output_class = output_class_obj
         if field_list is None:
             self.field_list = output_class_obj.fields()
@@ -162,7 +190,7 @@ class CoderMapperJSONClass(CodeMapperClass):
 
     def __init__(self, json_file_name, field_name=None):
         self.field_name = field_name
-        with open(json_file_name, newline="") as f:
+        with open(json_file_name) as f:
             self.mapper_dict = json.load(f)
 
     def map(self, input_dict):
