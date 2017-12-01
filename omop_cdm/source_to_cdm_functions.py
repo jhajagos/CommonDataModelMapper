@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import datetime
+import sys
 
 
 class LeftMapperString(MapperClass):
@@ -93,14 +94,24 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
     if json_file_name is None:
         json_file_name = csv_file_name + ".json"
 
-    with open(csv_file_name, "r", newline="") as fc:
-        dict_reader = csv.DictReader(fc)
-        map_dict = {}
+    if sys.version_info[0] == 2:
+        with open(csv_file_name, "rb") as fc:
+            dict_reader = csv.DictReader(fc)
+            map_dict = {}
 
-        for row_dict in dict_reader:
-            map_key = row_dict[lookup_field_name]
-            map_value = row_dict[lookup_value_field_name]
-            map_dict[map_key] = {lookup_value_field_name: map_value}
+            for row_dict in dict_reader:
+                map_key = row_dict[lookup_field_name]
+                map_value = row_dict[lookup_value_field_name]
+                map_dict[map_key] = {lookup_value_field_name: map_value}
+    else:
+        with open(csv_file_name, "r", newline="") as fc:
+            dict_reader = csv.DictReader(fc)
+            map_dict = {}
+
+            for row_dict in dict_reader:
+                map_key = row_dict[lookup_field_name]
+                map_value = row_dict[lookup_value_field_name]
+                map_dict[map_key] = {lookup_value_field_name: map_value}
 
     with open(json_file_name, "w") as fwj:
         json.dump(map_dict, fwj)
