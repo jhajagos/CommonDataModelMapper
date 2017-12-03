@@ -15,7 +15,7 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
     SourceProcedureObject, SourceMedicationObject
 
 from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis
+from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 
@@ -296,6 +296,56 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                condition_rules, output_class_obj, in_out_map_obj)
 
     condition_mapper_obj.run()
+
+    # Procedure
+
+    """
+        if coding_system_oid == '2.16.840.1.113883.6.104':
+        return 'ICD9 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.12':
+        return 'CPT Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.14':
+        return 'HCFA Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.4':
+        return 'ICD10 Procedure Codes'
+    elif coding_system_oid == '2.16.840.1.113883.6.96':
+        return 'SNOMED'
+    elif coding_system_oid == '2.16.840.1.113883.6.285':
+        return 'HCPCS'
+    else:
+        return False
+
+    """
+
+    procedure_code_oid_map = {
+        "CPT4": "2.16.840.1.113883.6.12",
+        "HCPCS": "2.16.840.1.113883.6.285",
+        "ICD9": "2.16.840.1.113883.6.104"}
+
+    procedure_code_oid_mapper = CodeMapperDictClass(procedure_code_oid_map)
+
+    ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
+     "s_procedure_code", "s_procedure_code_type", "m_procedure_code_oid", "s_sequence_id", "s_rank", "m_rank"]
+
+    hf_procedure_csv = os.path.join(input_csv_directory, file_name_dict["procedure"])
+    source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
+
+    procedure_rules = [("patient_id", "s_person_id"),
+                       ("encounter_id", "s_encounter_id"),
+                       ("procedure_dt_tm", "s_start_procedure_datetime"),
+                       ("procedure_code", "s_procedure_code"),
+                       ("procedure_type", "s_procedure_code_type"),
+                       ("procedure_type", procedure_code_oid_mapper, {"mapped_value":"m_procedure_code_oid"}),
+                       #("", "s_rank"),
+                       #("", "m_rank"),
+                       ("procedure_priority","s_sequence_id")
+                       ]
+
+    procedure_mapper_obj = generate_mapper_obj(hf_procedure_csv, HFProcedure(), source_procedure_csv,
+                                               SourceProcedureObject(),
+                                               procedure_rules, output_class_obj, in_out_map_obj)
+
+    procedure_mapper_obj.run()
 
 
 if __name__ == "__main__":
