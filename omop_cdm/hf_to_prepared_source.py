@@ -1,4 +1,5 @@
 import argparse
+
 import json
 import os
 import csv
@@ -14,8 +15,54 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
     SourceProcedureObject, SourceMedicationObject
 
 from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient, HFCareSite
+from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
+
+def generate_observation_period(encounter_csv_file_name, hf_period_observation_csv_file_name,
+                                id_field_name, start_date_field_name, end_date_field_name):
+
+    with open(encounter_csv_file_name, newline="") as f:
+        dict_reader = csv.DictReader(f)
+        observation_period_dict = {}
+
+        for row_dict in dict_reader:
+
+            start_date_value = row_dict[start_date_field_name]
+            end_date_value = row_dict[end_date_field_name]
+
+            if len(end_date_value) == 0:
+                end_date_value = start_date_value
+
+            id_value = row_dict[id_field_name]
+
+            if id_value in observation_period_dict:
+                past_start_date_value, past_end_date_value = observation_period_dict[id_value]
+
+                if start_date_value < past_start_date_value:
+                    set_start_date_value = start_date_value
+                else:
+                    set_start_date_value = past_start_date_value
+
+                if end_date_value > past_end_date_value:
+                    set_end_date_value = end_date_value
+                else:
+                    set_end_date_value = past_end_date_value
+
+                observation_period_dict[id_value] = (set_start_date_value, set_end_date_value)
+
+            else:
+                observation_period_dict[id_value] = (start_date_value, end_date_value)
+
+    with open(hf_period_observation_csv_file_name, "w", newline="") as fw:
+        csv_writer = csv.writer(fw)
+
+        csv_writer.writerow([id_field_name, start_date_field_name, end_date_field_name])
+
+        for id_value in observation_period_dict:
+            start_date_value, end_date_value = observation_period_dict[id_value]
+            row_to_write = [id_value, start_date_value, end_date_value]
+            csv_writer.writerow(row_to_write)
 
 
 def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory):
@@ -127,6 +174,25 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     source_person_runner_obj.run()
 
+    # Observation Period
+
+    hf_observation_period_csv = os.path.join(input_csv_directory, "hf_observation_period.csv")
+    generate_observation_period(encounter_file_name, hf_observation_period_csv,
+                                "patient_id", "admitted_dt_tm", "discharged_dt_tm")
+
+    observation_period_rules = [("patient_id", "s_person_id"),
+                                ("admitted_dt_tm", "s_start_observation_datetime"),
+                                ("discharged_dt_tm", "s_end_observation_datetime")]
+
+    source_observation_period_csv = os.path.join(output_csv_directory, "source_observation_period.csv")
+
+    observation_runner_obj = generate_mapper_obj(hf_observation_period_csv, HFObservationPeriod(),
+                                                 source_observation_period_csv,
+                                                 SourceObservationPeriodObject(), observation_period_rules,
+                                                 output_class_obj, in_out_map_obj)
+    observation_runner_obj.run()
+
+    # Care site
     care_site_csv = os.path.join(input_csv_directory, "care_site.csv")
 
     md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
@@ -145,13 +211,39 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
 
-    source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
-
     care_site_runner_obj = generate_mapper_obj(care_site_csv, HFCareSite(), source_care_site_csv,
                                                SourceCareSiteObject(), care_site_rules,
                                                output_class_obj, in_out_map_obj)
 
     care_site_runner_obj.run()
+
+    # Encounter
+
+    ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
+     "m_visit_type", "k_care_site", "s_discharge_to", "m_discharge_to",
+     "s_admitting_source", "m_admitting_source", "i_exclude"]
+
+    encounter_rules = [
+        ("encounter_id", "s_encounter_id"),
+        ("patient_id", "s_person_id"),
+        ("admitted_dt_tm", "s_visit_start_datetime"),
+        ("discharged_dt_tm", "s_visit_end_datetime"),
+        ("patient_type_desc", "s_visit_type"),
+        ("patient_type_desc", "m_visit_type"),
+        (("hospital_id", "caresetting_desc"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
+        #("", "s_discharge_to"),
+        #("", "m_discharge_to"),
+        ("admission_source_code_desc", "s_admitting_source"),
+        #("m_admitting_source")
+    ]
+
+    source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
+
+    encounter_runner_obj = generate_mapper_obj(encounter_file_name, HFEncounter(), source_encounter_csv,
+                                               SourceEncounterObject(), encounter_rules,
+                                               output_class_obj, in_out_map_obj)
+
+    encounter_runner_obj.run()
 
 
 if __name__ == "__main__":

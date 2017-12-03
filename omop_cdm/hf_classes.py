@@ -39,3 +39,7 @@ class HFMedication(InputClass):
 class HFCareSite(InputClass):
     def fields(self):
         return []
+
+class HFObservationPeriod(InputClass):
+    def fields(self):
+        return []
