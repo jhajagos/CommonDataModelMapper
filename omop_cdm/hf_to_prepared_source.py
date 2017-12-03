@@ -15,7 +15,7 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
     SourceProcedureObject, SourceMedicationObject
 
 from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod
+from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 
@@ -231,9 +231,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("patient_type_desc", "s_visit_type"),
         ("patient_type_desc", "m_visit_type"),
         (("hospital_id", "caresetting_desc"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
-        #("", "s_discharge_to"),
+        ("dischg_disp_code_desc", "s_discharge_to"),
         #("", "m_discharge_to"),
-        ("admission_source_code_desc", "s_admitting_source"),
+        ("admission_source_code_desc", "s_admitting_source")
         #("m_admitting_source")
     ]
 
@@ -244,6 +244,58 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                output_class_obj, in_out_map_obj)
 
     encounter_runner_obj.run()
+
+    # Encounter plan or insurance coverage
+
+    source_encounter_coverage_csv = os.path.join(output_csv_directory, "source_encounter_coverage.csv")
+
+    encounter_coverage_rules = [("patient_id", "s_person_id"),
+                                ("encounter_id", "s_encounter_id"),
+                                ("admitted_dt_tm", "s_start_payer_date"),
+                                ("discharged_dt_tm", "s_end_payer_date"),
+                                ("payer_code_desc", "s_payer_name"),
+                                ("payer_code_desc", "m_payer_name"),
+                                ("payer_code_desc", "s_plan_name"),
+                                ("payer_code_desc", "m_plan_name")]
+
+    encounter_benefit_runner_obj = generate_mapper_obj(encounter_file_name,
+                                                       HFEncounter(),
+                                                       source_encounter_coverage_csv, SourceEncounterCoverageObject(),
+                                                       encounter_coverage_rules, output_class_obj, in_out_map_obj)
+
+    encounter_benefit_runner_obj.run()
+
+    # Diagnosis / condition
+
+    dx_code_oid_map = {
+        "ICD9": "2.16.840.1.113883.6.103"
+    }
+
+    dx_code_oid_mapper = CodeMapperDictClass(dx_code_oid_map)
+
+    ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
+     "s_condition_code", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type",
+     "s_present_on_admission_indicator"]
+
+    condition_rules = [("patient_id", "s_person_id"),
+                       ("encounter_id", "s_encounter_id"),
+                       ("diagnosis_code","s_condition_code"),
+                       ("diagnosis_type", "s_condition_code_type"),
+                       ("diagnosis_type", dx_code_oid_mapper, {"mapped_value": "m_condition_code_oid"}),
+                       ("diagnosis_priority", "s_sequence_id"),
+                       ("diagnosis_type_display", "s_condition_type"),
+                       ("present_on_admit_code","s_present_on_admission_indicator"),
+                       ("admitted_dt_tm", "s_start_condition_datetime"),
+                       ("discharged_dt_tm", "s_end_condition_datetime")
+                       ]
+
+    hf_diagnosis_csv = os.path.join(input_csv_directory, file_name_dict["diagnosis"])
+    source_condition_csv = os.path.join(output_csv_directory, "source_condition.csv")
+    condition_mapper_obj = generate_mapper_obj(hf_diagnosis_csv, HFDiagnosis(), source_condition_csv,
+                                               SourceConditionObject(),
+                                               condition_rules, output_class_obj, in_out_map_obj)
+
+    condition_mapper_obj.run()
 
 
 if __name__ == "__main__":
@@ -257,17 +309,13 @@ if __name__ == "__main__":
         config_dict = json.load(f)
 
     file_name_dict = {
-        "clinical_events": "healthfacts._clinical_event_joined_to_export_20171127_174343.csv",
-        "diagnosis": "healthfacts._diagnosis_joined_to_export_20161229_124107.csv",
-        "encounter": "healthfacts._encounter_joined_to_export_20161229_124107.csv",
-        "encounter_patient": "healthfacts._encounter_patient_joined_to_export_20161229_124107.csv",
-        "lab_procedure": "healthfacts._lab_procedure_joined_to_export_20161229_124107.csv",
-        "medication": "healthfacts._medication_joined_to_export_20161229_124107.csv",
-        "procedure": "healthfacts._procedure_joined_to_export_20161229_124107.csv"
+        "clinical_events": "healthfacts._clinical_event_joined_to_export_20171203_095405.csv",
+        "diagnosis": "healthfacts._diagnosis_joined_to_export_20171203_095405.csv",
+        "encounter": "healthfacts._encounter_patient_joined_to_export_20171203_095405.csv",
+        "encounter_patient": "healthfacts._encounter_patient_joined_to_export_20171203_095405.csv",
+        "lab_procedure": "healthfacts._lab_procedure_joined_to_export_20171203_095405.csv",
+        "medication": "healthfacts._medication_joined_to_export_20171203_095405.csv",
+        "procedure": "healthfacts._procedure_joined_to_export_20171203_095405.csv"
     }
 
-
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
-
-
-

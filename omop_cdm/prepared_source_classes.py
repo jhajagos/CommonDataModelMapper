@@ -46,7 +46,7 @@ class SourceEncounterObject(PreparedSourceObject):
 
 
 class SourceResultObject(PreparedSourceObject):
-    """Result"""
+    """Result: labs and procedures"""
 
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
@@ -56,10 +56,10 @@ class SourceResultObject(PreparedSourceObject):
 
 
 class SourceConditionObject(PreparedSourceObject):
-
+    """Diagnosis"""
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
-                "s_condition_code", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type",
+                "s_condition_code", "s_condition_code_type", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type",
                 "s_present_on_admission_indicator"]
 
 

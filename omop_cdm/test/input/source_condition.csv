@@ -1,4 +1,4 @@
-s_person_id,s_encounter_id,s_start_condition_datetime,s_condition_code,m_condition_code_oid,s_sequence_id,m_rank,s_condition_type,s_present_on_admission_indicator
+s_person_id,s_encounter_id,s_start_condition_datetime,s_condition_code,m_condition_code_oid,s_sequence_id,m_rank,s_condition_type,s_present_on_admission_indicator,s_condition_code_type
 101,10,2016-01-08,110.0,2.16.840.1.113883.6.103,1,Primary,Final,
 101,10,2016-01-08, 088.81,2.16.840.1.113883.6.103,2,Secondary,Admitting,
 101,10,2016-01-08,A08.4,2.16.840.1.113883.6.90,3,Secondary,Final,
