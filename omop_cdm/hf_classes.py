@@ -34,3 +34,8 @@ class HFPatient(InputClass):
 class HFMedication(InputClass):
     def fields(self):
         return []
+
+
+class HFCareSite(InputClass):
+    def fields(self):
+        return []

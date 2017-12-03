@@ -1,4 +1,5 @@
 import sys, os
+from .prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 try:
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
@@ -10,14 +11,14 @@ except ImportError:
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
-from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
+from .hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
     PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
 
-from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+from .prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
-from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
+from .source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
 import argparse
 import json
@@ -117,9 +118,6 @@ def main(input_csv_directory, output_csv_directory):
                                                  output_class_obj, in_out_map_obj)
 
     observation_runner_obj.run()
-
-    ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type", "m_visit_type",
-     "k_care_site", "i_exclude"]
 
     discharge_disposition_dict = {
         "Skilled Nursing": "Skilled Nursing Facility",
@@ -243,40 +241,6 @@ def main(input_csv_directory, output_csv_directory):
 
     source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
 
-    """
-    measurement_rules = [(":row_id", "measurement_id"),
-                         ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
-                         ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                         ("service_date", SplitDateTimeWithTZ(),
-                          {"date": "measurement_date", "time": "measurement_time"}),
-                         ("result_code", "measurement_source_value"),
-                         ("result_code", measurement_code_mapper, {"CONCEPT_ID": "measurement_source_concept_id"}),
-                         ("result_code", measurement_code_mapper, {"CONCEPT_ID": "measurement_concept_id"}),
-                         (
-                         "result_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
-                         ("norm_numeric_value", FloatMapper(), "value_as_number"),
-                         (("norm_codified_value_code", "interpretation_primary_display", "norm_text_value"),
-                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
-                         # norm_codified_value_primary_display",
-                         ("norm_unit_of_measure_primary_display", "unit_source_value"),
-                         ("norm_unit_of_measure_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
-                         (("norm_numeric_value", "norm_codified_value_primary_display", "result_primary_display",
-                           "norm_text_value"),
-                          numeric_coded_mapper,  # ChainMapper(numeric_coded_mapper, LeftMapperString(50)),
-                          {"norm_numeric_value": "value_source_value",
-                           "norm_codified_value_primary_display": "value_source_value",
-                           "result_primary_display": "value_source_value",
-                           "norm_text_value": "value_source_value"}),
-                         ("norm_ref_range_low", FloatMapper(), "range_low"),
-                         # TODO: Some values contain non-numeric elements
-                         ("norm_ref_range_high", FloatMapper(), "range_high")]
-    """
-
-    ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
-     "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
-     "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
-     "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
-
     result_rules = [("empi_id", "s_person_id"),
                     ("encounter_id", "s_encounter_id"),
                     ("service_date", "s_obtained_datetime"),
@@ -311,24 +275,6 @@ def main(input_csv_directory, output_csv_directory):
     encounter_id_claim_id_mapper = CascadeMapper(FilterHasKeyValueMapper(["encounter_id"]),
                                                  ChainMapper(FilterHasKeyValueMapper(["claim_id"]),
                                                              claim_id_encounter_id_mapper))
-    """
-        condition_rules_dx = [(":row_id", "condition_occurrence_id"),
-                       ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
-                       (("encounter_id", "claim_id"),
-                        encounter_id_claim_id_mapper,
-                        {"visit_occurrence_id": "visit_occurrence_id"}),
-                       (("condition_raw_code", "condition_coding_system_id"),
-                        ICDMapper,
-                        {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
-                       ("condition_raw_code", "condition_source_value"),
-                       ("rank_type", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
-                       ("effective_dt_tm", SplitDateTimeWithTZ(), {"date": "condition_start_date"})]
-
-    """
-
-    ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
-     "s_condition_code", "m_condition_code_oid", "s_sequence_id", "m_rank", "s_condition_type",
-     "s_present_on_admission_indicator"]
 
     def s_condition_type_func(input_dict):
 
@@ -380,27 +326,6 @@ def main(input_csv_directory, output_csv_directory):
 
     condition_mapper_obj.run()
 
-    """
-    [
-                                (("procedure_code", "procedure_coding_system_id"), ProcedureCodeMapper,
-                                 {"CONCEPT_ID": "procedure_source_concept_id",
-                                  "MAPPED_CONCEPT_ID": "procedure_concept_id"},
-                                 ),
-                                (":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
-                                  {"procedure_occurrence_id": "procedure_occurrence_id"}),
-                                 ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
-                                 (("encounter_id", "claim_id"), encounter_id_mapper,
-                                  {"visit_occurrence_id": "visit_occurrence_id"}),
-                                 ("service_start_dt_tm", SplitDateTimeWithTZ(),
-                                  {"date": "procedure_date"}),
-                                 ("procedure_code", "procedure_source_value"),
-                                 ("rank_type", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})
-                                 ]
-    """
-
-    ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
-     "s_procedure_code", "m_procedure_code_oid", "s_sequence_id", "s_rank"]
-
     procedure_rules = [("empi_id", "s_person_id"),
                        (("encounter_id", "claim_id"), encounter_id_claim_id_mapper, {"encounter_id": "s_encounter_id"}),
                        ("procedure_code", "s_procedure_code"),
@@ -416,32 +341,6 @@ def main(input_csv_directory, output_csv_directory):
                                                procedure_rules, output_class_obj, in_out_map_obj)
 
     procedure_mapper_obj.run()
-
-    """
-        medication_rules = [(":row_id", row_map_offset("drug_exposure_id", row_offset),
-                                      {"drug_exposure_id": "drug_exposure_id"}),
-                        ("empi_id", empi_id_mapper, {"person_id": "person_id"}),
-                        ("encounter_id", encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                        ("drug_raw_code", "drug_source_value"),
-                        ("route_display", "route_source_value"),
-                        ("status_display", "stop_reason"), #TODO: LeftMapperString(20)
-                        ("route_display", route_mapper, {"mapped_value": "route_concept_id"}),
-                        ("dose_quantity", "dose_source_value"),
-                        ("start_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
-                        ("stop_dt_tm", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
-                        ("dose_quantity", "quantity"),
-                        ("dose_unit_display", "dose_unit_source_value"),
-                        ("dose_unit_display", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
-                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), drug_source_concept_mapper,
-                         {"CONCEPT_ID": "drug_source_concept_id"}),
-                        (("drug_raw_coding_system_id", "drug_raw_code", "drug_primary_display"), rxnorm_concept_mapper,
-                         {"CONCEPT_ID": "drug_concept_id"}), # TODO: Make sure map maps to standard concept
-                        ("intended_dispenser", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})]
-    """
-
-    ["s_person_id", "s_encounter_id", "s_drug_code", "m_drug_code_oid", "s_drug_text",
-     "s_start_medication_datetime", "s_end_medication_datetime",
-     "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type", "s_intended_dispenser"]
 
     def active_medications(input_dict):
         if "status_primary_display" in input_dict:
@@ -517,67 +416,6 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
 
         with open(full_attribute_json_file_name, "w") as fw:
             json.dump(final_attribute_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
-
-
-def build_key_func_dict(fields, hashing_func=None, separator="|"):
-    if fields.__class__ not in ([].__class__, ().__class__):
-        fields = [fields]
-
-    def hash_func(input_dict):
-        key_list = []
-        for field in fields:
-            key_list += [input_dict[field]]
-
-        key_list = [kl for kl in key_list if len(kl)]
-        key_string = separator.join(key_list)
-
-        if hashing_func is not None:
-            key_string = hashing_func(key_string)
-
-        return key_string
-
-    return hash_func
-
-
-def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields, hashing_func=None):
-    lookup_dict = {}
-
-    key_func = build_key_func_dict(key_fields, hashing_func=hashing_func)
-
-    with open(input_csv_file_name, "rb") as f:
-        csv_dict = csv.DictReader(f)
-
-        for row_dict in csv_dict:
-            key_str = key_func(row_dict)
-            new_dict = {}
-            for field_name in field_names:
-                new_dict[field_name] = row_dict[field_name]
-
-            lookup_dict[key_str] = new_dict
-
-    with open(output_csv_file_name, "wb") as fw:
-        csv_writer = csv.writer(fw)
-
-        i = 0
-        for key_name in lookup_dict:
-
-            row_dict = lookup_dict[key_name]
-            if i == 0:
-                row_field_names = row_dict.keys()
-                header = ["key_name"] + row_field_names
-
-                csv_writer.writerow(header)
-
-            if len(key_name):
-                row_to_write = [key_name]
-                for field_name in row_field_names:
-                    row_to_write += [row_dict[field_name]]
-
-                csv_writer.writerow(row_to_write)
-
-            i += 1
-
-    return FunctionMapper(key_func)
 
 
 if __name__ == "__main__":

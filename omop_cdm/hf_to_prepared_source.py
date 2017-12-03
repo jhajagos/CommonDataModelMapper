@@ -3,17 +3,19 @@ import json
 import os
 import csv
 import datetime
+import hashlib
 
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass
 
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
 from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient
+from hf_classes import HFPatient, HFCareSite
+from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 
 def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory):
@@ -88,18 +90,68 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     output_class_obj = OutputClassDirectory()
     in_out_map_obj = InputOutputMapperDirectory()
 
+    race_map = {
+                "African American": "African American",
+                "Asian": "Asian",
+                #Biracial
+                "Caucasian": "White",
+                #Hispanic - ethnicity
+                #Mid Eastern Indian
+                "Native American": "American Indian or Alaska Native",
+                #Not Mapped
+                #NULL
+                #Other
+                "Pacific Islander": "Native Hawaiian or Other Pacific Islander"
+                #Unknown
+    }
+    race_mapper = CodeMapperDictClass(race_map)
+
+    ethnicity_source_map = {"Hispanic": "Hispanic"}
+    ethnicity_source_mapper = CodeMapperDictClass(ethnicity_source_map)
+
+    ethnicity_map = {"Hispanic": "Hispanic or Latino"}
+    ethnicity_mapper = CodeMapperDictClass(ethnicity_map)
+
     hf_patient_rules = [("patient_id", "s_person_id"),
                         ("gender", "s_gender"),
                         (("year_of_birth",), FunctionMapper(lambda x: x["year_of_birth"] + '-01-01', "date_of_birth"),
                         {"date_of_birth": "s_birth_datetime"}),
-                        ("race", "s_race")
-                        ]
+                        ("race", "s_race"),
+                        ("race", race_mapper, {"mapped_value": "m_race"}),
+                        ("race", ethnicity_source_mapper, {"mapped_value": "s_ethnicity"}),
+                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"})]
 
     source_person_runner_obj = generate_mapper_obj(file_name_dict["patient"], HFPatient(), output_person_csv,
                                                    SourcePersonObject(), hf_patient_rules,
                                                    output_class_obj, in_out_map_obj)
 
     source_person_runner_obj.run()
+
+    care_site_csv = os.path.join(input_csv_directory, "care_site.csv")
+
+    md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
+
+    key_care_site_mapper = build_name_lookup_csv(encounter_file_name, care_site_csv,
+                                                 ["hospital_id", "caresetting_desc"],
+                                                 ["hospital_id", "caresetting_desc"], hashing_func=md5_func)
+
+    care_site_name_mapper = FunctionMapper(
+        build_key_func_dict(["hospital_id", "caresetting_desc"], separator=" - "))
+
+    care_site_rules = [("key_name", "k_care_site"),
+                       (("hospital_id", "caresetting_desc"),
+                         care_site_name_mapper,
+                        {"mapped_value": "s_care_site_name"})]
+
+    source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
+
+    source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
+
+    care_site_runner_obj = generate_mapper_obj(care_site_csv, HFCareSite(), source_care_site_csv,
+                                               SourceCareSiteObject(), care_site_rules,
+                                               output_class_obj, in_out_map_obj)
+
+    care_site_runner_obj.run()
 
 
 if __name__ == "__main__":
@@ -121,6 +173,7 @@ if __name__ == "__main__":
         "medication": "healthfacts._medication_joined_to_export_20161229_124107.csv",
         "procedure": "healthfacts._procedure_joined_to_export_20161229_124107.csv"
     }
+
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
 
