@@ -417,7 +417,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     merge_lab_and_clinical_events_cvs(os.path.join(input_csv_directory, file_name_dict["clinical_events"]),
                                       os.path.join(input_csv_directory, file_name_dict["lab_procedure"]),
-                                      hf_result_csv, overwrite=True, sample_size=1000)
+                                      hf_result_csv, overwrite=True, sample_size=None)
 
     result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
 
@@ -499,6 +499,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                 output_class_obj, in_out_map_obj)
 
     medication_mapper_obj.run()
+
 
 if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser()
