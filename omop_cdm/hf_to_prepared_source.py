@@ -8,15 +8,77 @@ import hashlib
 
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, ConstantMapper
 
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
 from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure
+from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, HFMedication
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
+
+def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out_result_csv, overwrite=True, sample_size=1000):
+
+    cross_mappings = [("patient_id", "patient_id", "patient_id"),
+                      ("encounter_id", "encounter_id", "encounter_id"),
+                      ('loinc_code', 'detail_lab_procedure_loinc_code', 'code'),
+                      ('event_code_desc', 'detail_lab_procedure_lab_procedure_name', 'result_name'),
+                      ('performed_dt_tm', 'lab_performed_dt_tm', 'performed_dt_tm'),
+                      ('normal_high', 'normal_range_high', 'range_high'),
+                      ('normal_low', 'normal_range_low', 'range_low'),
+                      ('result_value_num', 'numeric_result', 'numeric_result'),
+                      ('result_value_dt_tm', None, "date_result"),
+                      ('result_unit','result_units_unit_display', 'result_unit'),
+                      ('normalcy_desc','result_indicator_desc', 'result_indicator')]
+
+    ce_field_map_dict ={}
+    for cross_map in cross_mappings:
+        if cross_map[0] is not None:
+            ce_field_map_dict[cross_map[0]] = cross_map[2]
+
+    lab_procedure_field_map_dict = {}
+    for cross_map in cross_mappings:
+        if cross_map[1] is not None:
+            lab_procedure_field_map_dict[cross_map[1]] = cross_map[2]
+
+    columns_to_map_to = [c[2] for c in cross_mappings]
+
+    if overwrite:
+        with open(out_result_csv, "w", newline="") as fw:
+            csv_writer = csv.writer(fw)
+            header = columns_to_map_to + ['source']
+            csv_writer.writerow(header)
+
+            field_maps_dict = [ce_field_map_dict, lab_procedure_field_map_dict]
+            csv_file_list = [clinical_event_csv, lab_procedure_csv]
+            field_type_list = ["clinical_event", "lab_procedure"]
+
+            t = 0
+            for field_map_dict in field_maps_dict:
+
+                with open(csv_file_list[t], newline="") as f:
+                    i = 0
+                    csv_dict_reader = csv.DictReader(f)
+                    for row_dict in csv_dict_reader:
+
+                        row_to_write = [''] * len(header)
+
+                        for field in field_map_dict:
+                            if field in row_dict:
+                                row_to_write[header.index(field_map_dict[field])] = row_dict[field]
+
+                        row_to_write[-1] = field_type_list[t]
+
+                        csv_writer.writerow(row_to_write)
+
+                        if sample_size is not None:
+                            if i == sample_size - 1:
+                                break
+
+                        i += 1
+                t += 1
 
 
 def generate_observation_period(encounter_csv_file_name, hf_period_observation_csv_file_name,
@@ -347,6 +409,96 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     procedure_mapper_obj.run()
 
+    # Lab results and conditions
+    # Merge the results and conditions together
+
+    hf_result_csv = os.path.join(input_csv_directory, "hf_result.csv")
+    source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
+
+    merge_lab_and_clinical_events_cvs(os.path.join(input_csv_directory, file_name_dict["clinical_events"]),
+                                      os.path.join(input_csv_directory, file_name_dict["lab_procedure"]),
+                                      hf_result_csv, overwrite=True, sample_size=1000)
+
+    result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
+
+    clinical_event_name_snomed_code_map = {
+        "Blood Pressure Diastolic": "271650006",
+        "Blood Pressure Systolic": "271649006",
+    }
+    clinical_event_name_snomed_code_mapper = CodeMapperDictClass(clinical_event_name_snomed_code_map, "result_name")
+    result_code_mapper = CascadeMapper(ChainMapper(FilterHasKeyValueMapper(["code"]), KeyTranslator({"code": "mapped_value"})),
+                                       ChainMapper(FilterHasKeyValueMapper(["result_name"]), clinical_event_name_snomed_code_mapper))
+
+    def func_result_code_type_mapper(input_dict):
+
+        if "code" in input_dict:
+            code_value = input_dict["code"]
+            if "-" in code_value:
+                return {"mapped_value": result_map["LOINC"]}
+            elif "result_name" in input_dict:
+                result_name = input_dict["result_name"]
+                if result_name in clinical_event_name_snomed_code_map:
+                    return {"mapped_value": result_map["SNOMED"]}
+
+        return {}
+
+    code_type_mapper = PassThroughFunctionMapper(func_result_code_type_mapper)
+
+
+    ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
+     "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
+     "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
+     "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
+    # patient_id	encounter_id	code	result_name	performed_dt_tm	range_high	range_low	numeric_result	date_result	result_unit	result_indicator	source
+
+    result_rules = [
+        ("patient_id", "s_person_id"),
+        ("encounter_id", "s_encounter_id"),
+        ("performed_dt_tm", "s_obtained_datetime"),
+        ("result_name", "s_type_name"),
+        (("code", "result_name"), result_code_mapper, {"mapped_value":"s_type_code"}),
+         (("code","result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
+        ("result_indicator", "s_result_text"),
+        ("numeric_result", "s_result_numeric"),
+        #("", "s_result_code"),
+        #("", "m_result_code_oid"),
+        ("range_low", "s_result_numeric_lower"),
+        ("range_high", "s_result_numeric_upper"),
+        ("result_unit", "s_result_unit")
+    ]
+
+    result_mapper_obj = generate_mapper_obj(hf_result_csv, HFResult(), source_result_csv, SourceResultObject(),
+                                            result_rules, output_class_obj, in_out_map_obj)
+
+    result_mapper_obj.run()
+
+    # Medication
+    ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type", "m_drug_code_oid", "s_drug_text",
+     "s_start_medication_datetime", "s_end_medication_datetime",
+     "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
+
+    medication_rules = [
+        ("patient_id", "s_person_id"),
+        ("encounter_id", "s_encounter_id"),
+        ("ndc_code", "s_drug_code"),
+        ("ndc_code", ConstantMapper({"mapped_value": "2.16.840.1.113883.6.69"}), {"mapped_value": "m_drug_code_oid"}),
+        ("brand_name", "s_drug_text"),
+        ("med_started_dt_tm", "s_start_medication_datetime"),
+        ("med_stopped_dt_tm", "s_end_medication_datetime"),
+        ("route_description", "s_route"),
+        ("total_dispensed_doses","s_quantity"),
+        ("order_strength_units_unit_display", "s_dose_unit"),
+        ("med_order_status_desc", "s_status")
+    ]
+
+    hf_medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
+    source_medication_csv = os.path.join(output_csv_directory, "source_medication.csv")
+
+    medication_mapper_obj = generate_mapper_obj(hf_medication_csv, HFMedication(), source_medication_csv,
+                                                SourceMedicationObject(), medication_rules,
+                                                output_class_obj, in_out_map_obj)
+
+    medication_mapper_obj.run()
 
 if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser()

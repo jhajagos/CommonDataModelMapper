@@ -21,7 +21,7 @@ class HFLaboratory(InputClass):
         return []
 
 
-class HFObservation(InputClass):
+class HFResult(InputClass):
     def fields(self):
         return []
 

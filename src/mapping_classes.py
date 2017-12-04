@@ -425,7 +425,7 @@ class CascadeMapper(MapperClass):
 
 
 class CascadeKeyMapper(MapperClass):
-    """Runs through mappers until one returns a results"""
+    """Runs through mappers until one returns a results with a specific key"""
 
     def __init__(self, key, *mapper_classes):
         self.mapper_classes = mapper_classes
@@ -443,7 +443,7 @@ class CascadeKeyMapper(MapperClass):
 
 class FilterHasKeyValueMapper(MapperClass):
 
-    """Return only a single key which matches a key"""
+    """Return only a single key which matches a key and has a value"""
 
     def __init__(self, keys_to_track, empty_value=""):
         self.keys_to_track = keys_to_track
