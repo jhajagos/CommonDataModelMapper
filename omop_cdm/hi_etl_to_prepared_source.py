@@ -385,7 +385,7 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
     """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
 
     master_attribute_dict = {}
-    with open(person_attribute_filename, "rb") as f:
+    with open(person_attribute_filename, "r", newline="") as f:
 
         csv_dict_reader = csv.DictReader(f)
 

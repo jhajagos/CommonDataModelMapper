@@ -513,13 +513,13 @@ if __name__ == "__main__":
         config_dict = json.load(f)
 
     file_name_dict = {
-        "clinical_events": "healthfacts._clinical_event_joined_to_export_20171203_095405.csv",
-        "diagnosis": "healthfacts._diagnosis_joined_to_export_20171203_095405.csv",
-        "encounter": "healthfacts._encounter_patient_joined_to_export_20171203_095405.csv",
-        "encounter_patient": "healthfacts._encounter_patient_joined_to_export_20171203_095405.csv",
-        "lab_procedure": "healthfacts._lab_procedure_joined_to_export_20171203_095405.csv",
-        "medication": "healthfacts._medication_joined_to_export_20171203_095405.csv",
-        "procedure": "healthfacts._procedure_joined_to_export_20171203_095405.csv"
+        "clinical_events": "clinical_event_joined_to_export.csv",
+        "diagnosis": "diagnosis_joined_to_export.csv",
+        "encounter": "encounter_patient_joined_to_export.csv",
+        "encounter_patient": "encounter_patient_joined_to_export.csv",
+        "lab_procedure": "lab_procedure_joined_to_export.csv",
+        "medication": "medication_joined_to_export.csv",
+        "procedure": "procedure_joined_to_export.csv"
     }
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)

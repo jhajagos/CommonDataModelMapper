@@ -17,7 +17,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     vocabularies = []
 
     # Determine which vocabularies are in the concept file
-    with open(concept_csv, "rb") as f:
+    with open(concept_csv, "r", newline="") as f:
         dict_reader = csv.DictReader(f, delimiter=delimiter)
         for row_dict in dict_reader:
             vocabulary_id = row_dict["VOCABULARY_ID"]
@@ -44,7 +44,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
         print("Generating '%s'" % concept_relationship_json)
         csv_file_name_to_keyed_json(concept_relationship_csv, concept_relationship_json, "CONCEPT_ID_1", ("RELATIONSHIP_ID", "Maps to"))
 
-    with open(concept_csv, "rb") as f:
+    with open(concept_csv, "r", newline="") as f:
         dict_reader = csv.DictReader(f, delimiter=delimiter)
         concept_dict_vocabulary = {}
         for row_dict in dict_reader:
@@ -55,7 +55,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
         with open(global_concept_json, "w") as fw:
             json.dump(concept_dict_vocabulary, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
-    with open(concept_csv, "rb") as f:
+    with open(concept_csv, newline="") as f:
         dict_reader = csv.DictReader(f, delimiter=delimiter)
         concept_dict_domain = {}
         for row_dict in dict_reader:
