@@ -440,7 +440,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                 if result_name in clinical_event_name_snomed_code_map:
                     return {"mapped_value": result_map["SNOMED"]}
 
-        return {}
+        return {"i_exclude": 1}
 
     code_type_mapper = PassThroughFunctionMapper(func_result_code_type_mapper)
 
@@ -464,7 +464,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         #("", "m_result_code_oid"),
         ("range_low", "s_result_numeric_lower"),
         ("range_high", "s_result_numeric_upper"),
-        ("result_unit", "s_result_unit")
+        ("result_unit", "s_result_unit"),
+        (("code","result_name"), code_type_mapper, {"i_exclude": "i_exclude"})
     ]
 
     result_mapper_obj = generate_mapper_obj(hf_result_csv, HFResult(), source_result_csv, SourceResultObject(),
