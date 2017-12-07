@@ -184,7 +184,8 @@ Date formats:
 * s_route
 * m_route
 * s_quantity
-* s_dose
+* s_dose -- The source dose form
+* m_dose -- The mapped dose form
 * s_dose_unit
 * m_dose_unit
 * s_status -- {Completed, Ordered, Canceled}
