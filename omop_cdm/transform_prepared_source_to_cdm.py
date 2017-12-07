@@ -1051,7 +1051,7 @@ def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text")
 
 def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, row_offset):
 
-    #TODO: Increase mapping coverage of drugs - while likely need manual overrides
+    # TODO: Increase mapping coverage of drugs - while likely need manual overrides
 
     rxnorm_rxcui_mapper = generate_rxcui_drug_code_mapper(json_map_directory)
     rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)

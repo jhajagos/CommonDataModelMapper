@@ -19,7 +19,7 @@ def main(directory, glob_pattern, combined_file_name):
 
             print("Reading '%s'" % part_file_name_path)
 
-            with open(part_file_name_path, "rb") as f:
+            with open(part_file_name_path, "r", newline="") as f:
                 if i > 0:
                     f.__next__()  # skip the header
 

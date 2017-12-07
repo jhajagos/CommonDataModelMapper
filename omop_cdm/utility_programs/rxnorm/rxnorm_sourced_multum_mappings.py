@@ -31,7 +31,7 @@ RXNCONSO_FIELD_LAYOUT = {"RXCUI": 0, "LAT": 1, "RXAUI": 7, "SCUI": 9, "SAB": 11,
 
 
 def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RXNCONSO_FIELD_LAYOUT):
-    with open(rrf_file_name, "r") as f:
+    with open(rrf_file_name, "r", newline="") as f:
         rrf_reader = csv.reader(f, delimiter="|")
 
         lookup_dict = {}

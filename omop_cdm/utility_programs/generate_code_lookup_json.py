@@ -6,6 +6,7 @@
 import csv
 import json
 import os
+import argparse
 
 
 def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"):
@@ -151,6 +152,13 @@ def csv_file_name_to_keyed_json(csv_file_name, json_file_name, field_to_key_on, 
 
 
 if __name__ == "__main__":
-    with open("hi_config.json") as f:
-        cdm_config = json.load(f)
-    main(cdm_config["json_map_directory"])
+    arg_parse_obj = argparse.ArgumentParser(description="Transform Athena vocabulary files into JSON map files for mapping scripts")
+    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file",
+                               default="hi_config.json")
+    arg_obj = arg_parse_obj.parse_args()
+
+    print("Reading config file '%s'" % arg_obj.config_file_name)
+    with open(arg_obj.config_file_name, "r") as f:
+        config_dict = json.load(f)
+
+    main(config_dict["json_map_directory"])

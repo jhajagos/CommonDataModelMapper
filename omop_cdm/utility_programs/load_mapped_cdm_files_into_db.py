@@ -1,8 +1,5 @@
-import os
-import sys
 import argparse
 import json
-
 from utility_functions import load_csv_files_into_db, generate_db_dict
 
 
@@ -34,9 +31,8 @@ if __name__ == "__main__":
         connection_uri = arg_obj.connection_uri
 
     if arg_obj.schema is None:
-        schema = config["schema"]
+        db_schema = config["schema"]
     else:
-        schema = arg_obj.schema
+        db_schema = arg_obj.schema
 
-    main(config["csv_output_directory"], connection_uri, schema)
-
+    main(config["csv_output_directory"], connection_uri, db_schema)

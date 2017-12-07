@@ -38,7 +38,6 @@ def main(ddl_file_name, connection_string, db_schema,
 
         metadata.drop_all()
 
-
     # Build schema
     if ddl_file_name:
         execute_sql_file(connection, ddl_file_name, db_schema)
@@ -123,7 +122,7 @@ def create_schema_if_does_not_exists(connection, schema):
 
 
 if __name__ == "__main__":
-    arg_parse_obj = argparse.ArgumentParser()
+    arg_parse_obj = argparse.ArgumentParser(description="Utility program for setting up OHDSI databases on PostGres Servers")
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)
     arg_parse_obj.add_argument("--schema", dest="schema", default=None)
     arg_parse_obj.add_argument("--schema-customization-file", dest="schema_customization_file_name", default=None)

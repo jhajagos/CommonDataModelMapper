@@ -161,6 +161,7 @@ Date formats:
 * s_type_code
 * m_type_code_oid
 * s_result_text
+* m_result_text
 * s_result_numeric
 * s_result_datetime
 * s_result_code

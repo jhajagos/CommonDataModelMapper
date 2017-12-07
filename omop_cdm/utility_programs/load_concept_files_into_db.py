@@ -18,7 +18,7 @@ def main(vocab_directory, connection_string, schema, vocabularies=["CONCEPT"]):
 
 if __name__ == "__main__":
 
-    arg_parse_obj = argparse.ArgumentParser()
+    arg_parse_obj = argparse.ArgumentParser(description="Load concept/vocabulary files into database")
     arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="../hi_config.json")
 
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)

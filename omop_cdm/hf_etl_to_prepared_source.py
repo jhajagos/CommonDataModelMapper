@@ -478,13 +478,13 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("result_name", "s_type_name"),
         (("code", "result_name"), result_code_mapper, {"mapped_value":"s_type_code"}),
          (("code","result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
-        ("result_indicator", ReplacementMapper({"NULL": "", "Within Range": "Within reference range"}), {"result_indicator": "s_result_text"}),
+        ("result_indicator", ReplacementMapper({"NULL": "", "Within Range": "Within reference range"}),
+         {"result_indicator": "m_result_text"}),
         ("numeric_result", "s_result_numeric"),
-        #("", "s_result_code"),
-        #("", "m_result_code_oid"),
         ("range_low", "s_result_numeric_lower"),
         ("range_high", "s_result_numeric_upper"),
-        ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "s_result_unit"}),
+        ("result_unit", "s_result_unit"),
+        ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "m_result_unit"}), # TODO: Map to standard
         (("code","result_name", "numeric_result", "date_result"), i_exclude_func_mapper, {"i_exclude": "i_exclude"})
     ]
 
@@ -494,9 +494,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     result_mapper_obj.run()
 
     # Medication
-    ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type", "m_drug_code_oid", "s_drug_text",
-     "s_start_medication_datetime", "s_end_medication_datetime",
-     "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
 
     medication_rules = [
         ("patient_id", "s_person_id"),
@@ -508,7 +505,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("med_started_dt_tm", "s_start_medication_datetime"),
         ("med_stopped_dt_tm", "s_end_medication_datetime"),
         ("dose_form_description", "s_dose"),
+        ("dose_form_description", "m_dose"),
         ("route_description", "s_route"),
+        ("route_description", "m_route"),
         ("total_dispensed_doses","s_quantity"),
         ("order_strength_units_unit_display", "s_dose_unit"),
         ("med_order_status_desc", "s_status"),
