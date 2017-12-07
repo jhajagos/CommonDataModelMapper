@@ -730,7 +730,7 @@ class RunMapperAgainstSingleInputRealization(RunMapper):
 
             if i % n_rows == 0 and i > 0:
                 end_time = timer()
-                logging.info("Read %s rows and mapped %s rows in %s seconds" % (i, j, end_time - start_time))
+                logging.info("Read %s rows and mapped %s rows in %s seconds" % (i, j - 1, end_time - start_time))
                 start_time = end_time
 
             i += 1

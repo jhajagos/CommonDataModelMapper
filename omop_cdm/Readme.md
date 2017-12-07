@@ -106,30 +106,91 @@ Date formats:
 
 ### source_observation_period.csv
 
+* s_person_id
+* s_start_observation_datetime
+* s_end_observation_datetime
+
 ### source_encounter_coverage.csv
+
+* s_person_id
+* s_encounter_id
+* s_start_payer_date
+* s_end_payer_date
+* s_payer_name
+* m_payer_name
+* s_plan_name
+* m_plan_name
 
 ### source_condition.csv
 
+* s_person_id
+* s_encounter_id
+* s_start_condition_datetime
+* s_end_condition_datetime
+* s_condition_code
+* s_condition_code_type
+* m_condition_code_oid
+* s_sequence_id
+* s_rank
+* m_rank
+* s_condition_type
+* s_present_on_admission_indicator
+* i_exclude
+
 ### source_procedure.csv
+
+* s_encounter_id -- Source identifier for patient of person
+* s_person_id -- Source identifier for an encounter
+* s_start_procedure_datetime
+* s_end_procedure_datetime
+* s_procedure_code
+* s_procedure_code_type
+* m_procedure_code_oid
+* s_sequence_id
+* s_rank
+* m_rank
+* i_exclude
 
 ### source_result.csv
 
+* s_person_id
+* s_encounter_id
+* s_obtained_datetime
+* s_type_name
+* s_type_code
+* m_type_code_oid
+* s_result_text
+* s_result_numeric
+* s_result_datetime
+* s_result_code
+* m_result_code_oid
+* s_result_unit
+* s_result_unit_code
+* m_result_unit_code_oid
+* s_result_numeric_lower
+* s_result_numeric_upper
+* i_exclude
+                
 ### source_medication.csv
 
-*  s_person_id
-*  s_encounter_id
-*  s_drug_code
-*  s_drug_code_type
-*  m_drug_code_oid
-*  s_drug_text
-*  s_start_medication_datetime
-*  s_end_medication_datetime
-*  s_route
-*  s_quantity
-*  s_dose
-*  s_dose_unit
-*  s_status
-*  s_drug_type
+* s_person_id
+* s_encounter_id
+* s_drug_code
+* s_drug_code_type -- Name of drug coding system {NDC, RxNorm} (not used in mapping)
+* m_drug_code_oid -- OID for drug coding system
+* s_drug_text -- Name of the drug
+* s_start_medication_datetime -- Start of drug
+* s_end_medication_datetime -- End of drug
+* s_route
+* m_route
+* s_quantity
+* s_dose
+* s_dose_unit
+* m_dose_unit
+* s_status -- {Completed, Ordered, Canceled}
+* s_drug_type -- How the drug was delivered {Inpatient, Office}
+* m_drug_type -- In standard mapping
+* i_exclude
 
 ```json
 {

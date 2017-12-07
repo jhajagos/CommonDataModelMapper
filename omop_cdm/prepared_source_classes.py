@@ -60,22 +60,29 @@ class SourceConditionObject(PreparedSourceObject):
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
                 "s_condition_code", "s_condition_code_type", "m_condition_code_oid", "s_sequence_id", "s_rank",
-                "m_rank", "s_condition_type", "s_present_on_admission_indicator"]
+                "m_rank", "s_condition_type", "s_present_on_admission_indicator", "i_exclude"]
 
 
 class SourceProcedureObject(PreparedSourceObject):
 
     def _fields(self):
-        return ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
-                "s_procedure_code", "s_procedure_code_type", "m_procedure_code_oid", "s_sequence_id",
-                "s_rank", "m_rank"]
-
+        return ["s_person_id", "s_encounter_id",
+                "s_start_procedure_datetime", "s_end_procedure_datetime",
+                "s_procedure_code", "s_procedure_code_type", "m_procedure_code_oid",
+                "s_sequence_id", "s_rank", "m_rank",
+                "i_exclude"]
 
 class SourceMedicationObject(PreparedSourceObject):
     def _fields(self):
-        return ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type", "m_drug_code_oid", "s_drug_text",
+        return ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type",
+                "m_drug_code_oid", "s_drug_text",
                 "s_start_medication_datetime", "s_end_medication_datetime",
-                "s_route", "s_quantity", "s_dose", "s_dose_unit", "s_status", "s_drug_type"]
+                "s_route", "m_route",
+                "s_quantity",
+                "s_dose", "m_dose",
+                "s_dose_unit", "s_status",
+                "s_drug_type", "m_drug_type",
+                "i_exclude"]
 
 
 class SourceEncounterCoverageObject(PreparedSourceObject):
