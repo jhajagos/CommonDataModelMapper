@@ -38,6 +38,7 @@ look up files. The vocabulary files need to be downloaded from: http://www.ohdsi
 ```bash
 psql ohdsi < echo "create schema mapped_data_cdm; grant all on schema mapped_data_cdm to username"
 ```
+
 ## Load database schema
 
 ```bash
