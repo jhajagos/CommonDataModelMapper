@@ -11,7 +11,7 @@ def main(directory, glob_pattern, combined_file_name):
 
     combined_file_name_path = os.path.join(directory, combined_file_name)
 
-    with open(combined_file_name_path, "wb") as fw:
+    with open(combined_file_name_path, "w", newline="") as fw:
         i = 0
         for part_file_name in files_to_combine:
 
@@ -21,7 +21,7 @@ def main(directory, glob_pattern, combined_file_name):
 
             with open(part_file_name_path, "rb") as f:
                 if i > 0:
-                    f.next() # skip the header
+                    f.__next__()  # skip the header
 
                 for line in f:
                     fw.write(line)

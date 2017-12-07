@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.insert(0, os.path.curdir)
 import unittest
 import json
 import transform_prepared_source_to_cdm as tpsc

@@ -1,6 +1,6 @@
 import os
 import json
-from utility_functions import load_csv_files_into_db, generate_db_dict
+from utility_functions import load_csv_files_into_db, generate_db_dict, generate_vocabulary_load
 
 
 def main(output_directory=None, vocabulary_directory=None, load_vocabularies=False, load_data=True):
@@ -32,8 +32,6 @@ def main(output_directory=None, vocabulary_directory=None, load_vocabularies=Fal
             vocab_dict[pair[1]] = pair[0]
 
         load_csv_files_into_db(connection_string, vocab_dict, delimiter="\t", i_print_update=100000)
-
-
 
 
 if __name__ == "__main__":

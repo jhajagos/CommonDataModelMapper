@@ -1,5 +1,5 @@
 import sys, os
-from .prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 try:
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
@@ -11,14 +11,14 @@ except ImportError:
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
-from .hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
+from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
     PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
 
-from .prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
     SourceProcedureObject, SourceMedicationObject
 
-from .source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
+from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
 import argparse
 import json

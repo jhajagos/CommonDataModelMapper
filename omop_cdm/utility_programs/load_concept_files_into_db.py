@@ -1,5 +1,3 @@
-import os
-import sys
 import argparse
 import json
 
@@ -45,11 +43,11 @@ if __name__ == "__main__":
         schema = arg_obj.schema
 
     if arg_obj.load_full_concept_files:
-        vocabularies = ["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_CLASS", "CONCEPT_RELATIONSHIP", "CONCEPT_SYNONYM",
+        vocabularies_to_load = ["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_CLASS", "CONCEPT_RELATIONSHIP", "CONCEPT_SYNONYM",
                         "DOMAIN", "DRUG_STRENGTH", "RELATIONSHIP", "VOCABULARY"]
 
     else:
-        vocabularies = ["CONCEPT"]
+        vocabularies_to_load = ["CONCEPT"]
 
-    main(config["json_map_directory"], connection_uri, schema, vocabularies=vocabularies)
+    main(config["json_map_directory"], connection_uri, schema, vocabularies=vocabularies_to_load)
 
