@@ -115,3 +115,29 @@ Date formats:
 ### source_result.csv
 
 ### source_medication.csv
+
+*  s_person_id
+*  s_encounter_id
+*  s_drug_code
+*  s_drug_code_type
+*  m_drug_code_oid
+*  s_drug_text
+*  s_start_medication_datetime
+*  s_end_medication_datetime
+*  s_route
+*  s_quantity
+*  s_dose
+*  s_dose_unit
+*  s_status
+*  s_drug_type
+
+```json
+{
+ "HOSPITAL_PHARMACY": "Inpatient administration",
+ "INPATIENT_FLOOR_STOCK": "Inpatient administration",
+ "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
+ "UNKNOWN": "Prescription dispensed in pharmacy",
+ "_NOT_VALUED": "Prescription written",
+ "OFFICE": "Physician administered drug (identified from EHR observation)"
+}
+```

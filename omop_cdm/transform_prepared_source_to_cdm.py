@@ -278,7 +278,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           ("s_condition_type", condition_status_mapper, {"CONCEPT_ID": "condition_status_concept_id"}),
                           ("s_condition_type", "condition_status_source_value"),
                           ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"}),
-                          ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"})]
+                          ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"}),
+                          ("s_end_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_end_date"}),
+                          ("s_end_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_end_datetime"})
+                          ]
 
     condition_rules_dx_class = build_input_output_mapper(condition_rules_dx)
 

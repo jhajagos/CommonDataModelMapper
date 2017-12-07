@@ -8,7 +8,8 @@ import hashlib
 
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, ConstantMapper
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, ConstantMapper, \
+        ReplacementMapper
 
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
     SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
@@ -19,7 +20,7 @@ from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, 
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 
-def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out_result_csv, overwrite=True, sample_size=1000):
+def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out_result_csv, overwrite=True, sample_size=None):
 
     cross_mappings = [("patient_id", "patient_id", "patient_id"),
                       ("encounter_id", "encounter_id", "encounter_id"),
@@ -424,6 +425,11 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     clinical_event_name_snomed_code_map = {
         "Blood Pressure Diastolic": "271650006",
         "Blood Pressure Systolic": "271649006",
+        "Respiratory Rate": "86290005",
+        "SPO2 (Saturation of peripheral oxygen)": "59408-5",
+        "Weight": "27113001",
+        "Height": "50373000",
+        "Pulse Peripheral": "54718008"
     }
     clinical_event_name_snomed_code_mapper = CodeMapperDictClass(clinical_event_name_snomed_code_map, "result_name")
     result_code_mapper = CascadeMapper(ChainMapper(FilterHasKeyValueMapper(["code"]), KeyTranslator({"code": "mapped_value"})),
@@ -442,6 +448,20 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
         return {"i_exclude": 1}
 
+
+    def func_i_exclude_type_mapper(input_dict):
+
+        result_dict = func_result_code_type_mapper(input_dict)
+        if "i_exclude" in result_dict:
+            return {"i_exclude": 1}
+        else:
+            if input_dict["numeric_result"]	in ("", "NULL") and input_dict["date_result"] in ("", "NULL"):
+                return {"i_exclude": 1}
+            else:
+                return {}
+
+    i_exclude_func_mapper = PassThroughFunctionMapper(func_i_exclude_type_mapper)
+
     code_type_mapper = PassThroughFunctionMapper(func_result_code_type_mapper)
 
 
@@ -458,14 +478,14 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("result_name", "s_type_name"),
         (("code", "result_name"), result_code_mapper, {"mapped_value":"s_type_code"}),
          (("code","result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
-        ("result_indicator", "s_result_text"),
+        ("result_indicator", ReplacementMapper({"NULL": "", "Within Range": "Within reference range"}), {"result_indicator": "s_result_text"}),
         ("numeric_result", "s_result_numeric"),
         #("", "s_result_code"),
         #("", "m_result_code_oid"),
         ("range_low", "s_result_numeric_lower"),
         ("range_high", "s_result_numeric_upper"),
-        ("result_unit", "s_result_unit"),
-        (("code","result_name"), code_type_mapper, {"i_exclude": "i_exclude"})
+        ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "s_result_unit"}),
+        (("code","result_name", "numeric_result", "date_result"), i_exclude_func_mapper, {"i_exclude": "i_exclude"})
     ]
 
     result_mapper_obj = generate_mapper_obj(hf_result_csv, HFResult(), source_result_csv, SourceResultObject(),
@@ -489,7 +509,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("route_description", "s_route"),
         ("total_dispensed_doses","s_quantity"),
         ("order_strength_units_unit_display", "s_dose_unit"),
-        ("med_order_status_desc", "s_status")
+        ("med_order_status_desc", "s_status"),
+        (":row_id", ConstantMapper({"s_drug_type": "HOSPITAL_PHARMACY"}), {"s_drug_type": "s_drug_type"})
     ]
 
     hf_medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
