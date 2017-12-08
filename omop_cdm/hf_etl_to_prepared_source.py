@@ -517,7 +517,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("order_strength_units_unit_display", "s_dose_unit"),
         ("order_strength_units_unit_display", "m_dose_unit"),
         ("med_order_status_desc", "s_status"),
-        (":row_id", ConstantMapper({"s_drug_type": "HOSPITAL_PHARMACY"}), {"m_drug_type": "m_drug_type"})
+        (":row_id", ConstantMapper({"m_drug_type": "HOSPITAL_PHARMACY"}), {"m_drug_type": "m_drug_type"})
     ]
 
     hf_medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
