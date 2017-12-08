@@ -543,7 +543,7 @@ if __name__ == "__main__":
     file_name_dict = {
         "clinical_events": "clinical_event_joined_to_export.csv",
         "diagnosis": "diagnosis_joined_to_export.csv",
-        "encounter": "encounter_patient_joined_to_export.csv",
+        "encounter": "encounter_joined_to_export.csv",
         "encounter_patient": "encounter_patient_joined_to_export.csv",
         "lab_procedure": "lab_procedure_joined_to_export.csv",
         "medication": "medication_joined_to_export.csv",

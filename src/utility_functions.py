@@ -7,7 +7,7 @@ import os
 
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
-                           lower_case_keys=True, i_print_update=1000, truncate=False, truncate_long_fields=True):
+                           lower_case_keys=True, i_print_update=10000, truncate=False, truncate_long_fields=True):
 
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()

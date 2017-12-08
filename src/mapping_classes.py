@@ -235,6 +235,7 @@ class CodeMapperClassSqliteJSONClass(CodeMapperClass):
             self.connection, self.meta_data = self._build_sqlite_db()
 
         self.mapper_dict_cache = {}
+        self.missed_mapper_dict_cache = {} # hold values that are missed so we don't make multiple expensive lookups to file
 
     def _create_connection(self):
         connection_string = "sqlite:///" + self.db_file_name
@@ -267,7 +268,6 @@ class CodeMapperClassSqliteJSONClass(CodeMapperClass):
                     key_value = json_dict[key]
                     key_dict = {"key_string": key, "json_value_text": json.dumps(key_value)}
                     connection.execute(lookup_table.insert(key_dict))
-
         except:
             transaction.commit()
             raise
@@ -301,25 +301,34 @@ class CodeMapperClassSqliteJSONClass(CodeMapperClass):
             else:
                 return {}
 
-            if value in self.mapper_dict_cache:
-                mapped_dict_instance = self.mapper_dict_cache[value]
-                if mapped_dict_instance.__class__ == [].__class__:
-                    mapped_dict_instance = mapped_dict_instance[0]
-                    logging.error("Map '%s' to non-unique value selecting the first item" % value)
-
-                return mapped_dict_instance
-            else:
-
-                read_from_db_value = self._look_up_value(value)
-                if read_from_db_value is None:
-                    return {}
-                else:
-                    self.mapper_dict_cache[value] = read_from_db_value
-                    mapped_dict_instance = read_from_db_value
+            if len(value):  # We only look for values that exist
+                if value in self.mapper_dict_cache:  # We have seen this value before
+                    mapped_dict_instance = self.mapper_dict_cache[value]
                     if mapped_dict_instance.__class__ == [].__class__:
                         mapped_dict_instance = mapped_dict_instance[0]
                         logging.error("Map '%s' to non-unique value selecting the first item" % value)
+
                     return mapped_dict_instance
+
+                else: # The value is not in our cache
+
+                    if value in self.missed_mapper_dict_cache:  # We check to see if the value is in our miss cache
+                        self.missed_mapper_dict_cache[value] += 1
+                        return {}
+                    else:
+                        read_from_db_value = self._look_up_value(value)
+                        if read_from_db_value is None:
+                            self.missed_mapper_dict_cache[value] = 1  # If the value is missed add to cache
+                            return {}
+                        else:
+                            self.mapper_dict_cache[value] = read_from_db_value
+                            mapped_dict_instance = read_from_db_value
+                            if mapped_dict_instance.__class__ == [].__class__:
+                                mapped_dict_instance = mapped_dict_instance[0]
+                                logging.error("Map '%s' to non-unique value selecting the first item" % value)
+                            return mapped_dict_instance
+            else:
+                return {}
         else:
             return {}
 
