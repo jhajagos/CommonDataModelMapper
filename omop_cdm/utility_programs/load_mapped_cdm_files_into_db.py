@@ -1,5 +1,10 @@
 import argparse
 import json
+import sys
+import os
+
+
+sys.path.insert(0, os.path.join(os.path.pardir, os.path.pardir, "src"))
 from utility_functions import load_csv_files_into_db, generate_db_dict
 
 
@@ -8,7 +13,7 @@ def main(output_directory, connection_string, schema):
     data_dict = generate_db_dict(output_directory)
 
     load_csv_files_into_db(connection_string, data_dict,schema_ddl=None, indices_ddl=None,
-                           i_print_update=1000, truncate=True, schema=schema)
+                           i_print_update=10000, truncate=True, schema=schema)
 
 
 if __name__ == "__main__":
