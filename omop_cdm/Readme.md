@@ -52,9 +52,15 @@ python ./utility_programs/generate_code_lookup_json.py -c hi_config.json
 
 ## Mapping from source files to prepared_source
 
-Currently there are two examples of source vocabularies.
+Currently there are two examples of mapped to the prepared_source CSV format. These
+are for CSV extracts from a larger database. Mapping to prepared_source
+CSV format can be made with any tool that supports CSV exporting.
 
-## Mapping prepared_source to OHDSI
+## Mapping prepared_source to OHDSI CSV format
+
+```bash
+python transform_prepared_source_to_cdm.py -c hi_config.json
+```
 
 ## Create database schema
 
@@ -65,7 +71,8 @@ psql ohdsi < echo "create schema mapped_data_cdm; grant all on schema mapped_dat
 ## Load database schema
 
 ```bash
-python ./utility_programs/load_schema_into_db.py -c hi_config.json
+python ./utility_programs/load_schema_into_db.py -c hi_config.json --ddl-file ..\schema\5.2\omop_cdm.sql \
+ --index-file ..\schema\5.2\omop_cdm_indexes.sql
 ```
 ## Load vocabulary into database schema
 
