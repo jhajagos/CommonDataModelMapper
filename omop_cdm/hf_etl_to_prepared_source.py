@@ -5,6 +5,10 @@ import os
 import csv
 import datetime
 import hashlib
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
@@ -476,10 +480,11 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("encounter_id", "s_encounter_id"),
         ("performed_dt_tm", "s_obtained_datetime"),
         ("result_name", "s_type_name"),
-        (("code", "result_name"), result_code_mapper, {"mapped_value":"s_type_code"}),
+        (("code", "result_name"), result_code_mapper, {"mapped_value": "s_type_code"}),
          (("code","result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
         ("result_indicator", ReplacementMapper({"NULL": "", "Within Range": "Within reference range"}),
          {"result_indicator": "m_result_text"}),
+        ("result_indicator", "s_result_text"),
         ("numeric_result", "s_result_numeric"),
         ("range_low", "s_result_numeric_lower"),
         ("range_high", "s_result_numeric_upper"),
@@ -510,8 +515,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("route_description", "m_route"),
         ("total_dispensed_doses","s_quantity"),
         ("order_strength_units_unit_display", "s_dose_unit"),
+        ("order_strength_units_unit_display", "m_dose_unit"),
         ("med_order_status_desc", "s_status"),
-        (":row_id", ConstantMapper({"s_drug_type": "HOSPITAL_PHARMACY"}), {"s_drug_type": "s_drug_type"})
+        (":row_id", ConstantMapper({"s_drug_type": "HOSPITAL_PHARMACY"}), {"m_drug_type": "m_drug_type"})
     ]
 
     hf_medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])

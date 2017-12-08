@@ -80,7 +80,7 @@ def main(input_csv_directory, output_csv_directory):
     encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
     care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
-    md5_func = lambda x: hashlib.md5(x).hexdigest()
+    md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
     # md5_func = None
 
     key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv,
@@ -252,12 +252,18 @@ def main(input_csv_directory, output_csv_directory):
                                                                    "norm_text_value"]),
                      {"norm_codified_value_primary_display": "s_result_text",
                       "norm_text_value": "s_result_text"}),
+                    (("norm_codified_value_primary_display", "result_primary_display",
+                      "norm_text_value"), FilterHasKeyValueMapper(["norm_codified_value_primary_display",
+                                                                   "norm_text_value"]),
+                     {"norm_codified_value_primary_display": "m_result_text",
+                      "norm_text_value": "m_result_text"}),
                     ("norm_numeric_value", "s_result_numeric"),
                     ("norm_date_value", "s_result_datetime"),
                     (("norm_codified_value_code", "interpretation_primary_display"),
                      FilterHasKeyValueMapper(["norm_codified_value_code", "interpretation_primary_display"]),
                      {"norm_codified_value_code": "s_result_code", "interpretation_primary_display": "s_result_code"}),
                     ("norm_unit_of_measure_display", "s_result_unit"),
+                    ("norm_unit_of_measure_display", "m_result_unit"),
                     ("norm_unit_of_measure_code", "s_result_unit_code"),
                     ("norm_ref_range_low", "s_result_numeric_lower"),
                     ("norm_ref_range_high", "s_result_numeric_upper")]
@@ -359,9 +365,12 @@ def main(input_csv_directory, output_csv_directory):
                         ("start_dt_tm", "s_start_medication_datetime"),
                         ("stop_dt_tm", "s_end_medication_datetime"),
                         ("route_display", "s_route"),
+                        ("route_display", "m_route"),
                         ("dose_quantity", "s_quantity"),
                         ("dose_unit_display", "s_dose_unit"),
+                        ("dose_unit_display", "m_dose_unit"),
                         ("intended_dispenser", "s_drug_type"),
+                        ("intended_dispenser", "m_drug_type"),
                         ("status_display", "s_status"),
                         ("status_primary_display", PassThroughFunctionMapper(active_medications),
                          {"i_exclude": "i_exclude"})

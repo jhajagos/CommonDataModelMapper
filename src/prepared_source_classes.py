@@ -2,7 +2,7 @@ from mapping_classes import InputClass
 
 
 class PreparedSourceObject(InputClass):
-
+    """Parent class"""
     def _parent_class_fields(self):
         return ["i_exclude"]
 
@@ -37,7 +37,7 @@ class SourceObservationPeriodObject(PreparedSourceObject):
 
 
 class SourceEncounterObject(PreparedSourceObject):
-    """An encounter"""
+    """An encounter or visit"""
 
     def _fields(self):
         return ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
@@ -50,13 +50,14 @@ class SourceResultObject(PreparedSourceObject):
 
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
-                "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
+                "s_result_text", "m_result_text",
+                "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
                 "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
                 "s_result_numeric_lower", "s_result_numeric_upper", "i_exclude"]
 
 
 class SourceConditionObject(PreparedSourceObject):
-    """Diagnosis"""
+    """Conditions: Diagnosis codes"""
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_start_condition_datetime", "s_end_condition_datetime",
                 "s_condition_code", "s_condition_code_type", "m_condition_code_oid", "s_sequence_id", "s_rank",
@@ -64,7 +65,7 @@ class SourceConditionObject(PreparedSourceObject):
 
 
 class SourceProcedureObject(PreparedSourceObject):
-
+    """Procedures"""
     def _fields(self):
         return ["s_person_id", "s_encounter_id",
                 "s_start_procedure_datetime", "s_end_procedure_datetime",
@@ -72,7 +73,9 @@ class SourceProcedureObject(PreparedSourceObject):
                 "s_sequence_id", "s_rank", "m_rank",
                 "i_exclude"]
 
+
 class SourceMedicationObject(PreparedSourceObject):
+    """Ordered, administered medications and drugs"""
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type",
                 "m_drug_code_oid", "s_drug_text",
@@ -80,7 +83,8 @@ class SourceMedicationObject(PreparedSourceObject):
                 "s_route", "m_route",
                 "s_quantity",
                 "s_dose", "m_dose",
-                "s_dose_unit", "s_status",
+                "s_dose_unit", "m_dose_unit",
+                "s_status",
                 "s_drug_type", "m_drug_type",
                 "i_exclude"]
 

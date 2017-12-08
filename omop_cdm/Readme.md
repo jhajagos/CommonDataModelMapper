@@ -53,7 +53,7 @@ python ./utility_programs/load_mapped_cdm_files_into_db.py
 ## Load mapped files into the database
 
 ```bash
-./utility_programs/load_mapped_cdm_files_into_db.py`
+./utility_programs/load_mapped_cdm_files_into_db.py
 ```
 
 ## Prepared source specification
