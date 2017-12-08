@@ -1,6 +1,7 @@
 import argparse
 import sqlparse
 import sqlalchemy as sa
+import json
 
 
 def copy_into_table(connection, table_name, source_schema, destination_schema):
@@ -125,6 +126,7 @@ if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser(description="Utility program for setting up OHDSI databases on PostGres Servers")
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)
     arg_parse_obj.add_argument("--schema", dest="schema", default=None)
+    arg_parse_obj.add_arguement("--config-file", "-c", dest="config_file", default=None)
     arg_parse_obj.add_argument("--schema-customization-file", dest="schema_customization_file_name", default=None)
     arg_parse_obj.add_argument("--drop-tables", dest="drop_tables", default=False, action="store_true")
     arg_parse_obj.add_argument("--constraints-file", dest="constraints_file_name", default=None)
@@ -134,6 +136,14 @@ if __name__ == "__main__":
     arg_parse_obj.add_argument("--vocabulary-schema", dest="vocab_schema")
 
     arg_obj = arg_parse_obj.parse_args()
+
+    if arg_obj.config_file is not None:
+
+        with open(arg_obj.config_file, "r") as f:
+            config_dict = json.load(f)
+
+        schema = config_dict["schema"]
+        connection_uri = config_dict["connection_uri"]
 
     connection_uri = arg_obj.connection_uri
     schema = arg_obj.schema

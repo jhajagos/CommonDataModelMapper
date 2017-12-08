@@ -10,7 +10,8 @@ If files are formatted into prepared source then the script
 into output files.
 
 The scripts in the project require Python 3.6 and the following libraries:
- sqlalchemy, psycopg2, and sqlparse.
+ `sqlalchemy`, `psycopg2`, and `sqlparse`. To add these libraries to Python use
+  `pip install psycopg2`.
 
 ## Download Athena concept tables
 
