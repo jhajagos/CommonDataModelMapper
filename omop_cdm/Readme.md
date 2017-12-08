@@ -9,7 +9,18 @@ If files are formatted into prepared source then the script
 `transform_prepared_source_to_cdm.py` can be run to convert the input files 
 into output files.
 
-The scripts in the project require Python 3.6.
+The scripts in the project require Python 3.6 and the following libraries:
+ sqlalchemy, psycopg2, and sqlparse.
+
+## Download Athena concept tables
+
+OHDSI makes available concept/vocabulary files. 
+The concept/vocabulary files need to be downloaded from: http://www.ohdsi.org/web/athena/
+
+The Athena web tools allows the user to select the needed vocabularies. After the 
+request is submitted an email notification will be sent when the files are ready for download.
+If you are working with claims data you will need a license for CPT codes and run a separate
+process for including the CPT codes in the concept table.
 
 ## Create a JSON config file
 
@@ -24,12 +35,24 @@ The first step is to create a JSON file which configures the directory location.
 }
 ```
 
+The `"json_map_directory"` points to the directory for the decompressed Athena concept files. 
+The `"csv_input_directory"` points to where the source files for conversion and `csv_output_directory` 
+is where the final OHDSI mapped files files will be placed.  If you want
+to load the files into a PostGreSQL database `connection_uri` can be set and `schema` is the specific 
+database.
+
 ## Generating vocabulary JSON lookup
 
-Before running the `transform_prepared_source_to_cdm.py` vocabulary needs to generate JSON 
-look up files. The vocabulary files need to be downloaded from: http://www.ohdsi.org/web/athena/
+Before running the `./transform_prepared_source_to_cdm.py` vocabulary needs to generate JSON 
+look up files. This process will convert the CSV files into separate focused vocabularies.
 
-## Mapping from source vocabulary to prepared_source
+```bash
+python ./utility_programs/generate_code_lookup_json.py -c hi_config.json
+```
+
+## Mapping from source files to prepared_source
+
+Currently there are two examples of source vocabularies.
 
 ## Mapping prepared_source to OHDSI
 
@@ -42,18 +65,18 @@ psql ohdsi < echo "create schema mapped_data_cdm; grant all on schema mapped_dat
 ## Load database schema
 
 ```bash
-python ./utility_programs/load_schema_into_db.py
+python ./utility_programs/load_schema_into_db.py -c hi_config.json
 ```
 ## Load vocabulary into database schema
 
 ```bash
-python ./utility_programs/load_mapped_cdm_files_into_db.py
+python ./utility_programs/load_mapped_cdm_files_into_db.py -c hi_config.json
 ```
 
 ## Load mapped files into the database
 
 ```bash
-./utility_programs/load_mapped_cdm_files_into_db.py
+python ./utility_programs/load_mapped_cdm_files_into_db.py -c hi_config.json
 ```
 
 ## Prepared source specification
@@ -64,7 +87,7 @@ Prefix nomenclature:
 
 * "s_" source value - as represented source
 * "m_" mapped value - a mapped value
-* "k_" and key value which maps to another value in a table
+* "k_" a key value usually hash which maps to another value in a table
 * "i_" indicator field where "1" indicates true
 
 Date formats:
@@ -88,8 +111,8 @@ Date formats:
 
 ### source_care_site.csv
 
-* k_care_site -- 
-* s_care_site_name -- 
+* k_care_site -- hashed key representing an organization
+* s_care_site_name -- name of the care site
 
 ### source_encounter.csv
 
@@ -97,46 +120,46 @@ Date formats:
 * s_person_id -- Source identifier for patient or person
 * s_visit_start_datetime -- Start date or date time or admission date or time 
 * s_visit_end_datetime -- End date or date time or discharge date or time
-* s_visit_type -- 
-* m_visit_type -- 
-* k_care_site -- 
-* s_discharge_to -- 
+* s_visit_type -- Source of type of visit
+* m_visit_type -- Type of visit {Inpatient, Outpatient, . .}
+* k_care_site -- Linking key to location
+* s_discharge_to -- Source value discharge disposition
 * m_discharge_to -- 
-* s_admitting_source -- 
+* s_admitting_source -- Source value for admitting source
 * m_admitting_source -- 
 
 ### source_observation_period.csv
 
-* s_person_id
-* s_start_observation_datetime
-* s_end_observation_datetime
+* s_person_id -- Source identifier for patient or person
+* s_start_observation_datetime -- Start period of patient observation 
+* s_end_observation_datetime --  End period of patient observation
 
 ### source_encounter_coverage.csv
 
-* s_person_id
-* s_encounter_id
-* s_start_payer_date
-* s_end_payer_date
-* s_payer_name
-* m_payer_name
-* s_plan_name
-* m_plan_name
+* s_person_id --
+* s_encounter_id --
+* s_start_payer_date -- in date format
+* s_end_payer_date -- in date format
+* s_payer_name -- 
+* m_payer_name --  
+* s_plan_name -- 
+* m_plan_name -- 
 
 ### source_condition.csv
 
-* s_person_id
-* s_encounter_id
-* s_start_condition_datetime
-* s_end_condition_datetime
-* s_condition_code
-* s_condition_code_type
-* m_condition_code_oid
-* s_sequence_id
-* s_rank
-* m_rank
-* s_condition_type
-* s_present_on_admission_indicator
-* i_exclude
+* s_person_id -- 
+* s_encounter_id -- 
+* s_start_condition_datetime -- 
+* s_end_condition_datetime -- 
+* s_condition_code -- 
+* s_condition_code_type -- 
+* m_condition_code_oid -- 
+* s_sequence_id -- 
+* s_rank -- 
+* m_rank -- 
+* s_condition_type -- 
+* s_present_on_admission_indicator -- 
+* i_exclude -- exclude from OHDSI mapper
 
 ### source_procedure.csv
 
