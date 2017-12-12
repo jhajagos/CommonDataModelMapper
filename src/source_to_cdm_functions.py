@@ -187,7 +187,7 @@ class FloatMapper(MapperClass):
         for key in input_dict:
             try:
                 resulting_map[key] = float(input_dict[key])
-            except ValueError:
+            except(ValueError, TypeError):
                 pass
 
         return resulting_map

@@ -228,6 +228,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     hf_patient_rules = [("patient_id", "s_person_id"),
                         ("gender", "s_gender"),
+                        ("gender", "m_gender"),
                         (("year_of_birth",), FunctionMapper(lambda x: x["year_of_birth"] + '-01-01', "date_of_birth"),
                         {"date_of_birth": "s_birth_datetime"}),
                         ("race", "s_race"),
