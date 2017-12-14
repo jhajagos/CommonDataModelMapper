@@ -1,6 +1,9 @@
 import argparse
 import json
+import sys
+import os
 
+sys.path.insert(0, os.path.join(os.path.pardir, os.path.pardir, "src"))
 from utility_functions import load_csv_files_into_db, generate_vocabulary_load
 
 

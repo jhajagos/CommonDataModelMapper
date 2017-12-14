@@ -126,7 +126,7 @@ if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser(description="Utility program for setting up OHDSI databases on PostGres Servers")
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)
     arg_parse_obj.add_argument("--schema", dest="schema", default=None)
-    arg_parse_obj.add_arguement("--config-file", "-c", dest="config_file", default=None)
+    arg_parse_obj.add_argument("--config-file", "-c", dest="config_file", default=None)
     arg_parse_obj.add_argument("--schema-customization-file", dest="schema_customization_file_name", default=None)
     arg_parse_obj.add_argument("--drop-tables", dest="drop_tables", default=False, action="store_true")
     arg_parse_obj.add_argument("--constraints-file", dest="constraints_file_name", default=None)
@@ -145,8 +145,10 @@ if __name__ == "__main__":
         schema = config_dict["schema"]
         connection_uri = config_dict["connection_uri"]
 
-    connection_uri = arg_obj.connection_uri
-    schema = arg_obj.schema
+    else:
+        connection_uri = arg_obj.connection_uri
+        schema = arg_obj.schema
+
     schema_customization_file_name = arg_obj.schema_customization_file_name
     constraints_file_name = arg_obj.constraints_file_name
     index_file_name = arg_obj.index_file_name
