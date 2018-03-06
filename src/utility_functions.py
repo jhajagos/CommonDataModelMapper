@@ -4,6 +4,7 @@ import datetime
 import pprint
 import time
 import os
+import sqlparse
 
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
@@ -14,7 +15,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
 
     table_names = []
     if schema_ddl is not None:
-        split_sql = schema_ddl.split(";")
+        split_sql = sqlparse.split(schema_ddl)
         for sql_statement in split_sql:
             db_connection.execute(sql_statement)
 
@@ -108,34 +109,40 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
             raise
 
     if indices_ddl is not None:
-        split_sql = indices_ddl.split(";")
+        split_sql = sqlparse.split(indices_ddl)
         for sql_statement in split_sql:
-            db_connection.execute(sql_statement)
+            try:
+                db_connection.execute(sql_statement)
+            except(sa.exc.OperationalError):
+                print("Skipping: '%s'" % sql_statement)
 
-
-def generate_db_dict(output_directory):
-    load_pairs = [("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
-                  ("person", "person_cdm.csv"),
-                  ("visit_occurrence", "visit_occurrence_cdm.csv"),
-                  ("procedure_occurrence", "procedure_cdm.csv"),
-                  ("procedure_occurrence", "procedure_dx_cdm.csv"),
-                  ("measurement", "measurement_encounter_cdm.csv"),
-                  ("measurement", "measurement_dx_cdm.csv"),
-                  ("measurement", "measurement_proc_cdm.csv"),
-                  ("drug_exposure", "drug_exposure_cdm.csv"),
-                  ("drug_exposure", "drug_exposure_proc_cdm.csv"),
-                  ("death", "death_cdm.csv"),
-                  ("observation", "observation_dx_cdm.csv"),
-                  ("observation", "observation_measurement_encounter_cdm.csv"),
-                  ("observation", "observation_proc_cdm.csv"),
-                  ("observation_period", "observation_period_cdm.csv"),
-                  ("care_site", "care_site_cdm.csv"),
-                  ("payer_plan_period", "payer_plan_period_cdm.csv")
-                  ]
+def generate_db_dict(output_directory=None, load_pairs=None):
+    if load_pairs is None:
+        load_pairs = [("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
+                      ("person", "person_cdm.csv"),
+                      ("visit_occurrence", "visit_occurrence_cdm.csv"),
+                      ("procedure_occurrence", "procedure_cdm.csv"),
+                      ("procedure_occurrence", "procedure_dx_cdm.csv"),
+                      ("measurement", "measurement_encounter_cdm.csv"),
+                      ("measurement", "measurement_dx_cdm.csv"),
+                      ("measurement", "measurement_proc_cdm.csv"),
+                      ("drug_exposure", "drug_exposure_cdm.csv"),
+                      ("drug_exposure", "drug_exposure_proc_cdm.csv"),
+                      ("death", "death_cdm.csv"),
+                      ("observation", "observation_dx_cdm.csv"),
+                      ("observation", "observation_measurement_encounter_cdm.csv"),
+                      ("observation", "observation_proc_cdm.csv"),
+                      ("observation_period", "observation_period_cdm.csv"),
+                      ("care_site", "care_site_cdm.csv"),
+                      ("payer_plan_period", "payer_plan_period_cdm.csv")
+                      ]
 
     data_dict = {}
     for pair in load_pairs:
-        data_dict[os.path.join(output_directory, pair[1])] = pair[0]
+        if output_directory is not None:
+            data_dict[os.path.join(output_directory, pair[1])] = pair[0]
+        else:
+            data_dict[pair[1]] = pair[0]
 
     return data_dict
 

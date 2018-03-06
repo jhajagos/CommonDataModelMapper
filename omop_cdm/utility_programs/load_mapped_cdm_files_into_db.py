@@ -2,10 +2,13 @@ import argparse
 import json
 import sys
 import os
+import sys
 
-
-sys.path.insert(0, os.path.join(os.path.pardir, os.path.pardir, "src"))
-from utility_functions import load_csv_files_into_db, generate_db_dict
+try:
+    from utility_functions import load_csv_files_into_db, generate_db_dict
+except ImportError:
+    sys.path.insert(0, os.path.join(os.path.pardir, os.path.pardir, "src"))
+    from utility_functions import load_csv_files_into_db, generate_db_dict
 
 
 def main(output_directory, connection_string, schema):
