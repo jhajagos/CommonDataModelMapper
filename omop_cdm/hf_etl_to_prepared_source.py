@@ -1,27 +1,45 @@
 import argparse
-
 import json
 import os
 import csv
 import datetime
 import hashlib
 import logging
+import sys
 
 logging.basicConfig(level=logging.INFO)
 
 
-from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
+try:
+    from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
+            CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
+            CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, ConstantMapper, \
+            ReplacementMapper
+
+    from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+        SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
+        SourceProcedureObject, SourceMedicationObject
+
+    from source_to_cdm_functions import generate_mapper_obj
+    from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, HFMedication
+    from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+except(ImportError):
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
+
+    from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, ConstantMapper, \
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CodeMapperDictClass, \
+        ConstantMapper, \
         ReplacementMapper
 
-from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-    SourceProcedureObject, SourceMedicationObject
+    from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+        SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
+        SourceProcedureObject, SourceMedicationObject
 
-from source_to_cdm_functions import generate_mapper_obj
-from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, HFMedication
-from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+    from source_to_cdm_functions import generate_mapper_obj
+    from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, \
+        HFMedication
+    from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 
 def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out_result_csv, overwrite=True, sample_size=None):
@@ -155,7 +173,7 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
                 estimated_dob_dt_tm = admit_dt_tm - age_in_years_td
                 year_of_birth = estimated_dob_dt_tm.year
             else:
-                age_in_years = None
+                year_of_birth = None
 
             patient_id = row_dict["patient_id"]
             

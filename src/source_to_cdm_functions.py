@@ -79,12 +79,16 @@ def convert_datetime(datetime_str):
     if datetime_str == '':
         return null_date
     else:
-        if re_odbc_date_time_1.match(datetime_str):
-            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M')
-        elif re_odbc_date.match(datetime_str):
-            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d')
-        elif re_odbc_date_time_2:
-            localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+
+        try:
+            if re_odbc_date_time_1.match(datetime_str):
+                localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M')
+            elif re_odbc_date.match(datetime_str):
+                localized_datetime = time.strptime(datetime_str, '%Y-%m-%d')
+            elif re_odbc_date_time_2:
+                localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+        except(ValueError):
+            return null_date
 
         return time.strftime('%Y-%m-%d %H:%M:%S', localized_datetime)
 
