@@ -7,7 +7,7 @@ import sys
 try:
     from utility_functions import load_csv_files_into_db, generate_db_dict
 except ImportError:
-    sys.path.insert(0, os.path.join(os.path.pardir, os.path.pardir, "src"))
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, os.path.pardir, "src")))
     from utility_functions import load_csv_files_into_db, generate_db_dict
 
 
