@@ -9,7 +9,6 @@ import sys
 
 logging.basicConfig(level=logging.INFO)
 
-
 try:
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
             CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
@@ -23,6 +22,7 @@ try:
     from source_to_cdm_functions import generate_mapper_obj
     from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, HFMedication
     from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
 except(ImportError):
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
 
@@ -183,14 +183,14 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
 
             patient_dict["year_of_birth"] = year_of_birth
             if patient_id not in result_dict:
-
                 result_dict[patient_id] = patient_dict
-
             else:
                 existing_patient_dict = result_dict[patient_id]
                 existing_year_of_birth = existing_patient_dict["year_of_birth"]
-                if year_of_birth < existing_year_of_birth or year_of_birth is None:
-                    result_dict[patient_id] = patient_dict
+                if year_of_birth is not None and existing_year_of_birth is not None:
+                    if year_of_birth < existing_year_of_birth:
+                        result_dict[patient_id] = patient_dict
+
 
         with open(file_to_write, "w", newline="") as fw:
             fields_to_write = patient_fields + ["year_of_birth"]
@@ -244,6 +244,13 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     ethnicity_map = {"Hispanic": "Hispanic or Latino"}
     ethnicity_mapper = CodeMapperDictClass(ethnicity_map)
 
+    def no_year_of_birth(dict_of_interest):
+        year_string = dict_of_interest["year_of_birth"]
+        if len(year_string):
+            return {"year_of_birth": ""}
+        else:
+            return {"year_of_birth": 1}
+
     hf_patient_rules = [("patient_id", "s_person_id"),
                         ("gender", "s_gender"),
                         ("gender", "m_gender"),
@@ -252,7 +259,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("race", "s_race"),
                         ("race", race_mapper, {"mapped_value": "m_race"}),
                         ("race", ethnicity_source_mapper, {"mapped_value": "s_ethnicity"}),
-                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"})]
+                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"}),
+                        ("year_of_birth", PassThroughFunctionMapper(no_year_of_birth), {"year_of_birth": "i_exclude"})
+                        ]
 
     source_person_runner_obj = generate_mapper_obj(file_name_dict["patient"], HFPatient(), output_person_csv,
                                                    SourcePersonObject(), hf_patient_rules,

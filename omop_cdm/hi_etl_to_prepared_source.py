@@ -1,24 +1,39 @@
 import sys, os
-from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
 
 try:
+    from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
-except ImportError:
+
+    from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
+        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
+
+    from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+        SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
+        SourceProcedureObject, SourceMedicationObject
+
+    from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
+
+except(ImportError):
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
+
+    from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
-from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
-    PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
+    from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
+        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
 
-from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
-    SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-    SourceProcedureObject, SourceMedicationObject
+    from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
+        SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
+        SourceProcedureObject, SourceMedicationObject
 
-from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
+    from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
 import argparse
 import json
