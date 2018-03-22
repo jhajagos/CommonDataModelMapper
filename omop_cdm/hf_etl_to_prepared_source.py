@@ -146,6 +146,8 @@ def generate_observation_period(encounter_csv_file_name, hf_period_observation_c
 
         for id_value in observation_period_dict:
             start_date_value, end_date_value = observation_period_dict[id_value]
+            if start_date_value == "":
+                start_date_value = end_date_value
             row_to_write = [id_value, start_date_value, end_date_value]
             csv_writer.writerow(row_to_write)
 
@@ -166,6 +168,9 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
         for row_dict in dict_reader:
 
             admit_dt_tm_txt = row_dict["admitted_dt_tm"]
+            if not len(admit_dt_tm_txt):
+                admit_dt_tm_txt = row_dict["discharged_dt_tm"]
+
             if len(admit_dt_tm_txt):
                 admit_dt_tm = datetime.datetime.strptime(admit_dt_tm_txt, "%Y-%m-%d %H:%M:%S")
                 age_in_years = row_dict["age_in_years"]
@@ -244,12 +249,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     ethnicity_map = {"Hispanic": "Hispanic or Latino"}
     ethnicity_mapper = CodeMapperDictClass(ethnicity_map)
 
-    def no_year_of_birth(dict_of_interest):
-        year_string = dict_of_interest["year_of_birth"]
-        if len(year_string):
-            return {"year_of_birth": ""}
-        else:
-            return {"year_of_birth": 1}
+
 
     hf_patient_rules = [("patient_id", "s_person_id"),
                         ("gender", "s_gender"),
@@ -259,8 +259,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("race", "s_race"),
                         ("race", race_mapper, {"mapped_value": "m_race"}),
                         ("race", ethnicity_source_mapper, {"mapped_value": "s_ethnicity"}),
-                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"}),
-                        ("year_of_birth", PassThroughFunctionMapper(no_year_of_birth), {"year_of_birth": "i_exclude"})
+                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"})
+                        #,
+                        #("year_of_birth", PassThroughFunctionMapper(no_year_of_birth), {"year_of_birth": "i_exclude"})
                         ]
 
     source_person_runner_obj = generate_mapper_obj(file_name_dict["patient"], HFPatient(), output_person_csv,
@@ -318,11 +319,27 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
      "m_visit_type", "k_care_site", "s_discharge_to", "m_discharge_to",
      "s_admitting_source", "m_admitting_source", "i_exclude"]
 
+    def admit_discharge_mapper(dict_of_interest):
+        admitted_dt_tm_txt = dict_of_interest["admitted_dt_tm"]
+        discharged_dt_tm_txt = dict_of_interest["discharged_dt_tm"]
+
+        if not len(admitted_dt_tm_txt):
+            admitted_dt_tm_txt = discharged_dt_tm_txt
+
+        if not len(discharged_dt_tm_txt):
+            discharged_dt_tm_txt = admitted_dt_tm_txt
+
+        return {"admitted_dt_tm": admitted_dt_tm_txt, "discharged_dt_tm": discharged_dt_tm_txt}
+
+
+
     encounter_rules = [
         ("encounter_id", "s_encounter_id"),
         ("patient_id", "s_person_id"),
-        ("admitted_dt_tm", "s_visit_start_datetime"),
-        ("discharged_dt_tm", "s_visit_end_datetime"),
+        (("admitted_dt_tm", "discharged_dt_tm"),  PassThroughFunctionMapper(admit_discharge_mapper),
+         {"admitted_dt_tm": "s_visit_start_datetime"}),
+        (("admitted_dt_tm", "discharged_dt_tm"), PassThroughFunctionMapper(admit_discharge_mapper),
+         {"discharged_dt_tm": "s_visit_end_datetime"}),
         ("patient_type_desc", "s_visit_type"),
         ("patient_type_desc", "m_visit_type"),
         (("hospital_id", "caresetting_desc"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
