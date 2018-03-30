@@ -23,6 +23,13 @@ request is submitted an email notification will be sent when the files are ready
 If you are working with claims data you will need a license for CPT codes and run a separate
 process for including the CPT codes in the concept table.
 
+To generate the CONCEPT.csv with the CPT codes you need to run a Java program. With newer versions of Java you need to
+modify the command:
+
+```bash
+java --add-modules java.xml.ws -jar cpt4.jar 5
+```
+
 ## Create a JSON config file
 
 The first step is to create a JSON file which configures the directory location.
@@ -37,8 +44,8 @@ The first step is to create a JSON file which configures the directory location.
 ```
 
 The `"json_map_directory"` points to the directory for the decompressed Athena concept files. 
-The `"csv_input_directory"` points to where the source files for conversion and `csv_output_directory` 
-is where the final OHDSI mapped files files will be placed.  If you want
+The `"csv_input_directory"` points to where the source files are located and `csv_output_directory`
+is the location where the OHDSI mapped files files will be written.  If you want
 to load the files into a PostGreSQL database `connection_uri` can be set and `schema` is the specific 
 database.
 

@@ -125,6 +125,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
 
 class SplitDateTimeWithTZ(MapperClass):
     """Split datetime into two parts and convert time to local time"""
+
     def map(self, input_dict):
         datetime_value = input_dict[list(input_dict.keys())[0]]
 

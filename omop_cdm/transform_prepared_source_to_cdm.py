@@ -168,9 +168,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if input_dict["i_exclude"] != "1":
                 mapped_result_code = snomed_code_result_mapper.map(input_dict)
                 if "CONCEPT_CLASS_ID" in mapped_result_code:
-                    if mapped_result_code["DOMAIN_ID"] == "Measurement":
+                    if mapped_result_code["DOMAIN_ID".lower()] == "Measurement":
                         return MeasurementObject()
-                    elif mapped_result_code["DOMAIN_ID"] == "Observation":
+                    elif mapped_result_code["DOMAIN_ID".lower()] == "Observation":
                         return ObservationObject()
                     else:
                         return NoOutputClass()
@@ -240,19 +240,19 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     def clean_concept_ids(input_dict):
 
-        if "CONCEPT_ID" in input_dict:
-            if input_dict["CONCEPT_ID"] == "" or input_dict["CONCEPT_ID"] is None:
-                input_dict["CONCEPT_ID"] = 0
+        if "CONCEPT_ID".lower() in input_dict:
+            if input_dict["CONCEPT_ID".lower()] == "" or input_dict["CONCEPT_ID".lower()] is None:
+                input_dict["CONCEPT_ID".lower()] = 0
         else:
-            input_dict["CONCEPT_ID"] = 0
+            input_dict["CONCEPT_ID".lower()] = 0
 
-        if "MAPPED_CONCEPT_ID" in input_dict:
+        if "MAPPED_CONCEPT_ID".lower() in input_dict:
 
-            if input_dict["MAPPED_CONCEPT_ID"] == "" or input_dict["MAPPED_CONCEPT_ID"] is None:
-                input_dict["MAPPED_CONCEPT_ID"] = 0
+            if input_dict["MAPPED_CONCEPT_ID".lower()] == "" or input_dict["MAPPED_CONCEPT_ID".lower()] is None:
+                input_dict["MAPPED_CONCEPT_ID".lower()] = 0
 
         else:
-            input_dict["MAPPED_CONCEPT_ID"] = 0
+            input_dict["MAPPED_CONCEPT_ID".lower()] = 0
 
         return input_dict
 
@@ -272,10 +272,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                           (("s_condition_code", "m_condition_code_oid"),
                            ICDMapper,
-                           {"CONCEPT_ID": "condition_source_concept_id", "MAPPED_CONCEPT_ID": "condition_concept_id"}),
+                           {"CONCEPT_ID".lower(): "condition_source_concept_id", "MAPPED_CONCEPT_ID".lower(): "condition_concept_id"}),
                           ("s_condition_code", "condition_source_value"),
-                          ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID": "condition_type_concept_id"}),
-                          ("s_condition_type", condition_status_mapper, {"CONCEPT_ID": "condition_status_concept_id"}),
+                          ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID".lower(): "condition_type_concept_id"}),
+                          ("s_condition_type", condition_status_mapper, {"CONCEPT_ID".lower(): "condition_status_concept_id"}),
                           ("s_condition_type", "condition_status_source_value"),
                           ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"}),
                           ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"}),
@@ -303,8 +303,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                              {"datetime": "measurement_datetime"}),
                             ("s_condition_code", "measurement_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
-                             {"CONCEPT_ID": "measurement_source_concept_id",
-                              "MAPPED_CONCEPT_ID": "measurement_concept_id"})]
+                             {"CONCEPT_ID".lower(): "measurement_source_concept_id",
+                              "MAPPED_CONCEPT_ID".lower(): "measurement_concept_id"})]
 
     measurement_rules_dx_class = build_input_output_mapper(measurement_rules_dx)
     in_out_map_obj.register(SourceConditionObject(), MeasurementObject(), measurement_rules_dx_class)
@@ -333,10 +333,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                              {"datetime": "observation_datetime"}),
                             ("s_condition_code", "observation_source_value"),
                             (("s_condition_code", "m_condition_code_oid"), ICDMapper,
-                             {"CONCEPT_ID": "observation_source_concept_id",
-                              "MAPPED_CONCEPT_ID": "observation_concept_id"}),
+                             {"CONCEPT_ID".lower(): "observation_source_concept_id",
+                              "MAPPED_CONCEPT_ID".lower(): "observation_concept_id"}),
                             ("m_rank", condition_claim_type_map,
-                             {"CONCEPT_ID": "condition_type_concept_id"})]
+                             {"CONCEPT_ID".lower(): "condition_type_concept_id"})]
 
     observation_rules_dx_class = build_input_output_mapper(observation_rules_dx)
 
@@ -358,7 +358,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                     (":row_id",
                                      ChainMapper(ConstantMapper({"name": "Procedure recorded as diagnostic code"}),
                                                  procedure_type_mapper),
-                                     {"CONCEPT_ID": "procedure_type_concept_id"}),
+                                     {"CONCEPT_ID".lower(): "procedure_type_concept_id"}),
                                     ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                     ("s_encounter_id", s_encounter_id_mapper,
                                      {"visit_occurrence_id": "visit_occurrence_id"}),
@@ -368,8 +368,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                      {"datetime": "procedure_datetime"}),
                                     ("s_condition_code", "procedure_source_value"),
                                     (("s_condition_code", "m_condition_code_oid"), ICDMapper,
-                                     {"CONCEPT_ID": "procedure_source_concept_id",
-                                      "MAPPED_CONCEPT_ID": "procedure_concept_id"})]
+                                     {"CONCEPT_ID".lower(): "procedure_source_concept_id",
+                                      "MAPPED_CONCEPT_ID".lower(): "procedure_concept_id"})]
 
     procedure_rules_dx_encounter_class = build_input_output_mapper(procedure_rules_dx_encounter)
 
@@ -388,11 +388,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                 if coding_system_oid:
                     result_dict = ICDMapper.map(input_dict)
 
-                    if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
-                        if "MAPPED_CONCEPT_DOMAIN" in result_dict:
-                            domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                    if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict or "DOMAIN_ID".lower() in result_dict:
+                        if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict:
+                            domain = result_dict["MAPPED_CONCEPT_DOMAIN".lower()]
                         else:
-                            domain = result_dict["DOMAIN_ID"]
+                            domain = result_dict["DOMAIN_ID".lower()]
                     else:
                         domain = ""
 
@@ -460,8 +460,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                          {"datetime": "measurement_datetime"}),
                                         ("s_procedure_code", "measurement_source_value"),
                                         (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
-                                         {"CONCEPT_ID": "measurement_source_concept_id",
-                                          "MAPPED_CONCEPT_ID": "measurement_concept_id"})]
+                                         {"CONCEPT_ID".lower(): "measurement_source_concept_id",
+                                          "MAPPED_CONCEPT_ID".lower(): "measurement_concept_id"})]
 
     measurement_rules_proc_encounter_class = build_input_output_mapper(measurement_rules_proc_encounter)
 
@@ -487,8 +487,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                               ("s_procedure_code", "observation_source_value"),
                               ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
                               (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
-                               {"CONCEPT_ID": "observation_source_concept_id",
-                                "MAPPED_CONCEPT_ID": "observation_concept_id"})]
+                               {"CONCEPT_ID".lower(): "observation_source_concept_id",
+                                "MAPPED_CONCEPT_ID".lower(): "observation_concept_id"})]
 
     observation_rules_proc_class = build_input_output_mapper(observation_rules_proc)
     output_observation_proc_csv = os.path.join(output_csv_directory, "observation_proc_cdm.csv")
@@ -513,8 +513,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                        ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                        ("s_procedure_code", "drug_source_value"),
                        (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
-                        {"CONCEPT_ID": "drug_source_concept_id",
-                         "MAPPED_CONCEPT_ID": "drug_concept_id"})]
+                        {"CONCEPT_ID".lower(): "drug_source_concept_id",
+                         "MAPPED_CONCEPT_ID".lower(): "drug_concept_id"})]
 
     drug_rules_proc_class = build_input_output_mapper(drug_rules_proc)
     output_drug_proc_csv = os.path.join(output_csv_directory, "drug_exposure_proc_cdm.csv")
@@ -539,8 +539,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           {"datetime": "device_exposure_start_datetime"}),
                          ("s_procedure_code", "device_source_value"),
                          (("s_procedure_code", "m_procedure_code_oid"), procedure_code_map,
-                          {"CONCEPT_ID": "device_source_concept_id",
-                           "MAPPED_CONCEPT_ID": "device_concept_id"})]
+                          {"CONCEPT_ID".lower(): "device_source_concept_id",
+                           "MAPPED_CONCEPT_ID".lower(): "device_concept_id"})]
 
     device_rules_proc_class = build_input_output_mapper(device_rules_proc)
     output_device_proc_csv = os.path.join(output_csv_directory, "device_exposure_proc_cdm.csv")
@@ -559,11 +559,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                            "HCPCS"):
                     result_dict = procedure_code_map.map(input_dict)
 
-                    if "MAPPED_CONCEPT_DOMAIN" in result_dict or "DOMAIN_ID" in result_dict:
-                        if "MAPPED_CONCEPT_DOMAIN" in result_dict:
-                            domain = result_dict["MAPPED_CONCEPT_DOMAIN"]
+                    if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict or "DOMAIN_ID".lower() in result_dict:
+                        if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict:
+                            domain = result_dict["MAPPED_CONCEPT_DOMAIN".lower()]
                         else:
-                            domain = result_dict["DOMAIN_ID"]
+                            domain = result_dict["DOMAIN_ID".lower()]
 
                         if domain == "Procedure":
                             return ProcedureOccurrenceObject()
@@ -639,7 +639,7 @@ def create_person_rules(json_map_directory):
     gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
-    gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+    gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     race_json = os.path.join(json_map_directory, "CONCEPT_NAME_Race.json")
     race_json_mapper = CoderMapperJSONClass(race_json)
@@ -661,11 +661,11 @@ def create_person_rules(json_map_directory):
 
     race_mapper = CascadeMapper(ChainMapper(
                               FilterHasKeyValueMapper(["m_race"]), ReplacementMapper(race_map_dict),
-                              race_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+                              race_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     ethnicity_mapper = CascadeMapper(ChainMapper(
                               FilterHasKeyValueMapper(["m_ethnicity"]), ReplacementMapper(ethnicity_map_dict),
-                              ethnicity_json_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+                              ethnicity_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     # TODO: Replace :row_id with starting seed that increments
     # Required person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id
@@ -675,14 +675,14 @@ def create_person_rules(json_map_directory):
                       {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
                      ("s_birth_datetime", DateTimeWithTZ(), {"datetime": "birth_datetime"}),
                      ("s_gender", "gender_source_value"),
-                     ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_concept_id"}),
-                     ("m_gender", gender_mapper, {"CONCEPT_ID": "gender_source_concept_id"}),
+                     ("m_gender", gender_mapper, {"CONCEPT_ID".lower(): "gender_concept_id"}),
+                     ("m_gender", gender_mapper, {"CONCEPT_ID".lower(): "gender_source_concept_id"}),
                      ("s_race", "race_source_value"),
-                     ("m_race", race_mapper, {"CONCEPT_ID": "race_concept_id"}),
-                     ("m_race", race_mapper, {"CONCEPT_ID": "race_source_concept_id"}),
+                     ("m_race", race_mapper, {"CONCEPT_ID".lower(): "race_concept_id"}),
+                     ("m_race", race_mapper, {"CONCEPT_ID".lower(): "race_source_concept_id"}),
                      ("s_ethnicity", "ethnicity_source_value"),
-                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_concept_id"}),
-                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID": "ethnicity_source_concept_id"})]
+                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_concept_id"}),
+                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_source_concept_id"})]
 
     return patient_rules
 
@@ -712,7 +712,7 @@ def create_death_person_rules(json_map_directory, s_person_id_mapper):
 
     # Required person_id, death_date, death_type_concept_id
     death_rules = [("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
-                   ("s_death_datetime", death_concept_mapper, {"CONCEPT_ID": "death_type_concept_id"}),
+                   ("s_death_datetime", death_concept_mapper, {"CONCEPT_ID".lower(): "death_type_concept_id"}),
                    ("s_death_datetime", SplitDateTimeWithTZ(), {"date": "death_date"}),
                    ("s_death_datetime", DateTimeWithTZ(), {"datetime": "death_datetime"})]
 
@@ -738,7 +738,7 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
                                 ("s_end_observation_datetime", DateTimeWithTZ(),
                                  {"datetime": "observation_period_end_datetime"}),
                                 (":row_id", observation_period_constant_mapper,
-                                 {"CONCEPT_ID": "period_type_concept_id"})
+                                 {"CONCEPT_ID".lower(): "period_type_concept_id"})
                                 ]
 
     return observation_period_rules
@@ -810,7 +810,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
         CascadeMapper(ChainMapper(
                 ReplacementMapper({"PRIMARY": "Primary Procedure", "SECONDARY": "Secondary Procedure"}),
                 CoderMapperJSONClass(procedure_type_name_json)),
-            ConstantMapper({"CONCEPT_ID": 0})
+            ConstantMapper({"CONCEPT_ID".lower(): 0})
         )
 
     # TODO: Add SNOMED Codes to the Mapping
@@ -819,12 +819,12 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                      CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
                                      CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
                                      CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
-                                     ), ConstantMapper({"CONCEPT_ID": 0, "MAPPED_CONCEPT_ID": 0}))
+                                     ), ConstantMapper({"CONCEPT_ID".lower(): 0, "MAPPED_CONCEPT_ID": 0}))
 
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [(("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
-                                 {"CONCEPT_ID": "procedure_source_concept_id",
-                                  "MAPPED_CONCEPT_ID": "procedure_concept_id"},
+                                 {"CONCEPT_ID".lower(): "procedure_source_concept_id",
+                                  "MAPPED_CONCEPT_ID".lower(): "procedure_concept_id"},
                                  ),
                                 (":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
                                   {"procedure_occurrence_id": "procedure_occurrence_id"}),
@@ -835,7 +835,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                   {"date": "procedure_date"}),
                                  ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "procedure_datetime"}),
                                  ("s_procedure_code", "procedure_source_value"),
-                                 ("s_rank", procedure_type_map, {"CONCEPT_ID": "procedure_type_concept_id"})]
+                                 ("s_rank", procedure_type_map, {"CONCEPT_ID".lower(): "procedure_type_concept_id"})]
 
     return procedure_rules_encounter
 
@@ -864,9 +864,9 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     visit_rules = [("s_encounter_id", "visit_source_value"),
                    ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                    (":row_id", "visit_occurrence_id"),
-                   ("m_visit_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID": 0})),
-                    {"CONCEPT_ID": "visit_concept_id"}),
-                   (":row_id", visit_concept_type_mapper, {"CONCEPT_ID": "visit_type_concept_id"}),
+                   ("m_visit_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0})),
+                    {"CONCEPT_ID".lower(): "visit_concept_id"}),
+                   (":row_id", visit_concept_type_mapper, {"CONCEPT_ID".lower(): "visit_type_concept_id"}),
                    ("s_visit_start_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_start_date", "time": "visit_start_time"}),
                    ("s_visit_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
@@ -874,9 +874,9 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                     {"date": "visit_end_date", "time": "visit_end_time"}),
                    ("s_visit_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
                    ("s_admitting_source", "admitting_source_value"),
-                   ("m_admitting_source", admit_discharge_source_mapper, {"CONCEPT_ID": "admitting_source_concept_id"}),
+                   ("m_admitting_source", admit_discharge_source_mapper, {"CONCEPT_ID".lower(): "admitting_source_concept_id"}),
                    ("s_discharge_to", "discharge_to_source_value"),
-                   ("m_discharge_to", admit_discharge_source_mapper, {"CONCEPT_ID": "discharge_to_concept_id"}),
+                   ("m_discharge_to", admit_discharge_source_mapper, {"CONCEPT_ID".lower(): "discharge_to_concept_id"}),
                    ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"})]
 
     return visit_rules
@@ -892,7 +892,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
 
     NumericMapperConvertDate = CascadeMapper(FloatMapper(), ChainMapper(DateTimeWithTZ("s_result_datetime"), MapDateTimeToUnixEpochSeconds()))
 
-    measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID": 0}))
+    measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies
     # reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
@@ -913,7 +913,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
 
     measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
                                                                  ReplacementMapper({"Lab Test": "Lab result"}),
-                                                                 measurement_type_mapper), ConstantMapper({"CONCEPT_ID": 0}))
+                                                                 measurement_type_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     value_source_mapper = FilterHasKeyValueMapper(["s_result_numeric", "m_result_text", "s_result_datetime", "s_result_code"])
 
@@ -923,15 +923,15 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
                          ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date"}),
                          ("s_type_name", "measurement_source_value"),
-                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_source_concept_id"}),
-                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID": "measurement_concept_id"}),
-                         ("s_type_code", measurement_type_chained_mapper, {"CONCEPT_ID": "measurement_type_concept_id"}),
+                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_source_concept_id"}),
+                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
+                         ("s_type_code", measurement_type_chained_mapper, {"CONCEPT_ID".lower(): "measurement_type_concept_id"}),
                          (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
                             {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
                          (("s_result_code", "m_result_text"),
-                          value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
+                          value_as_concept_mapper, {"CONCEPT_ID".lower(): "value_as_concept_id"}),
                          ("s_result_unit", "unit_source_value"),
-                         ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID": "unit_concept_id"}),
+                         ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID".lower(): "unit_concept_id"}),
                          (("s_result_numeric", "m_result_text", "s_result_datetime", "s_result_code"),
                             value_source_mapper, # Map datetime to unix time
                           {"s_result_numeric": "value_source_value",
@@ -951,19 +951,19 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                      ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
                                      ("s_type_code", "observation_source_value"),
                                      ("s_type_code", measurement_code_mapper,
-                                      {"CONCEPT_ID": "observation_source_concept_id"}),
+                                      {"CONCEPT_ID".lower(): "observation_source_concept_id"}),
                                      ("s_type_code", measurement_code_mapper,
-                                      {"CONCEPT_ID": "observation_concept_id"}),
+                                      {"CONCEPT_ID".lower(): "observation_concept_id"}),
                                      ("s_type_code", measurement_type_chained_mapper,
-                                      {"CONCEPT_ID": "observation_type_concept_id"}),
+                                      {"CONCEPT_ID".lower(): "observation_type_concept_id"}),
                                      (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
                                       {"s_result_numeric": "value_as_number",
                                        "seconds_since_unix_epoch": "value_as_number"}),
                                      (("s_result_code", "s_result_text"),
-                                      value_as_concept_mapper, {"CONCEPT_ID": "value_as_concept_id"}),
+                                      value_as_concept_mapper, {"CONCEPT_ID".lower(): "value_as_concept_id"}),
                                      ("s_result_unit", "unit_source_value"),
                                      ("s_result_unit_code", unit_measurement_mapper,
-                                      {"CONCEPT_ID": "unit_concept_id"}),
+                                      {"CONCEPT_ID".lower(): "unit_concept_id"}),
                                      (("s_result_numeric", "s_result_text", "s_result_datetime"), value_source_mapper,
                                       {"s_result_numeric": "value_as_string",
                                        "s_result_text": "value_as_string",
@@ -1174,12 +1174,12 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("s_end_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                         ("s_quantity", "quantity"),
                         ("s_dose_unit", "dose_unit_source_value"),
-                        ("m_dose_unit", snomed_mapper, {"CONCEPT_ID": "dose_unit_concept_id"}),
+                        ("m_dose_unit", snomed_mapper, {"CONCEPT_ID".lower(): "dose_unit_concept_id"}),
                         (("m_drug_code_oid", "s_drug_code", "s_drug_text"), drug_source_concept_mapper,
-                         {"CONCEPT_ID": "drug_source_concept_id"}),
+                         {"CONCEPT_ID".lower(): "drug_source_concept_id"}),
                         (("m_drug_code_oid", "s_drug_code", "s_drug_text"), rxnorm_concept_mapper,
-                         {"CONCEPT_ID": "drug_concept_id"}),  # TODO: Make sure map maps to standard concept
-                        ("m_drug_type", drug_type_mapper, {"CONCEPT_ID": "drug_type_concept_id"})]
+                         {"CONCEPT_ID".lower(): "drug_concept_id"}),  # TODO: Make sure map maps to standard concept
+                        ("m_drug_type", drug_type_mapper, {"CONCEPT_ID".lower(): "drug_type_concept_id"})]
 
     return medication_rules
 
