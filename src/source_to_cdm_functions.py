@@ -142,9 +142,10 @@ class SplitDateTimeWithTZ(MapperClass):
 class DateTimeWithTZ(MapperClass):
 
     def __init__(self, key=None):
-        self.key = None
+        self.key = key
 
     def map(self, input_dict):
+
         if self.key is None:
             datetime_value = input_dict[list(input_dict.keys())[0]]
         else:
@@ -162,9 +163,10 @@ class DateTimeWithTZ(MapperClass):
 
 
 class MapDateTimeToUnixEpochSeconds(MapperClass):
-    def map(self, input_dict, field="datetime"):
-        if field in input_dict:
 
+    def map(self, input_dict, field="datetime"):
+
+        if field in input_dict:
             date_value = input_dict[field]
 
             try:
@@ -187,6 +189,7 @@ class MapDateTimeToUnixEpochSeconds(MapperClass):
 
 class FloatMapper(MapperClass):
     """Convert value to float"""
+
     def map(self, input_dict):
         resulting_map = {}
         for key in input_dict:

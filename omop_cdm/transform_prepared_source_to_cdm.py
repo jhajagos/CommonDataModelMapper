@@ -167,7 +167,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
             if input_dict["i_exclude"] != "1":
                 mapped_result_code = snomed_code_result_mapper.map(input_dict)
-                if "CONCEPT_CLASS_ID" in mapped_result_code:
+                if "CONCEPT_CLASS_ID".lower() in mapped_result_code:
                     if mapped_result_code["DOMAIN_ID".lower()] == "Measurement":
                         return MeasurementObject()
                     elif mapped_result_code["DOMAIN_ID".lower()] == "Observation":

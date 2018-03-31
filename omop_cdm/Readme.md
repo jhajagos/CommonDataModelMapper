@@ -58,6 +58,15 @@ look up files. This process will convert the CSV files into separate focused voc
 python ./utility_programs/generate_code_lookup_json.py -c hi_config.json
 ```
 
+## Generate RxNorm mappings
+
+```bash
+# Generate mappings
+python rxnorm_sourced_multum_mappings.py -c hi_config.json
+
+python
+```
+
 ## Mapping from source files to prepared_source
 
 Currently there are two examples of mapped to the prepared_source CSV format. These

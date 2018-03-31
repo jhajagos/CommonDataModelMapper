@@ -23,18 +23,21 @@ File layout of RXNCONSO.RRF file
  ('', 17),
  ('', 18)]
 """
+
 import csv
 import json
 import os
+import argparse
 
 RXNCONSO_FIELD_LAYOUT = {"RXCUI": 0, "LAT": 1, "RXAUI": 7, "SCUI": 9, "SAB": 11, "TTY": 12, "CODE": 13, "STR": 14, "SUPPRESS": 16}
 
 
 def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RXNCONSO_FIELD_LAYOUT):
-    with open(rrf_file_name, "r", newline="") as f:
+    with open(rrf_file_name, newline="", encoding="utf8") as f:
         rrf_reader = csv.reader(f, delimiter="|")
 
         lookup_dict = {}
+        i = 0
         for rrf_row in rrf_reader:
             rrf_dict = {}
             for key in field_layout:
@@ -43,6 +46,9 @@ def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RX
             if rrf_dict["SAB"] == sab and rrf_dict["TTY"] == tty and rrf_dict["SUPPRESS"] == "N":
                 lookup_dict[rrf_dict[lookup_field]] = rrf_dict
 
+            #print(i)
+            i += 1
+
     output_json_file_name = os.path.join(output_directory, "RxNorm_" + sab + "_" + tty + ".json")
 
     with open(output_json_file_name, "w") as fw:
@@ -50,10 +56,20 @@ def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RX
 
 
 if __name__ == "__main__":
-    main("E:\\data\\RxNorm_full_09062016\\rrf\\RXNCONSO.RRF", "MMSL", "BN", "CODE", "E:\\data\\RxNorm_full_09062016\\rrf\\")
-    main("E:\\data\\RxNorm_full_09062016\\rrf\\RXNCONSO.RRF", "MMSL", "GN", "CODE",
-         "E:\\data\\RxNorm_full_09062016\\rrf\\")
-    main("E:\\data\\RxNorm_full_09062016\\rrf\\RXNCONSO.RRF", "MMSL", "CD", "CODE",
-         "E:\\data\\RxNorm_full_09062016\\rrf\\")
-    main("E:\\data\\RxNorm_full_09062016\\rrf\\RXNCONSO.RRF", "MMSL", "BD", "CODE",
-         "E:\\data\\RxNorm_full_09062016\\rrf\\")
+
+    arg_obj = argparse.ArgumentParser(description="Subset RxNorm RRF files for MMSL file")
+    arg_obj.add_argument("-c", dest="config_file_name", help="JSON config file")
+
+    arg_parse_obj = arg_obj.parse_args()
+
+    with open(arg_parse_obj.config_file_name, "r") as f:
+        config = json.load(f)
+
+    rxnorm_base_directory = config["rxnorm_base_directory"]
+
+    rxnorm_rrf_directory = os.path.join(rxnorm_base_directory, "rrf")
+
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BN", "CODE", rxnorm_rrf_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "GN", "CODE", rxnorm_rrf_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "CD", "CODE", rxnorm_rrf_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BD", "CODE", rxnorm_rrf_directory)

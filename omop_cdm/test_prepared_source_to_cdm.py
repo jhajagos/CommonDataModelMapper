@@ -6,10 +6,20 @@ import json
 import transform_prepared_source_to_cdm as tpsc
 import csv
 import os
+import sys
+
+
+def open_csv_file(file_name, mode="r"):
+
+    ver_info = sys.version_info[0]
+    if ver_info == 2:
+        return open(file_name, mode=mode + "b")
+    else:
+        return open(file_name, newline="", mode=mode)
 
 
 def read_csv_file_as_dict(csv_file_name):
-    with open(csv_file_name) as f:
+    with open_csv_file(csv_file_name) as f:
         return list(csv.DictReader(f))
 
 
@@ -38,42 +48,42 @@ class TestMapping(unittest.TestCase):
         tpsc.main("./test/input/", "./test/output/", self.config["json_map_directory"])
 
         results_person = read_csv_file_as_dict("./test/output/person_cdm.csv")
-        self.assertEquals(4, len(results_person))
+        self.assertEqual(4, len(results_person))
 
         first_person = results_person[0]
 
-        self.assertNotEquals("", first_person["birth_datetime"])
+        self.assertNotEqual("", first_person["birth_datetime"])
 
         results_death = read_csv_file_as_dict("./test/output/death_cdm.csv")
-        self.assertEquals(1, len(results_death))
+        self.assertEqual(1, len(results_death))
 
         # TODO: Add different visit types inpatient, outpatient, and ED
         # TODO: Add support for 5.2 added datetime
         results_observation_period = read_csv_file_as_dict("./test/output/observation_period_cdm.csv")
-        self.assertEquals(4, len(results_observation_period))
+        self.assertEqual(4, len(results_observation_period))
 
         results_visit_occurrence = read_csv_file_as_dict("./test/output/visit_occurrence_cdm.csv")
-        self.assertEquals(1, len(results_visit_occurrence))
+        self.assertEqual(1, len(results_visit_occurrence))
 
         first_visit = results_visit_occurrence[0]
 
         self.assertEqual("1", first_visit["care_site_id"])
 
-        self.assertNotEquals("", first_visit["visit_start_datetime"])
-        self.assertNotEquals("", first_visit["visit_end_datetime"])
+        self.assertNotEqual("", first_visit["visit_start_datetime"])
+        self.assertNotEqual("", first_visit["visit_end_datetime"])
 
-        self.assertNotEquals("", first_visit["admitting_source_concept_id"])
-        self.assertNotEquals("", first_visit["discharge_to_concept_id"])
+        self.assertNotEqual("", first_visit["admitting_source_concept_id"])
+        self.assertNotEqual("", first_visit["discharge_to_concept_id"])
 
         result_payer_plan_period = read_csv_file_as_dict("./test/output/payer_plan_period_cdm.csv")
-        self.assertEquals(1, len(result_payer_plan_period))
+        self.assertEqual(1, len(result_payer_plan_period))
 
         result_measurement = read_csv_file_as_dict("./test/output/measurement_encounter_cdm.csv")
         self.assertTrue(len(result_measurement))
 
         first_measurement = result_measurement[0]
         self.assertTrue(len(first_measurement["visit_occurrence_id"])) # Has a mapped visit_occurrence_id
-        self.assertNotEquals("", first_measurement["measurement_datetime"])
+        self.assertNotEqual("", first_measurement["measurement_datetime"])
 
         self.assertNotEqual("", first_measurement["value_as_number"])
 
@@ -88,7 +98,6 @@ class TestMapping(unittest.TestCase):
         self.assertNotEqual("", first_observation["observation_datetime"])
         self.assertNotEqual("", first_observation["value_as_string"])
 
-
         second_observation = result_observation[1]
         self.assertNotEqual("", second_observation["value_as_string"])
         self.assertNotEqual("", second_observation["value_as_number"])
@@ -99,25 +108,25 @@ class TestMapping(unittest.TestCase):
         self.assertNotEqual("", result_condition[0]["condition_status_concept_id"])
 
         # TODO: Add conditions that map to other domains
-        self.assertNotEquals("", result_condition[0]["condition_start_datetime"])
+        self.assertNotEqual("", result_condition[0]["condition_start_datetime"])
 
         result_observation_dx = read_csv_file_as_dict("./test/output/observation_dx_cdm.csv")
 
         second_result_observation_dx = result_observation_dx[1]
 
-        self.assertEquals("0", second_result_observation_dx["observation_concept_id"])
+        self.assertEqual("4215685", second_result_observation_dx["observation_concept_id"])
 
         result_procedure = read_csv_file_as_dict("./test/output/procedure_cdm.csv")
         self.assertTrue(len(result_procedure))
         # TODO: Add procedures that map to other domains
 
-        self.assertNotEquals("", result_procedure[0]["procedure_datetime"])
+        self.assertNotEqual("", result_procedure[0]["procedure_datetime"])
 
         result_drug_exposure = read_csv_file_as_dict("./test/output/drug_exposure_cdm.csv")
         self.assertTrue(len(result_drug_exposure))
 
         first_drug_exposure = result_drug_exposure[0]
-        self.assertNotEquals("0", first_drug_exposure["drug_concept_id"])
+        self.assertNotEqual("0", first_drug_exposure["drug_concept_id"])
 
 
 class TestCodeMappers(unittest.TestCase):
@@ -148,7 +157,7 @@ class TestCodeMappers(unittest.TestCase):
 
         output_dict_1 = rxnorm_name_mapper.map(input_dict_1)
 
-        self.assertTrue("CONCEPT_ID" in output_dict_1)
+        self.assertTrue("concept_id" in output_dict_1)
 
     def test_d_code(self):
         drug_code_mapper = tpsc.generate_rxcui_drug_code_mapper(self.config["json_map_directory"])
@@ -156,7 +165,7 @@ class TestCodeMappers(unittest.TestCase):
         dict_to_map_1 = {"s_drug_code": "d00313", "m_drug_code_oid": "2.16.840.1.113883.6.314"}
 
         mapping_result_1 = drug_code_mapper.map(dict_to_map_1)
-        #print(mapping_result_1)
+
         self.assertTrue(len(mapping_result_1))
 
         dict_to_map_2 = {"s_drug_code": "d03431", "m_drug_code_oid": "2.16.840.1.113883.6.314"}
