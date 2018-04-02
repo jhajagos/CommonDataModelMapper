@@ -28,12 +28,18 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     vocabularies = []
 
     # Determine which vocabularies are in the concept file
+    print("Scanning '%s'" % os.path.abspath(concept_csv))
     with open_csv_file(concept_csv, "r") as f:
         dict_reader = csv.DictReader(f, delimiter=delimiter)
+        i = 0
         for row_dict in dict_reader:
             vocabulary_id = row_dict["VOCABULARY_ID".lower()]
             if vocabulary_id not in vocabularies:
                 vocabularies += [vocabulary_id]
+            i += 1
+
+    print("Read %s lines" % i)
+    print("Found %s vocabularies" % len(vocabularies))
 
     # Generate first pass of converting concepts into a JSON lookup file
     # Generate one for concept_name and one for concept_code

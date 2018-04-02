@@ -182,9 +182,7 @@ class TestCodeMappers(unittest.TestCase):
 
         mapping_result3 = rxnorm_code_mapper_concept.map(dict_to_map_1)
 
-        #print(mapping_result3)
-
-        self.assertTrue('S', mapping_result3["STANDARD_CONCEPT"])
+        self.assertTrue('S', mapping_result3["standard_concept"])
 
 
 if __name__ == '__main__':
