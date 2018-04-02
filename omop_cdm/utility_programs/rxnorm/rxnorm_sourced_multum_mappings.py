@@ -32,7 +32,7 @@ import argparse
 RXNCONSO_FIELD_LAYOUT = {"RXCUI": 0, "LAT": 1, "RXAUI": 7, "SCUI": 9, "SAB": 11, "TTY": 12, "CODE": 13, "STR": 14, "SUPPRESS": 16}
 
 
-def main(rrf_file_name, sab, tty, lookup_field,output_directory, field_layout=RXNCONSO_FIELD_LAYOUT):
+def main(rrf_file_name, sab, tty, lookup_field, output_directory, field_layout=RXNCONSO_FIELD_LAYOUT):
     with open(rrf_file_name, newline="", encoding="utf8") as f:
         rrf_reader = csv.reader(f, delimiter="|")
 
@@ -66,10 +66,11 @@ if __name__ == "__main__":
         config = json.load(f)
 
     rxnorm_base_directory = config["rxnorm_base_directory"]
+    json_map_directory = config["json_map_directory"]
 
     rxnorm_rrf_directory = os.path.join(rxnorm_base_directory, "rrf")
 
-    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BN", "CODE", rxnorm_rrf_directory)
-    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "GN", "CODE", rxnorm_rrf_directory)
-    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "CD", "CODE", rxnorm_rrf_directory)
-    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BD", "CODE", rxnorm_rrf_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BN", "CODE", json_map_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "GN", "CODE", json_map_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "CD", "CODE", json_map_directory)
+    main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BD", "CODE", json_map_directory)
