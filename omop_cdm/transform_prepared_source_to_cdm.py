@@ -72,7 +72,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_obs_per_csv = os.path.join(input_csv_directory, "source_observation_period.csv")
 
     def obs_router_obj(input_dict):
-        return ObservationPeriodObject()
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            return ObservationPeriodObject()
+        else:
+            return NoOutputClass()
 
     obs_per_runner_obj = generate_mapper_obj(input_obs_per_csv, SourceObservationPeriodObject(), output_obs_per_csv,
                                              ObservationPeriodObject(),
@@ -731,12 +734,12 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
                                 ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                 ("s_start_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_start_date"}),
-                                ("s_start_observation_datetime", DateTimeWithTZ(),
-                                 {"datetime": "observation_period_start_datetime"}),
+                                # ("s_start_observation_datetime", DateTimeWithTZ(),
+                                #  {"datetime": "observation_period_start_datetime"}),
                                 ("s_end_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_end_date"}),
-                                ("s_end_observation_datetime", DateTimeWithTZ(),
-                                 {"datetime": "observation_period_end_datetime"}),
+                                # ("s_end_observation_datetime", DateTimeWithTZ(),
+                                #  {"datetime": "observation_period_end_datetime"}),
                                 (":row_id", observation_period_constant_mapper,
                                  {"CONCEPT_ID".lower(): "period_type_concept_id"})
                                 ]

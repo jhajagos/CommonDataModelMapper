@@ -20,9 +20,12 @@ class ConceptObject(OutputClass):
 
 class ObservationPeriodObject(OutputClass):
     def fields(self):
-        return ["observation_period_id", "person_id", "observation_period_start_date",
-                "observation_period_start_datetime", "observation_period_end_date",
-                "observation_period_end_datetime", "period_type_concept_id"]
+        return ["observation_period_id", "person_id",
+                "observation_period_start_date",
+                #"observation_period_start_datetime",
+                "observation_period_end_date",
+                #"observation_period_end_datetime",
+                "period_type_concept_id"]
 
     def table_name(self):
         return "observation_period"
