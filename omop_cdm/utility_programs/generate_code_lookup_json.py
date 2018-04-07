@@ -55,7 +55,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
                 csv_file_name_to_keyed_json(concept_csv, path_vocabulary_name, field_to_key_on,
                                             [("VOCABULARY_ID".lower(), vocabulary), ("INVALID_REASON".lower(), "")])
 
-    concept_relationship_csv = os.path.join(source_vocabulary_directory, "CONCEPT_RELATIONSHIP.CSV")
+    concept_relationship_csv = os.path.join(source_vocabulary_directory, "CONCEPT_RELATIONSHIP.csv")
     concept_relationship_json = os.path.join(output_json_directory, "concept_relationship.json")
     # Build a master dict
     if not(os.path.exists(concept_relationship_json)):
