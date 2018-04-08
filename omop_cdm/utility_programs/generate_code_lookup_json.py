@@ -88,7 +88,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     vocabularies_with_maps = ["ICD9CM", "ICD9Proc", "ICD10CM", "ICD10PCS", "Multum", "LOINC", "CPT4", "HCPCS"]
     for vocabulary_id in vocabularies_with_maps:
         print("Annotating '%s'" % vocabulary_id)
-        vocabulary_json = os.path.join(output_json_directory, "CONCEPT_CODE_" + vocabulary_id + ".json")
+        vocabulary_json = os.path.join(output_json_directory, "concept_code_" + vocabulary_id + ".json")
 
         concept_with_parent_json = os.path.join(output_json_directory, vocabulary_id + "_with_parent.json")
 
