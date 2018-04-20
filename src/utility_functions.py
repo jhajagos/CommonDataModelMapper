@@ -8,7 +8,9 @@ import sqlparse
 
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
-                           lower_case_keys=True, i_print_update=10000, truncate=False, truncate_long_fields=True):
+                           lower_case_keys=True, i_print_update=10000, truncate=False, truncate_long_fields=True,
+                           conditions=None
+                           ):
 
     db_engine = sa.create_engine(connection_string)
     db_connection = db_engine.connect()
@@ -85,19 +87,32 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                             temp_cleaned_dict[key.lower()] = cleaned_dict[key]
                         cleaned_dict = temp_cleaned_dict
 
-                    s = table_obj.insert(cleaned_dict)
-                    try:
-                        db_connection.execute(s)
-                    except:
-                        pprint.pprint(cleaned_dict)
-                        raise
+                    if conditions is None:
+                        insert_data = True
 
-                    if i > 0 and i % i_print_update == 0:
-                        current_time = time.time()
-                        time_difference = current_time - elapsed_time
-                        print("Loaded %s total rows at %s seconds per %s rows" % (i, time_difference, i_print_update))
-                        elapsed_time = time.time()
-                    i += 1
+                    else:
+                        insert_data = False
+                        for condition in conditions:
+                            field_key = condition[0]
+                            if field_key in cleaned_dict:
+                                field_value = cleaned_dict[field_key]
+                                if field_value in condition[1]:
+                                    insert_data = True
+
+                    if insert_data:
+                        s = table_obj.insert(cleaned_dict)
+                        try:
+                            db_connection.execute(s)
+                        except:
+                            pprint.pprint(cleaned_dict)
+                            raise
+
+                        if i > 0 and i % i_print_update == 0:
+                            current_time = time.time()
+                            time_difference = current_time - elapsed_time
+                            print("Loaded %s total rows at %s seconds per %s rows" % (i, time_difference, i_print_update))
+                            elapsed_time = time.time()
+                        i += 1
 
                 db_transaction.commit()
                 current_time = time.time()

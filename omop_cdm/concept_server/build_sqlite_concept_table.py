@@ -63,20 +63,16 @@ def main(data_directory, vocabulary_directory):
 
     connection.close()
 
-    concepts = ["concept", "concept_relationship"]
+    concept_csv = os.path.join(vocabulary_directory, "concept" + ".csv")
+    concept_relationship_csv = os.path.join(vocabulary_directory, "concept_relationship" + ".csv")
 
-    concept_tables = []
-    for concept in concepts:
-        concept_tables += [(concept.lower(), os.path.join(vocabulary_directory, concept + ".csv"))]
+    load_csv_files_into_db(connection_string, {concept_csv: "concept"}, schema_ddl=None,
+                           indices_ddl=None,
+                           i_print_update=100000, truncate=False, schema=None, delimiter="\t")
 
-    concept_data_dict = {}
-    for pair in concept_tables:
-        concept_data_dict[pair[1]] = pair[0]
-
-    load_csv_files_into_db(connection_string, concept_data_dict, schema_ddl=None, indices_ddl=None,
-                           i_print_update=1000, truncate=False, schema=None, delimiter="\t")
-
-    connection = engine.connect()
+    load_csv_files_into_db(connection_string, {concept_relationship_csv: "concept_relationship"}, schema_ddl=None, indices_ddl=None,
+                           i_print_update=100000, truncate=False, schema=None, delimiter="\t",
+                           conditions=[("relationship_id", ("Maps to"))])
 
 
 if __name__ == "__main__":
