@@ -21,6 +21,7 @@ def convert_to_result_dict(result):
                    "concept_class_id": result["concept_class_id"]}
     return result_dict
 
+
 def find_concept_id_by_code(connection, vocabulary, code):
 
     meta_data = sa.MetaData(connection)
@@ -74,6 +75,7 @@ def find_concept_id_by_code(connection, vocabulary, code):
 
     else:
         return {}
+
 
 @app.route("/code/<vocabulary>/<code>")
 def find_by_vocabulary_code(vocabulary, code):
