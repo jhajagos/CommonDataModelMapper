@@ -8,9 +8,10 @@ app = Flask(__name__)
 def connect_to_database():
     with open("./config.json", "r") as f:
         config = json.load(f)
-        connection_string = config["connection_string"]
-        engine = sa.create_engine(connection_string)
-        connection = engine.connect()
+
+    connection_string = config["connection_string"]
+    engine = sa.create_engine(connection_string)
+    connection = engine.connect()
     return connection
 
 
@@ -25,7 +26,9 @@ def convert_to_result_dict(result):
     return result_dict
 
 
-def find_concept_id_by_code(connection, vocabulary, code):
+def find_concept_id_by_code(vocabulary, code):
+
+    connection = connect_to_database()
 
     meta_data = sa.MetaData(connection)
     meta_data.reflect()
@@ -83,7 +86,6 @@ def find_concept_id_by_code(connection, vocabulary, code):
 @app.route("/code/<vocabulary>/<code>")
 def find_by_vocabulary_code(vocabulary, code):
 
-    connection = connect_to_database()
-    result = find_concept_id_by_code(connection, vocabulary, code)
+    result = find_concept_id_by_code(vocabulary, code)
 
     return json.dumps(result)
