@@ -429,6 +429,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     condition_row_offset = condition_runner_obj.rows_run
     procedure_row_offset = condition_runner_obj.rows_run
     measurement_row_offset += condition_row_offset
+    observation_row_offset += condition_row_offset
 
     procedure_rules_encounter = create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper,
                                                        procedure_row_offset)
