@@ -64,7 +64,6 @@ python ./utility_programs/generate_code_lookup_json.py -c hi_config.json
 # Generate mappings
 python rxnorm_sourced_multum_mappings.py -c hi_config.json
 
-python
 ```
 
 ## Mapping from source files to prepared_source

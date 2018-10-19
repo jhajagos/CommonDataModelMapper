@@ -552,6 +552,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("ndc_code", ConstantMapper({"mapped_value": "2.16.840.1.113883.6.69"}), {"mapped_value": "m_drug_code_oid"}),
         (":row_id", ConstantMapper({"s_drug_code_type": "NDC"}), {"s_drug_code_type": "s_drug_code_type"}),
         ("brand_name", "s_drug_text"),
+        ("generic_name", "s_drug_alternative_text"),
         ("med_started_dt_tm", "s_start_medication_datetime"),
         ("med_stopped_dt_tm", "s_end_medication_datetime"),
         ("dose_form_description", "s_dose"),
