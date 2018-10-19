@@ -249,8 +249,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     ethnicity_map = {"Hispanic": "Hispanic or Latino"}
     ethnicity_mapper = CodeMapperDictClass(ethnicity_map)
 
-
-
     hf_patient_rules = [("patient_id", "s_person_id"),
                         ("gender", "s_gender"),
                         ("gender", "m_gender"),
@@ -380,7 +378,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     # Diagnosis / condition
 
     dx_code_oid_map = {
-        "ICD9": "2.16.840.1.113883.6.103"
+        "ICD9": "2.16.840.1.113883.6.103",
+        "ICD10-CM": "2.16.840.1.113883.6.90"
     }
 
     dx_code_oid_mapper = CodeMapperDictClass(dx_code_oid_map)
@@ -432,7 +431,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     procedure_code_oid_map = {
         "CPT4": "2.16.840.1.113883.6.12",
         "HCPCS": "2.16.840.1.113883.6.285",
-        "ICD9": "2.16.840.1.113883.6.104"}
+        "ICD9": "2.16.840.1.113883.6.104",
+        "ICD10-PCS": "2.16.840.1.113883.6.96"
+    }
 
     procedure_code_oid_mapper = CodeMapperDictClass(procedure_code_oid_map)
 
@@ -471,6 +472,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
 
+    # Expand this list
     clinical_event_name_snomed_code_map = {
         "Blood Pressure Diastolic": "271650006",
         "Blood Pressure Systolic": "271649006",
@@ -497,7 +499,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
         return {"i_exclude": 1}
 
-
     def func_i_exclude_type_mapper(input_dict):
 
         result_dict = func_result_code_type_mapper(input_dict)
@@ -512,7 +513,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     i_exclude_func_mapper = PassThroughFunctionMapper(func_i_exclude_type_mapper)
 
     code_type_mapper = PassThroughFunctionMapper(func_result_code_type_mapper)
-
 
     ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
      "s_result_text", "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
