@@ -14,7 +14,7 @@ def main(csv_files_list, key_field="MULDRUG_ID"):
                 keyed_dict[row_dict[key_field]] = row_dict
 
             with open(csv_file + "." + key_field + ".json", "w") as fw:
-                json.dump(keyed_dict, fw, sort_keys = True, indent=4, separators=(',', ': '))
+                json.dump(keyed_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 if __name__ == "__main__":

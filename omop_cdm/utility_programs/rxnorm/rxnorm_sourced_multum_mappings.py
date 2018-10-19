@@ -46,7 +46,6 @@ def main(rrf_file_name, sab, tty, lookup_field, output_directory, field_layout=R
             if rrf_dict["SAB"] == sab and rrf_dict["TTY"] == tty and rrf_dict["SUPPRESS"] == "N":
                 lookup_dict[rrf_dict[lookup_field]] = rrf_dict
 
-            #print(i)
             i += 1
 
     output_json_file_name = os.path.join(output_directory, "RxNorm_" + sab + "_" + tty + ".json")
