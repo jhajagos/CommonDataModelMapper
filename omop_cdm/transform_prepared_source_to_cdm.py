@@ -121,7 +121,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #### Visit_Occurrence ###
 
-    snomed_code_json = os.path.join(json_map_directory, "CONCEPT_CODE_SNOMED.json")
+    snomed_code_json = os.path.join(json_map_directory, "concept_code_SNOMED.json")
     snomed_code_mapper = CodeMapperClassSqliteJSONClass(snomed_code_json)
 
     visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper)
@@ -197,7 +197,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         else:
             return NoOutputClass()
 
-    snomed_json = os.path.join(json_map_directory, "CONCEPT_NAME_SNOMED.json")
+    snomed_json = os.path.join(json_map_directory, "concept_name_SNOMED.json")
     snomed_mapper = CodeMapperClassSqliteJSONClass(snomed_json)
 
     measurement_rules, observation_measurement_rules = \
@@ -220,7 +220,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #### CONDITION / DX ####
 
-    condition_type_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_Condition_Type.json")
+    condition_type_name_json = os.path.join(json_map_directory, "concept_name_Condition_Type.json")
     condition_type_name_map = CoderMapperJSONClass(condition_type_name_json)
 
     condition_claim_type_map = \
@@ -363,7 +363,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_directory_obj.register(ObservationObject(), output_observation_dx_encounter_csv_obj)
     in_out_map_obj.register(SourceConditionObject(), ObservationObject(), observation_rules_dx_class)
 
-    procedure_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
+    procedure_type_json = os.path.join(json_map_directory, "concept_name_Procedure_Type.json")
     procedure_type_mapper = CoderMapperJSONClass(procedure_type_json)
 
     # ICD9 and ICD10 codes which map to procedures according to the CDM Vocabulary
@@ -641,15 +641,15 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 def create_person_rules(json_map_directory):
     """Generate rules for mapping source_patient.csv"""
 
-    gender_json = os.path.join(json_map_directory, "CONCEPT_NAME_Gender.json")
+    gender_json = os.path.join(json_map_directory, "concept_name_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
     gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
-    race_json = os.path.join(json_map_directory, "CONCEPT_NAME_Race.json")
+    race_json = os.path.join(json_map_directory, "concept_name_Race.json")
     race_json_mapper = CoderMapperJSONClass(race_json)
 
-    ethnicity_json = os.path.join(json_map_directory, "CONCEPT_NAME_Ethnicity.json")
+    ethnicity_json = os.path.join(json_map_directory, "concept_name_Ethnicity.json")
     ethnicity_json_mapper = CoderMapperJSONClass(ethnicity_json)
 
     race_map_dict = {"American Indian or Alaska native": "American Indian or Alaska Native",
@@ -710,7 +710,7 @@ def create_death_person_rules(json_map_directory, s_person_id_mapper):
 
     death_concept_mapper = ChainMapper(HasNonEmptyValue(), ReplacementMapper({True: 'EHR record patient status "Deceased"'}),
                                        CoderMapperJSONClass(os.path.join(json_map_directory,
-                                                                         "CONCEPT_NAME_Death_Type.json")))
+                                                                         "concept_name_Death_Type.json")))
 
     # TODO: cause_concept_id, cause_source_value, cause_source_concept_id
     # Valid Concepts for the cause_concept_id have domain_id='Condition'.
@@ -727,7 +727,7 @@ def create_death_person_rules(json_map_directory, s_person_id_mapper):
 def create_observation_period_rules(json_map_directory, s_person_id_mapper):
     """Generate observation rules"""
     observation_period_mapper = CoderMapperJSONClass(
-        os.path.join(json_map_directory, "CONCEPT_NAME_Obs_Period_Type.json"))
+        os.path.join(json_map_directory, "concept_name_Obs_Period_Type.json"))
     observation_period_constant_mapper = ChainMapper(
         ConstantMapper({"observation_period_type_name": "Period covering healthcare encounters"}),
         observation_period_mapper)
@@ -809,7 +809,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
     icd10proc_json = os.path.join(json_map_directory, "ICD10PCS_with_parent.json")
     cpt_json = os.path.join(json_map_directory, "CPT4_with_parent.json")
     hcpcs_json = os.path.join(json_map_directory, "HCPCS_with_parent.json")
-    procedure_type_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_Procedure_Type.json")
+    procedure_type_name_json = os.path.join(json_map_directory, "concept_name_Procedure_Type.json")
 
     procedure_type_map = \
         CascadeMapper(ChainMapper(
@@ -848,7 +848,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
 def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
-    visit_concept_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit.json")
+    visit_concept_json = os.path.join(json_map_directory, "concept_name_Visit.json")
     visit_concept_mapper = ChainMapper(
         ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit",
                            "Outpatient": "Outpatient Visit", "Observation": "Emergency Room Visit",
@@ -856,11 +856,11 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                            }), # Note: there are no observation type
         CoderMapperJSONClass(visit_concept_json))
 
-    visit_concept_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Visit_Type.json")
+    visit_concept_type_json = os.path.join(json_map_directory, "concept_name_Visit_Type.json")
     visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
                                             CoderMapperJSONClass(visit_concept_type_json))
 
-    place_of_service_json_name = os.path.join(json_map_directory, "CONCEPT_NAME_Place_of_Service.json")
+    place_of_service_json_name = os.path.join(json_map_directory, "concept_name_Place_of_Service.json")
     place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
 
     admit_discharge_source_mapper = CascadeMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
@@ -902,7 +902,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     # TODO: Add operator Concept ID: A foreign key identifier to the predefined Concept in the Standardized Vocabularies
     # reflecting the mathematical operator that is applied to the value_as_number. Operators are <, <=, =, >=, >.
 
-    measurement_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Meas_Type.json")
+    measurement_type_json = os.path.join(json_map_directory, "concept_name_Meas_Type.json")
     measurement_type_mapper = CoderMapperJSONClass(measurement_type_json)
 
     value_as_concept_mapper = ChainMapper(FilterHasKeyValueMapper(["s_result_code", "m_result_text"]),
@@ -1021,7 +1021,7 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
     multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
     multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.MULDRUG_ID.json")
 
-    ndc_code_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_NDC.json")
+    ndc_code_mapper_json = os.path.join(json_map_directory, "concept_code_NDC.json")
 
     drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
                                               CodeMapperClassSqliteJSONClass(multum_json, "s_drug_code"),  # 0
@@ -1038,7 +1038,7 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
 
 
 def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text"):
-    rxnorm_name_json = os.path.join(json_map_directory, "CONCEPT_NAME_RxNorm.json")
+    rxnorm_name_json = os.path.join(json_map_directory, "concept_name_RxNorm.json")
     rxnorm_name_mapper = CodeMapperClassSqliteJSONClass(rxnorm_name_json, drug_field_name)
 
     def string_to_cap_first_letter(raw_string):
@@ -1064,10 +1064,10 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
     # TODO: Increase coverage of "Map route_source_value -> route_source_value"
 
-    drug_type_json = os.path.join(json_map_directory, "CONCEPT_NAME_Drug_Type.json")
+    drug_type_json = os.path.join(json_map_directory, "concept_name_Drug_Type.json")
     drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
 
-    rxnorm_code_mapper_json = os.path.join(json_map_directory, "CONCEPT_CODE_RxNorm.json")
+    rxnorm_code_mapper_json = os.path.join(json_map_directory, "concept_code_RxNorm.json")
     rxnorm_code_concept_mapper = CodeMapperClassSqliteJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
     drug_source_concept_mapper = ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
                                                            rxnorm_name_mapper_chained))
