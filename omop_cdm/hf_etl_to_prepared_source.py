@@ -174,7 +174,9 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
             if len(admit_dt_tm_txt):
                 admit_dt_tm = datetime.datetime.strptime(admit_dt_tm_txt, "%Y-%m-%d %H:%M:%S")
                 age_in_years = row_dict["age_in_years"]
-                age_in_years_td = datetime.timedelta(int(age_in_years) * 365.25)
+                if len(age_in_years):
+                    age_in_years_td = datetime.timedelta(int(float(age_in_years)) * 365.25)
+
                 estimated_dob_dt_tm = admit_dt_tm - age_in_years_td
                 year_of_birth = estimated_dob_dt_tm.year
             else:
