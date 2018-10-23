@@ -157,7 +157,7 @@ class CoderMapperStaticClass(CodeMapperClass):
 
 class CodeMapperDictClass(CodeMapperClass):
 
-    def __init__ (self, mapper_dict, field_name=None, key_to_map_to=None):
+    def __init__(self, mapper_dict, field_name=None, key_to_map_to=None):
         self.mapper_dict = mapper_dict
         self.field_name = field_name
         self.key_to_map_to = key_to_map_to
