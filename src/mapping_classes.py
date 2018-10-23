@@ -165,7 +165,11 @@ class CodeMapperDictClass(CodeMapperClass):
     def map(self, input_dict):
 
         if self.field_name is None:
-            key = list(input_dict.keys())[0]
+            if len(input_dict.keys()):
+                key = list(input_dict.keys())[0]
+            else:
+                key = self.field_name
+
         else:
             key = self.field_name
 
