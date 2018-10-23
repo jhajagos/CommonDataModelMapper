@@ -168,6 +168,7 @@ class CodeMapperDictClass(CodeMapperClass):
             try:
                 key = list(input_dict.keys())[0]
             except:
+                print(self.__class__)
                 print(self.mapper_dict)
                 raise
 
