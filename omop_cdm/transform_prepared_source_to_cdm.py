@@ -1073,12 +1073,17 @@ def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text")
     return rxnorm_name_mapper_chained
 
 
+def generate_drug_name_alternative_mapper(json_map_directory):
+    return generate_drug_name_mapper(json_map_directory, "s_drug_alternative_txt")
+
+
 def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, row_offset):
 
     # TODO: Increase mapping coverage of drugs - while likely need manual overrides
 
     rxnorm_rxcui_mapper = generate_rxcui_drug_code_mapper(json_map_directory)
-    rxnorm_name_mapper_chained = generate_drug_name_mapper(json_map_directory)
+    rxnorm_name_mapper_chained = CascadeMapper(generate_drug_name_mapper(json_map_directory),
+                                               generate_drug_name_alternative_mapper(json_map_directory))
 
     # TODO: Increase coverage of "Map dose_unit_source_value -> drug_unit_concept_id"
     # TODO: Increase coverage of "Map route_source_value -> route_source_value"
@@ -1199,9 +1204,9 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("s_quantity", "quantity"),
                         ("s_dose_unit", "dose_unit_source_value"),
                         ("m_dose_unit", snomed_mapper, {"CONCEPT_ID".lower(): "dose_unit_concept_id"}),
-                        (("m_drug_code_oid", "s_drug_code", "s_drug_text"), drug_source_concept_mapper,
+                        (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), drug_source_concept_mapper,
                          {"CONCEPT_ID".lower(): "drug_source_concept_id"}),
-                        (("m_drug_code_oid", "s_drug_code", "s_drug_text"), rxnorm_concept_mapper,
+                        (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), rxnorm_concept_mapper,
                          {"CONCEPT_ID".lower(): "drug_concept_id"}),  # TODO: Make sure map maps to standard concept
                         ("m_drug_type", drug_type_mapper, {"CONCEPT_ID".lower(): "drug_type_concept_id"})]
 

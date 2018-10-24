@@ -46,14 +46,15 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     for vocabulary in vocabularies:
         fields_to_key_on = ["CONCEPT_CODE".lower(), "CONCEPT_NAME".lower()]
 
-        vocabulary_name = "_".join(vocabulary.split(" "))
-        for field_to_key_on in fields_to_key_on:
-            file_vocabulary_name = field_to_key_on + "_" + vocabulary_name + ".json"
-            path_vocabulary_name = os.path.join(output_json_directory, file_vocabulary_name)
-            if not os.path.exists(path_vocabulary_name):
-                print("Generating '%s'" % file_vocabulary_name)
-                csv_file_name_to_keyed_json(concept_csv, path_vocabulary_name, field_to_key_on,
-                                            [("VOCABULARY_ID".lower(), vocabulary), ("INVALID_REASON".lower(), "")])
+        if vocabulary is not None:
+            vocabulary_name = "_".join(vocabulary.split(" "))
+            for field_to_key_on in fields_to_key_on:
+                file_vocabulary_name = field_to_key_on + "_" + vocabulary_name + ".json"
+                path_vocabulary_name = os.path.join(output_json_directory, file_vocabulary_name)
+                if not os.path.exists(path_vocabulary_name):
+                    print("Generating '%s'" % file_vocabulary_name)
+                    csv_file_name_to_keyed_json(concept_csv, path_vocabulary_name, field_to_key_on,
+                                                [("VOCABULARY_ID".lower(), vocabulary), ("INVALID_REASON".lower(), "")])
 
     concept_relationship_csv = os.path.join(source_vocabulary_directory, "CONCEPT_RELATIONSHIP.csv")
     concept_relationship_json = os.path.join(output_json_directory, "concept_relationship.json")
@@ -175,7 +176,7 @@ if __name__ == "__main__":
         description="Transform Athena vocabulary files into JSON map files for mapping scripts")
 
     arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file",
-                               default="hi_config.json")
+                               default="cdm_config.json")
     arg_obj = arg_parse_obj.parse_args()
 
     print("Reading config file '%s'" % arg_obj.config_file_name)

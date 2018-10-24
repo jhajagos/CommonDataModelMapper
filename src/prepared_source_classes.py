@@ -78,7 +78,8 @@ class SourceMedicationObject(PreparedSourceObject):
     """Ordered, administered medications and drugs"""
     def _fields(self):
         return ["s_person_id", "s_encounter_id", "s_drug_code", "s_drug_code_type",
-                "m_drug_code_oid", "s_drug_text", "s_drug_alternative_text",
+                "m_drug_code_oid", "s_drug_text",
+                "s_drug_alternative_text",
                 "s_start_medication_datetime", "s_end_medication_datetime",
                 "s_route", "m_route",
                 "s_quantity",
