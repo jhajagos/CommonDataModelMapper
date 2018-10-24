@@ -38,6 +38,9 @@ def drug_post_processing(output_dict):
             if output_dict[field] is not None:
                 if not len(output_dict[field]):
                     output_dict[field] = 0
+            elif output_dict[field] is None:
+                output_dict[field] = 0
+
     return output_dict
 
 
