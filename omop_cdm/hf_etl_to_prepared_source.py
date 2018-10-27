@@ -474,7 +474,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
 
-    # Expand this list
+    # Expand and validate this list
     clinical_event_name_snomed_code_map = {
         "Blood Pressure Diastolic": "271650006",
         "Blood Pressure Systolic": "271649006",
@@ -482,8 +482,26 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         "SPO2 (Saturation of peripheral oxygen)": "59408-5",
         "Weight": "27113001",
         "Height": "50373000",
-        "Pulse Peripheral": "54718008"
+        #"Pulse Peripheral": "54718008",
+        "Heart Rate": "8867-4",
+        "Heart Rate: Monitored": "8867-4",
+        "Mean Arterial Pressure": "8478-0",
+        #"Level of Consciousness": "70184-7", # no numeric results
+        "Glasgow Coma Score": "35088-4",
+        "Temperature Skin": "39106-0",
+        "Temperature (Route Not Specified)": "8310-5",
+        "Pain Scale Score": "72514-3",
+        "Pulse": "8867-4",
+        "Pulse Peripheral": "8867-4",
+        "O2 Saturation (SO2)": "59408-5",
+        "Temperature Oral": "8310-5",
+        "Braden Scale for Predicting Pressure Ulcer Risk": "81636-3",
+        "Numeric Pain Scale 0-10": "72514-3",
+        "FiO2 (Fraction of Inspired Oxygen)": "3150-0",
+        "Temperature Axillary": "8310-5",
+        "Temperature Tympanic": "8310-5"
     }
+
     clinical_event_name_snomed_code_mapper = CodeMapperDictClass(clinical_event_name_snomed_code_map, "result_name")
     result_code_mapper = CascadeMapper(ChainMapper(FilterHasKeyValueMapper(["code"]), KeyTranslator({"code": "mapped_value"})),
                                        ChainMapper(FilterHasKeyValueMapper(["result_name"]), clinical_event_name_snomed_code_mapper))
