@@ -547,10 +547,23 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     # Medication
 
+    def zero_pad_ndc(input_dict):
+        if "ndc_code" in input_dict:
+            if len("ndc_code"):
+                ndc_code = input_dict["ndc_code"]
+                ndc_code_len = len(ndc_code)
+
+                zeros_to_add = 11 - ndc_code_len
+
+                input_dict["ndc_code"] = "0" * zeros_to_add + ndc_code
+
+        return input_dict
+
+
     medication_rules = [
         ("patient_id", "s_person_id"),
         ("encounter_id", "s_encounter_id"),
-        ("ndc_code", "s_drug_code"),
+        ("ndc_code", PassThroughFunctionMapper(zero_pad_ndc), {"ndc_code": "s_drug_code"}),
         ("ndc_code", ConstantMapper({"mapped_value": "2.16.840.1.113883.6.69"}), {"mapped_value": "m_drug_code_oid"}),
         (":row_id", ConstantMapper({"s_drug_code_type": "NDC"}), {"s_drug_code_type": "s_drug_code_type"}),
         ("brand_name", "s_drug_text"),

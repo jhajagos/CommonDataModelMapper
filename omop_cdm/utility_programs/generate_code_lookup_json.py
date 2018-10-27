@@ -86,7 +86,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
         with open(global_concept_domain_json, "w") as fw:
             json.dump(concept_dict_vocabulary, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
-    vocabularies_with_maps = ["ICD9CM", "ICD9Proc", "ICD10CM", "ICD10PCS", "Multum", "LOINC", "CPT4", "HCPCS"]
+    vocabularies_with_maps = ["ICD9CM", "ICD9Proc", "ICD10CM", "ICD10PCS", "Multum", "LOINC", "CPT4", "HCPCS", "NDC"]
     for vocabulary_id in vocabularies_with_maps:
         print("Annotating '%s'" % vocabulary_id)
         vocabulary_json = os.path.join(output_json_directory, "concept_code_" + vocabulary_id + ".json")

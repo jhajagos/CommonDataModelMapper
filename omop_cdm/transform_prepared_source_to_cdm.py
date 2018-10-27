@@ -1035,8 +1035,7 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
     multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
     multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.MULDRUG_ID.json")
 
-    ndc_code_mapper_json = os.path.join(json_map_directory, "concept_code_NDC.json")
-
+    ndc_code_mapper_json = os.path.join(json_map_directory, "NDC_with_parent.json")
     if os.path.exists(multum_json) and os.path.exists(multum_drug_json) and os.path.exists(multum_drug_mmdc_json):
 
         drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_with_full_multum_code,
@@ -1096,8 +1095,9 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
 
     rxnorm_code_mapper_json = os.path.join(json_map_directory, "concept_code_RxNorm.json")
     rxnorm_code_concept_mapper = CodeMapperClassSqliteJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
-    drug_source_concept_mapper = ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
-                                                           rxnorm_name_mapper_chained))
+    drug_source_concept_mapper = CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
+                                                           rxnorm_rxcui_mapper,
+                                                           rxnorm_name_mapper_chained)
 
     rxnorm_bn_in_mapper_json = os.path.join(json_map_directory,
                                              "select_n_in__ot___from___select_bn_rxcui.csv.bn_rxcui.json")
@@ -1132,12 +1132,17 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     rxnorm_concept_mapper = CascadeMapper(ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper,
                                                                                 ChainMapper(rxnorm_bn_sbdf_mapper,
                                                                                             KeyTranslator({"sbdf_rxcui": "RXNORM_ID"}))),
-                                          ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_in_mapper,
+                                            ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_in_mapper,
                                                                                        KeyTranslator({"in_rxcui": "RXNORM_ID"}))),
-                                          rxnorm_rxcui_mapper), rxnorm_code_concept_mapper),
+                                            rxnorm_rxcui_mapper), rxnorm_code_concept_mapper),
+
                                           CascadeMapper(ChainMapper(rxnorm_str_bn_sbdf_mapper, rxnorm_name_mapper_chained),
                                                         ChainMapper(rxnorm_str_bn_in_mapper, rxnorm_name_mapper_chained),
-                                          rxnorm_name_mapper_chained))
+                                                        rxnorm_name_mapper_chained),
+
+                                          ChainMapper(drug_source_concept_mapper,
+                                                      KeyTranslator({"mapped_concept_id": "concept_id"}))
+                                          )
 
     drug_type_mapper = ChainMapper(ReplacementMapper({"HOSPITAL_PHARMACY": "Inpatient administration",
                                                       "INPATIENT_FLOOR_STOCK": "Inpatient administration",
