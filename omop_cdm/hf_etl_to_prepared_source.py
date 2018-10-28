@@ -7,6 +7,12 @@ import hashlib
 import logging
 import sys
 
+"""
+This script maps data extracted from the HealthFacts database into 
+a prepared source format. The prepared source format is then mapped
+into the OHDSI format. 
+"""
+
 logging.basicConfig(level=logging.INFO)
 
 try:
@@ -497,7 +503,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         "Temperature Oral": "8310-5",
         "Braden Scale for Predicting Pressure Ulcer Risk": "81636-3",
         "Numeric Pain Scale 0-10": "72514-3",
-        "FiO2 (Fraction of Inspired Oxygen)": "3150-0",
+        "FiO2 (Fraction of Inspired Oxygen)": "3150-0", # Need to validate this
         "Temperature Axillary": "8310-5",
         "Temperature Tympanic": "8310-5"
     }
