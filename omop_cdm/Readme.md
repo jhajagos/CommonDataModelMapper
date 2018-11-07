@@ -105,6 +105,8 @@ python ./utility_programs/load_mapped_cdm_files_into_db.py -c hi_config.json
 ## Prepared source specification
 
 The prepared source is an intermediary format for mapping to OHDSI format.
+The intermediary format is closer to how data is stored in clinical or administrative
+database.
 
 Prefix nomenclature:
 
@@ -121,6 +123,8 @@ Date formats:
 
 ### source_person.csv
 
+This file holds information about the person/patient.
+
 * s_person_id -- Source identifier for patient or person
 * s_gender	-- Source gender for person
 * m_gender -- {MALE, FEMALE, UNKNOWN}
@@ -134,10 +138,14 @@ Date formats:
 
 ### source_care_site.csv
 
+This file holds information about the care site of an encounter. It is used to reference the encounter.
+
 * k_care_site -- hashed key representing an organization
 * s_care_site_name -- name of the care site
 
 ### source_encounter.csv
+
+This file holds information about the encounter.
 
 * s_encounter_id -- Source identifier for encounter
 * s_person_id -- Source identifier for patient or person
@@ -147,11 +155,13 @@ Date formats:
 * m_visit_type -- Type of visit {Inpatient, Outpatient, . .}
 * k_care_site -- Linking key to location
 * s_discharge_to -- Source value discharge disposition
-* m_discharge_to -- 
+* m_discharge_to -- Mapped value {}
 * s_admitting_source -- Source value for admitting source
-* m_admitting_source -- 
+* m_admitting_source -- Mapped value {}
 
 ### source_observation_period.csv
+
+This file holds information about the period of time that data is collected about the person and captured.
 
 * s_person_id -- Source identifier for patient or person
 * s_start_observation_datetime -- Start period of patient observation 
@@ -159,26 +169,30 @@ Date formats:
 
 ### source_encounter_coverage.csv
 
-* s_person_id --
-* s_encounter_id --
+This file holds information about how the encounter is covered by a payer.
+
+* s_person_id -- Source identifier for patient or person
+* s_encounter_id --  -- Source identifier for an encounter
 * s_start_payer_date -- in date format
 * s_end_payer_date -- in date format
-* s_payer_name -- 
-* m_payer_name --  
-* s_plan_name -- 
-* m_plan_name -- 
+* s_payer_name -- the payer name
+* m_payer_name --  the mapped payer name
+* s_plan_name --  the plan name
+* m_plan_name --  the mapped plan name
 
 ### source_condition.csv
 
-* s_person_id -- 
-* s_encounter_id -- 
-* s_start_condition_datetime -- 
+This file holds information about the recorded conditions for a person and/or encounter.
+
+* s_person_id -- Source identifier for patient or person
+* s_encounter_id -- Source identifier for an encounter
+* s_start_condition_datetime -- The time of
 * s_end_condition_datetime -- 
 * s_condition_code -- 
 * s_condition_code_type -- 
 * m_condition_code_oid -- 
 * s_sequence_id -- 
-* s_rank -- 
+* s_rank --
 * m_rank -- 
 * s_condition_type -- 
 * s_present_on_admission_indicator -- 
@@ -186,8 +200,10 @@ Date formats:
 
 ### source_procedure.csv
 
-* s_encounter_id -- Source identifier for patient of person
-* s_person_id -- Source identifier for an encounter
+This file holds information the recorded procedure for a person and/or encounter.
+
+* s_encounter_id -- Source identifier for an encounter
+* s_person_id -- Source identifier for patient of person
 * s_start_procedure_datetime
 * s_end_procedure_datetime
 * s_procedure_code
@@ -200,10 +216,12 @@ Date formats:
 
 ### source_result.csv
 
-* s_person_id
-* s_encounter_id
-* s_obtained_datetime
-* s_type_name
+This file holds all recorded measurements for a person and/or encounter.
+
+* s_person_id -- Source identifier for patient or person
+* s_encounter_id -- Source identifier for an encounter
+* s_obtained_datetime -- The date the result was obtained or measured
+* s_type_name -- The text description of name
 * s_type_code
 * m_type_code_oid
 * s_result_text
@@ -221,12 +239,15 @@ Date formats:
                 
 ### source_medication.csv
 
-* s_person_id
-* s_encounter_id
-* s_drug_code
+This file holds all medications orders for a person and/or encounter
+
+* s_person_id -- Source identifier for patient or person
+* s_encounter_id -- Source identifier for an encounter
+* s_drug_code -- The drug code for the medication
 * s_drug_code_type -- Name of drug coding system {NDC, RxNorm} (not used in mapping)
 * m_drug_code_oid -- OID for drug coding system
 * s_drug_text -- Name of the drug
+* s_drug_alternative_text -- Alternative drug name (could be a generic or brand name)
 * s_start_medication_datetime -- Start of drug
 * s_end_medication_datetime -- End of drug
 * s_route
@@ -240,14 +261,3 @@ Date formats:
 * s_drug_type -- How the drug was delivered {Inpatient, Office}
 * m_drug_type -- In standard mapping
 * i_exclude
-
-```json
-{
- "HOSPITAL_PHARMACY": "Inpatient administration",
- "INPATIENT_FLOOR_STOCK": "Inpatient administration",
- "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
- "UNKNOWN": "Prescription dispensed in pharmacy",
- "_NOT_VALUED": "Prescription written",
- "OFFICE": "Physician administered drug (identified from EHR observation)"
-}
-```
