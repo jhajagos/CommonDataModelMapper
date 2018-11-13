@@ -23,8 +23,8 @@ request is submitted an email notification will be sent when the files are ready
 If you are working with claims data you will need a license for CPT codes and run a separate
 process for including the CPT codes in the concept table.
 
-To generate the CONCEPT.csv with the CPT codes you need to run a Java program. With newer versions of Java you need to
-modify the command:
+To generate the CONCEPT.csv with the CPT codes you need to run a Java program. With newer
+versions of Java you need to modify the command:
 
 ```bash
 java --add-modules java.xml.ws -jar cpt4.jar 5
@@ -131,7 +131,7 @@ This file holds information about the person/patient.
 * s_birth_datetime -- Date of birth can be either a date or a date time
 * s_death_datetime -- Date of death can either be either a date or a date time
 * s_race -- Source race value for person
-* m_race -- {White, Black or African American, American Indian or Alaska native, . .}
+* m_race -- {White, Black or African American, American Indian or Alaska Native, . .}
 * s_ethnicity -- Source ethnicity for person
 * m_ethnicity -- Mapped value {Not Hispanic or Latino, Hispanic or Latino}
 * k_location -- Not implemented 
@@ -186,17 +186,17 @@ This file holds information about the recorded conditions for a person and/or en
 
 * s_person_id -- Source identifier for patient or person
 * s_encounter_id -- Source identifier for an encounter
-* s_start_condition_datetime -- The time of
-* s_end_condition_datetime -- 
-* s_condition_code -- 
-* s_condition_code_type -- 
-* m_condition_code_oid -- 
+* s_start_condition_datetime -- The condition start time
+* s_end_condition_datetime --  The condition end time
+* s_condition_code -- The actual condition code
+* s_condition_code_type -- Source condition
+* m_condition_code_oid -- {ICD9: 2.16.840.1.113883.6.103, ICD10: 2.16.840.1.113883.6.90}
 * s_sequence_id -- 
 * s_rank --
-* m_rank -- 
+* m_rank -- {Primary, Secondary}
 * s_condition_type -- 
 * s_present_on_admission_indicator -- 
-* i_exclude -- exclude from OHDSI mapper
+* i_exclude -- exclude row from the mapper
 
 ### source_procedure.csv
 
@@ -212,7 +212,7 @@ This file holds information the recorded procedure for a person and/or encounter
 * s_sequence_id
 * s_rank
 * m_rank
-* i_exclude
+* i_exclude -- exclude row from the mapper
 
 ### source_result.csv
 
