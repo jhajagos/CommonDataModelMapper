@@ -10,7 +10,7 @@ alter table drug_exposure alter column drug_source_value type varchar(1023);
 
 alter table measurement alter column value_source_value type varchar(1023);
 
-alter table measurement alter column  measurement_source_value varchar(1023);
+alter table measurement alter column  measurement_source_value type varchar(1023);
 
 alter table observation alter column value_as_string type varchar(1023);
 
