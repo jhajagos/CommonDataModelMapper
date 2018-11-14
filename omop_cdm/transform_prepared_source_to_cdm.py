@@ -1062,15 +1062,19 @@ def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text")
     rxnorm_name_json = os.path.join(json_map_directory, "concept_name_RxNorm.json")
     rxnorm_name_mapper = CodeMapperClassSqliteJSONClass(rxnorm_name_json, drug_field_name)
 
-    def string_to_cap_first_letter(raw_string):
+    def string_to_cap_first_letters(raw_string):
         if len(raw_string):
-            return raw_string[0].upper() + raw_string[1:].lower()
+            split_raw_string = raw_string.split(" ")
+            capped_words = []
+            for word in split_raw_string:
+                capped_words += [word[0].upper() + word[1:].lower()]
+            return " ".join(capped_words)
         else:
             return raw_string
 
     rxnorm_name_mapper_chained = CascadeMapper(rxnorm_name_mapper,
                                                ChainMapper(
-                                                           TransformMapper(string_to_cap_first_letter), rxnorm_name_mapper))
+                                                           TransformMapper(string_to_cap_first_letters), rxnorm_name_mapper))
 
     return rxnorm_name_mapper_chained
 
