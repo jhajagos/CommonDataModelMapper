@@ -191,11 +191,11 @@ This file holds information about the recorded conditions for a person and/or en
 * s_condition_code -- The actual condition code
 * s_condition_code_type -- Source condition
 * m_condition_code_oid -- {ICD9: 2.16.840.1.113883.6.103, ICD10: 2.16.840.1.113883.6.90}
-* s_sequence_id -- 
-* s_rank --
-* m_rank -- {Primary, Secondary}
-* s_condition_type -- 
-* s_present_on_admission_indicator -- 
+* s_sequence_id -- The order of the diagnosis codes
+* s_rank -- The rank of the test
+* m_rank -- The mapped rank {Primary, Secondary}
+* s_condition_type -- Admit, discharge, problem list
+* s_present_on_admission_indicator -- For billing purposes indicates whether the
 * i_exclude -- exclude row from the mapper
 
 ### source_procedure.csv
@@ -204,14 +204,14 @@ This file holds information the recorded procedure for a person and/or encounter
 
 * s_encounter_id -- Source identifier for an encounter
 * s_person_id -- Source identifier for patient of person
-* s_start_procedure_datetime
-* s_end_procedure_datetime
-* s_procedure_code
-* s_procedure_code_type
-* m_procedure_code_oid
-* s_sequence_id
-* s_rank
-* m_rank
+* s_start_procedure_datetime -- The start of the procedure
+* s_end_procedure_datetime -- The end of the procedure
+* s_procedure_code -- The code for the procedure
+* s_procedure_code_type  -- The type of procedure code {ICD10:PCS, CPT}
+* m_procedure_code_oid -- The OID for the coding system: CPT: 	"2.16.840.1.113883.6.12"
+* s_sequence_id -- The procedure order as stored in the source system
+* s_rank -- The rank of the procedure:
+* m_rank -- The mapped rank of the procedure
 * i_exclude -- exclude row from the mapper
 
 ### source_result.csv
@@ -221,21 +221,21 @@ This file holds all recorded measurements for a person and/or encounter.
 * s_person_id -- Source identifier for patient or person
 * s_encounter_id -- Source identifier for an encounter
 * s_obtained_datetime -- The date the result was obtained or measured
-* s_type_name -- The text description of name
-* s_type_code
-* m_type_code_oid
-* s_result_text
-* m_result_text
-* s_result_numeric
-* s_result_datetime
-* s_result_code
-* m_result_code_oid
-* s_result_unit
-* s_result_unit_code
-* m_result_unit_code_oid
-* s_result_numeric_lower
-* s_result_numeric_upper
-* i_exclude
+* s_type_name -- The text description of lab test / measurement name, e.g., Hemoglobin A1C
+* s_type_code -- The code for the lab test/measurement, e.g., "4548-4"
+* m_type_code_oid -- The OID for the lab test/measurement, e.g., "2.16.840.1.113883.6.1"
+* s_result_text -- The text associated with the result., e.g., Above normal
+* m_result_text -- A mapped name of the result of the lab
+* s_result_numeric -- The numeric result of the lab test
+* s_result_datetime -- If the measurement has a date associated with it, for example, date of last
+* s_result_code -- If the result was a specific coded result
+* m_result_code_oid -- The OID For the coding system
+* s_result_unit -- The units of the measurement
+* s_result_unit_code -- A code for the units
+* m_result_unit_code_oid -- The OID for the coded unites
+* s_result_numeric_lower -- Numeric lower limit for normal
+* s_result_numeric_upper -- Numeric upper limit for normal
+* i_exclude -- exclude row from the mapper
                 
 ### source_medication.csv
 
