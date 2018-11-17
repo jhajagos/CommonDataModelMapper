@@ -248,16 +248,16 @@ This file holds all medications orders for a person and/or encounter
 * m_drug_code_oid -- OID for drug coding system
 * s_drug_text -- Name of the drug
 * s_drug_alternative_text -- Alternative drug name (could be a generic or brand name)
-* s_start_medication_datetime -- Start of drug
-* s_end_medication_datetime -- End of drug
-* s_route
-* m_route
-* s_quantity
+* s_start_medication_datetime -- Start of medication date time
+* s_end_medication_datetime -- End of medication date time
+* s_route -- Source route {Oral, Intravenous}
+* m_route -- Mapped route to standard
+* s_quantity == The quantity dispensed to the person
 * s_dose -- The source dose form
-* m_dose -- The mapped dose form
-* s_dose_unit
-* m_dose_unit
-* s_status -- {Completed, Ordered, Canceled}
-* s_drug_type -- How the drug was delivered {Inpatient, Office}
-* m_drug_type -- In standard mapping
+* m_dose -- The mapped dose form to standard unites
+* s_dose_unit == Source unit of dose
+* m_dose_unit == Mapped unit of dose
+* s_status -- Status of the medication order{Completed, Ordered, Canceled}
+* s_drug_type -- Source how the drug was delivered {Inpatient, Office}
+* m_drug_type -- Mapped how the drug was delivered
 * i_exclude
