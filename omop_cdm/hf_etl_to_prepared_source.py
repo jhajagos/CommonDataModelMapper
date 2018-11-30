@@ -204,7 +204,6 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
                     if year_of_birth < existing_year_of_birth:
                         result_dict[patient_id] = patient_dict
 
-
         with open(file_to_write, "w", newline="") as fw:
             fields_to_write = patient_fields + ["year_of_birth"]
             csv_writer = csv.writer(fw)
