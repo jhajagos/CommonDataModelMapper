@@ -31,6 +31,8 @@ if __name__ == "__main__":
     arg_parse_obj.add_argument("--connection-uri", dest="connection_uri", default=None)
     arg_parse_obj.add_argument("--schema", dest="schema", default=None)
 
+    arg_parse_obj.add_argument("--load-concept_ancestor", default=False, action="store_true", dest="load_concept_ancestor")
+
     arg_parse_obj.add_argument("--full-concept-files", default=False, action="store_true", dest="load_full_concept_files")
 
     arg_obj = arg_parse_obj.parse_args()
@@ -49,9 +51,13 @@ if __name__ == "__main__":
     else:
         schema = arg_obj.schema
 
+
     if arg_obj.load_full_concept_files:
         vocabularies_to_load = ["CONCEPT", "CONCEPT_ANCESTOR", "CONCEPT_CLASS", "CONCEPT_RELATIONSHIP", "CONCEPT_SYNONYM",
                         "DOMAIN", "DRUG_STRENGTH", "RELATIONSHIP", "VOCABULARY"]
+
+    elif arg_obj.load_concept_ancestor:
+        vocabularies_to_load = ["CONCEPT", "CONCEPT_ANCESTOR"]
 
     else:
         vocabularies_to_load = ["CONCEPT"]
