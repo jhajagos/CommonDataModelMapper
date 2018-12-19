@@ -28,9 +28,9 @@ import argparse
 logging.basicConfig(level=logging.INFO)
 
 
-def drug_post_processing(output_dict):
+def drug_procedure_post_processing(output_dict):
     """For concept_id"""
-    fields = ["drug_concept_id", "drug_source_concept_id"]
+    fields = ["drug_concept_id", "drug_source_concept_id", "procedure_concept_id", "procedure_source_concept_id"]
     for field in fields:
         if field not in output_dict:
             output_dict[field] = 0
@@ -608,7 +608,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_proc_csv_obj, in_out_map_obj,
                                                                   output_directory_obj,
-                                                                  procedure_router_obj, post_map_func=drug_post_processing)
+                                                                  procedure_router_obj, post_map_func=drug_procedure_post_processing)
 
     procedure_runner_obj.run()
 
@@ -635,7 +635,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, SourceMedicationObject(), output_drug_exposure_csv,
                                                    DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj,
-                                                   drug_exposure_router_obj, post_map_func=drug_post_processing)
+                                                   drug_exposure_router_obj, post_map_func=drug_procedure_post_processing)
     drug_exposure_runner_obj.run()
 
 
