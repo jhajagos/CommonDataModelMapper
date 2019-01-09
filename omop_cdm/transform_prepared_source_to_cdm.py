@@ -662,7 +662,8 @@ def create_person_rules(json_map_directory):
                      "Indian": "Asian Indian",
                      "White/Caucasian": "White",
                      "Black / African American": "Black",
-                     "Black or African American": "Black"
+                     "Black or African American": "Black",
+                     "Black/African American": "Black"
                      }
 
     ethnicity_map_dict = {
