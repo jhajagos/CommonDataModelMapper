@@ -56,7 +56,7 @@ def main(input_csv_directory, output_csv_directory):
     person_race_csv = os.path.join(input_csv_directory, "PH_D_Person_Race.csv")
     person_demographic_csv = os.path.join(input_csv_directory, "PH_D_Person_Demographics.csv")
 
-    build_json_person_attribute(person_race_csv, "person_race.json", "person_seq", "race_code", "race_primary_display",
+    build_json_person_attribute(person_race_csv, "person_race.json", "person_seq", "race_code", "race_display",
                                 output_directory=input_csv_directory)
 
     build_json_person_attribute(person_demographic_csv, "person_ethnicity.json", "person_seq", "ethnicity_code",
@@ -403,8 +403,11 @@ def main(input_csv_directory, output_csv_directory):
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name,
                                 code_field_name, description_field_name,
-                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown",
-                                                        "Ethnic group not given - patient refused", ""],
+                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Patient Declined",
+                                                        "Ethnic group not given - patient refused", "Unknown racial group",
+                                                        "Unable to Obtain", "OTHER", "UNKNOWN", "Declined to Specify",
+                                                        "Other/Yes", "Unknown/Unreported", "Unknown/Yes"
+                                                        ],
                                 output_directory="./"):
     """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
 
@@ -418,6 +421,10 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
             sequence_id = row_dict[sequence_field_name]
             code = row_dict[code_field_name]
             code_description = row_dict[description_field_name]
+
+            if len(code_description):
+                if "." == code_description[0]:
+                    code_description = code_description[1:]
 
             if code_description not in descriptions_to_ignore:
 

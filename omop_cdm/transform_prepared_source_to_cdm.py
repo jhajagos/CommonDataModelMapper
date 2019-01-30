@@ -659,8 +659,12 @@ def create_person_rules(json_map_directory):
                      "Asian or Pacific islander": "Asian",
                      "Black, not of hispanic origin": "Black",
                      "Caucasian": "White",
-                     "Indian": "Asian Indian"
-                    }
+                     "Indian": "Asian Indian",
+                     "White/Caucasian": "White",
+                     "Black / African American": "Black",
+                     "Black or African American": "Black",
+                     "Black/African American": "Black"
+                     }
 
     ethnicity_map_dict = {
         "Hispanic or Latino": "Hispanic or Latino",

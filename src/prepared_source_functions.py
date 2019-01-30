@@ -12,7 +12,7 @@ def build_key_func_dict(fields, hashing_func=None, separator="|"):
         for field in fields:
             key_list += [input_dict[field]]
 
-        key_list = [kl for kl in key_list if len(kl)]
+        key_list = [kl for kl in key_list if kl is not None and len(kl)]
         key_string = separator.join(key_list)
 
         if hashing_func is not None:
