@@ -54,7 +54,7 @@ class InputClassCSVRealization(InputClassRealization):
         if self.force_ascii and sys.version_info[0] == 2:
             f = open(csv_file_name, 'rb')
         else:
-            f = open(csv_file_name, newline='')
+            f = open(csv_file_name, newline='', encoding="utf-8")
         self.csv_dict = csv.DictReader(f)
 
         self.i = 1
@@ -108,7 +108,7 @@ class OutputClassCSVRealization(OutputClassRealization):
         if self.force_ascii and sys.version_info[0] == 2:
             self.fw = open(csv_file_name, "wb")
         else:
-            self.fw = open(csv_file_name, "w", newline="")
+            self.fw = open(csv_file_name, "w", newline="", encoding="utf-8")
 
         self.output_class = output_class_obj
         if field_list is None:
