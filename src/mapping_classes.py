@@ -54,6 +54,7 @@ class InputClassCSVRealization(InputClassRealization):
         if self.force_ascii and sys.version_info[0] == 2:
             f = open(csv_file_name, 'rb')
         else:
+
             f = open(csv_file_name, newline='', encoding="utf-8")
         self.csv_dict = csv.DictReader(f)
 
