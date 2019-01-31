@@ -75,6 +75,7 @@ def convert_datetime(datetime_str):
     re_odbc_date = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$")
     re_odbc_date_time_1 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}$")
     re_odbc_date_time_2 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}$")
+    re_odbc_date_time_3 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{1,4}$")
 
     if datetime_str == '':
         return null_date
@@ -85,8 +86,13 @@ def convert_datetime(datetime_str):
                 localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M')
             elif re_odbc_date.match(datetime_str):
                 localized_datetime = time.strptime(datetime_str, '%Y-%m-%d')
-            elif re_odbc_date_time_2:
+            elif re_odbc_date_time_2.match(datetime_str):
                 localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+            elif re_odbc_date_time_3.match(datetime_str):
+                localized_datetime = time.strptime(datetime_str, '%Y-%m-%d %H:%M:%S.%f')
+            else:
+                return null_date
+
         except(ValueError):
             return null_date
 
@@ -177,7 +183,11 @@ class MapDateTimeToUnixEpochSeconds(MapperClass):
                     time_obj = datetime.datetime.strptime(date_value,
                                                           "%Y-%m-%d")  # Seconds since January 1, 1970 Unix time
                 except ValueError:
-                    time_obj = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M")
+                    try:
+                        time_obj = datetime.datetime.strptime(date_value, "%Y-%m-%d %H:%M")
+                    except:
+                        time_obj = datetime.datetime.strptime(date_value,
+                                                      "%Y-%m-%d %H:%M:%S.%f")
 
             seconds_since_unix_epoch = (time_obj - datetime.datetime(1970, 1, 1)).total_seconds()
 

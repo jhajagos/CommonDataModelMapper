@@ -124,6 +124,7 @@ class TestTranslators(unittest.TestCase):
 
         self.assertEquals({"mapped_value": "1"}, mapper_result)
 
+
 class TestCodeMapperClassSqliteJSONClass(unittest.TestCase):
 
     def setUp(self):
