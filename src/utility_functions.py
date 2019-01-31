@@ -99,6 +99,12 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                                 if field_value in condition[1]:
                                     insert_data = True
 
+                    for field_key in cleaned_dict:
+                        field_value = cleaned_dict[field_key]
+                        if field_value.__class__ == u"".__class__:
+                            if field_value.upper() == "NULL":
+                                cleaned_dict[field_key] = None
+
                     if insert_data:
                         s = table_obj.insert(cleaned_dict)
                         try:
