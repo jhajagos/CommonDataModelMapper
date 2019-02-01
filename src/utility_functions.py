@@ -76,7 +76,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                                 else:
                                     cleaned_dict[key.lower()] = dict_row[key]
                             except ValueError:
-                                cleaned_dict[key.lower()] = None
+                                cleaned_dict[key.lower()] = datetime.datetime(1900, 1, 1, 0, 0)
 
                     if lower_case_keys:
                         temp_cleaned_dict = {}
