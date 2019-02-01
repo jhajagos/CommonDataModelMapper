@@ -64,16 +64,19 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                     for key in dict_row:
                         if len(dict_row[key]):
 
-                            if "date" in key or "DATE" in key:
-                                if "-" in dict_row[key]:
-                                    if " " in dict_row[key]:
-                                        cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
+                            try:
+                                if "date" in key or "DATE" in key:
+                                    if "-" in dict_row[key]:
+                                        if " " in dict_row[key]:
+                                            cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
+                                        else:
+                                            cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
                                     else:
-                                        cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
+                                        cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y%m%d")
                                 else:
-                                    cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y%m%d")
-                            else:
-                                cleaned_dict[key.lower()] = dict_row[key]
+                                    cleaned_dict[key.lower()] = dict_row[key]
+                            except ValueError:
+                                cleaned_dict[key.lower()] = None
 
                     if lower_case_keys:
                         temp_cleaned_dict = {}
