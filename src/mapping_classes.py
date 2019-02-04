@@ -349,7 +349,7 @@ class IdentityMapper(MapperClass):
 
 
 class HasNonEmptyValue(MapperClass):
-    """Tests whether a field has a value other than ''"""
+    """Tests whether a field has a value other than '' or null"""
 
     def map(self, input_dict):
         key = list(input_dict.keys())[0]
@@ -357,7 +357,8 @@ class HasNonEmptyValue(MapperClass):
 
         if key_value is not None:
             if len(key_value):
-                return {"non_empty_value": True}
+                if key_value != "null":
+                    return {"non_empty_value": True}
 
         return {}
 
@@ -459,15 +460,15 @@ class FilterHasKeyValueMapper(MapperClass):
 
     """Return only a single key which matches a key and has a value"""
 
-    def __init__(self, keys_to_track, empty_value=""):
+    def __init__(self, keys_to_track, empty_values=("", "null")):
         self.keys_to_track = keys_to_track
-        self.empty_value = empty_value
+        self.empty_values = empty_values
 
     def map(self, input_dict):
 
         for key in self.keys_to_track:
             if key in input_dict:
-                if input_dict[key] != self.empty_value:
+                if input_dict[key] not in self.empty_values:
                     return {key: input_dict[key]}
 
         return {}
