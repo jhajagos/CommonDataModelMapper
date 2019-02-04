@@ -460,16 +460,21 @@ class FilterHasKeyValueMapper(MapperClass):
 
     """Return only a single key which matches a key and has a value"""
 
-    def __init__(self, keys_to_track, empty_values=("", "null")):
+    def __init__(self, keys_to_track, empty_values=("", "null"), empty_value=None):
         self.keys_to_track = keys_to_track
         self.empty_values = empty_values
+        self.empty_value = empty_value
 
     def map(self, input_dict):
 
         for key in self.keys_to_track:
             if key in input_dict:
-                if input_dict[key] not in self.empty_values:
-                    return {key: input_dict[key]}
+                if self.empty_value is None:
+                    if input_dict[key] not in self.empty_values:
+                        return {key: input_dict[key]}
+                else:
+                    if input_dict[key] != self.empty_value:
+                        return {key: input_dict[key]}
 
         return {}
 
