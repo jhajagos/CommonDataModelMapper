@@ -1242,7 +1242,10 @@ def person_router_obj(input_dict):
 def death_router_obj(input_dict):
     """Determines if a row_dict codes a death"""
     if len(input_dict["s_death_datetime"]):
-        return DeathObject()
+        if input_dict["s_death_datetime"] != "null":
+            return DeathObject()
+        else:
+            return NoOutputClass()
     else:
         return NoOutputClass()
 

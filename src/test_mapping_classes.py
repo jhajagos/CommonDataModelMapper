@@ -98,6 +98,24 @@ class TestMappers(unittest.TestCase):
         result_dict_3 = case_mapper_obj.map({"x": -1})
         self.assertEquals({"x": math.exp(-1)}, result_dict_3)
 
+    def test_empty_values(self):
+
+        r1 = HasNonEmptyValue().map({"field_name": None})
+        self.assertEqual({}, r1)
+
+        r2 = HasNonEmptyValue().map({"field_name": "data"})
+        self.assertNotEqual({}, r2)
+        self.assertEqual({'non_empty_value': True}, r2)
+
+        r3 = HasNonEmptyValue().map({"field_name": ''})
+        self.assertEqual({}, r3)
+
+        r4 = HasNonEmptyValue().map({"field_name": 'null'})
+        self.assertEqual({}, r4)
+
+        r5 = HasNonEmptyValue().map({"field_name": 'nullx'})
+        self.assertNotEqual({}, r5)
+
 
 class TestTranslators(unittest.TestCase):
 
