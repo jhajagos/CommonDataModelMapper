@@ -920,7 +920,8 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                            "Negative": "Negative",
                            "Normal": "Normal",
                            "Positive": "Positive",
-                           "Very abnormal": "Abnormal"
+                           "Very abnormal": "Abnormal",
+                           "Below low normal": "Low"
                            }), snomed_mapper)))
 
     measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
