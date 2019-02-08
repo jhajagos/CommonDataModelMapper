@@ -9,7 +9,7 @@ import sqlparse
 
 def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None, schema=None, delimiter=",",
                            lower_case_keys=True, i_print_update=10000, truncate=False, truncate_long_fields=True,
-                           conditions=None
+                           conditions=None, null_flag=False
                            ):
 
     db_engine = sa.create_engine(connection_string)
@@ -105,7 +105,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                     for field_key in cleaned_dict:
                         field_value = cleaned_dict[field_key]
                         if field_value.__class__ == u"".__class__:
-                            if field_value.upper() == "NULL":
+                            if field_value.upper() == "NULL" and null_flag:
                                 cleaned_dict[field_key] = None
 
                     if insert_data:
