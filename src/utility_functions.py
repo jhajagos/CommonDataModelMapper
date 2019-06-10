@@ -54,7 +54,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
 
         db_transaction = db_connection.begin()
         try:
-            with open(data_file) as f:
+            with open(data_file, newline="", errors="replace") as f:
                 dict_reader = csv.DictReader(f, delimiter=delimiter)
                 start_time = time.time()
                 elapsed_time = start_time
