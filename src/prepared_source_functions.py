@@ -41,7 +41,7 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
 
                 lookup_dict[key_str] = new_dict
     else:
-        with open(input_csv_file_name, "r", newline="") as f:
+        with open(input_csv_file_name, "r", newline="", errors="replace") as f:
             csv_dict = csv.DictReader(f)
 
             for row_dict in csv_dict:
@@ -74,7 +74,7 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
                     csv_writer.writerow(row_to_write)
                 i += 1
     else:
-        with open(output_csv_file_name, "w", newline="") as fw:
+        with open(output_csv_file_name, "w", newline="", errors="replace") as fw:
             csv_writer = csv.writer(fw)
 
             i = 0

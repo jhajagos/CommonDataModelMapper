@@ -1072,7 +1072,8 @@ def generate_drug_name_mapper(json_map_directory, drug_field_name="s_drug_text")
             split_raw_string = raw_string.split(" ")
             capped_words = []
             for word in split_raw_string:
-                capped_words += [word[0].upper() + word[1:].lower()]
+                if len(word):
+                    capped_words += [word[0].upper() + word[1:].lower()]
             return " ".join(capped_words)
         else:
             return raw_string
