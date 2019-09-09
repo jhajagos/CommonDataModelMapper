@@ -28,9 +28,10 @@ import argparse
 logging.basicConfig(level=logging.INFO)
 
 
-def drug_procedure_post_processing(output_dict):
+def procedure_post_processing(output_dict):
     """For concept_id"""
-    fields = ["drug_concept_id", "drug_source_concept_id", "procedure_concept_id", "procedure_source_concept_id"]
+    fields = ["drug_concept_id", "drug_source_concept_id", "procedure_concept_id", "procedure_source_concept_id",
+              "measurement_concept_id", "measurement_source_concept_id"]
     for field in fields:
         if field not in output_dict:
             output_dict[field] = 0
@@ -483,6 +484,13 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                          {"CONCEPT_ID".lower(): "measurement_source_concept_id",
                                           "MAPPED_CONCEPT_ID".lower(): "measurement_concept_id"})]
 
+    # ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
+    #                                      CodeMapperClassSqliteJSONClass(icd9proc_json, "s_procedure_code"),
+    #                                      CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
+    #                                      CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
+    #                                      CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
+    #                                      ), ConstantMapper({"CONCEPT_ID".lower(): 0, "MAPPED_CONCEPT_ID": 0}))
+
     measurement_rules_proc_encounter_class = build_input_output_mapper(measurement_rules_proc_encounter)
 
     output_measurement_proc_encounter_csv = os.path.join(output_csv_directory, "measurement_proc_cdm.csv")
@@ -608,7 +616,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     procedure_runner_obj = RunMapperAgainstSingleInputRealization(hi_proc_csv_obj, in_out_map_obj,
                                                                   output_directory_obj,
-                                                                  procedure_router_obj, post_map_func=drug_procedure_post_processing)
+                                                                  procedure_router_obj, post_map_func=procedure_post_processing)
 
     procedure_runner_obj.run()
 
@@ -635,7 +643,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, SourceMedicationObject(), output_drug_exposure_csv,
                                                    DrugExposureObject(),
                                                    medication_rules, output_class_obj, in_out_map_obj,
-                                                   drug_exposure_router_obj, post_map_func=drug_procedure_post_processing)
+                                                   drug_exposure_router_obj, post_map_func=procedure_post_processing)
     drug_exposure_runner_obj.run()
 
 
