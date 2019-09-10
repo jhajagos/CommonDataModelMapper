@@ -31,7 +31,9 @@ logging.basicConfig(level=logging.INFO)
 def procedure_post_processing(output_dict):
     """For concept_id"""
     fields = ["drug_concept_id", "drug_source_concept_id", "procedure_concept_id", "procedure_source_concept_id",
-              "measurement_concept_id", "measurement_source_concept_id"]
+              "measurement_concept_id", "measurement_source_concept_id", "observation_concept_id",
+              "observation_source_concept_id"]
+
     for field in fields:
         if field not in output_dict:
             output_dict[field] = 0
