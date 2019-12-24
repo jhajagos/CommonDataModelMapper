@@ -253,11 +253,11 @@ This file holds all medications orders for a person and/or encounter
 * s_end_medication_datetime -- End of medication date time
 * s_route -- Source route {Oral, Intravenous}
 * m_route -- Mapped route to standard
-* s_quantity == The quantity dispensed to the person
+* s_quantity -- The quantity dispensed to the person
 * s_dose -- The source dose form
 * m_dose -- The mapped dose form to standard unites
-* s_dose_unit == Source unit of dose
-* m_dose_unit == Mapped unit of dose
+* s_dose_unit -- Source unit of dose
+* m_dose_unit -- Mapped unit of dose
 * s_status -- Status of the medication order{Completed, Ordered, Canceled}
 * s_drug_type -- Source how the drug was delivered {Inpatient, Office}
 * m_drug_type -- Mapped how the drug was delivered
