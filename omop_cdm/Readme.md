@@ -221,8 +221,9 @@ This file holds all recorded measurements for a person and/or encounter.
 * s_person_id -- Source identifier for patient or person
 * s_encounter_id -- Source identifier for an encounter
 * s_obtained_datetime -- The date the result was obtained or measured
-* s_type_name -- The text description of lab test / measurement name, e.g., Hemoglobin A1C
-* s_type_code -- The code for the lab test/measurement, e.g., "4548-4"
+* s_name -- The text description of lab test / measurement name, e.g., Hemoglobin A1C
+* s_code -- The code for the lab test/measurement, e.g., "4548-4"
+* s_code_type -- The type of code for example LOINC
 * m_type_code_oid -- The OID for the lab test/measurement, e.g., "2.16.840.1.113883.6.1"
 * s_result_text -- The text associated with the result., e.g., Above normal
 * m_result_text -- A mapped name of the result of the lab
