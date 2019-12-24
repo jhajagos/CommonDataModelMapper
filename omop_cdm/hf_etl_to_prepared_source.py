@@ -402,7 +402,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                        ("diagnosis_type", dx_code_oid_mapper, {"mapped_value": "m_condition_code_oid"}),
                        ("diagnosis_priority", "s_sequence_id"),
                        ("diagnosis_type_display", "s_condition_type"),
-                       ("present_on_admit_code","s_present_on_admission_indicator"),
+                       ("present_on_admit_code", "s_present_on_admission_indicator"),
                        ("admitted_dt_tm", "s_start_condition_datetime"),
                        ("discharged_dt_tm", "s_end_condition_datetime")
                        ]
@@ -478,6 +478,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                       hf_result_csv, overwrite=True, sample_size=None)
 
     result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
+    reverse_result_map = {"2.16.840.1.113883.6.1": "LOINC", "2.16.840.1.113883.6.285": "SNOMED"}
 
     # Expand and validate this list
     clinical_event_name_snomed_code_map = {
@@ -485,6 +486,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         "Blood Pressure Systolic": "271649006",
         "Respiratory Rate": "86290005",
         "SPO2 (Saturation of peripheral oxygen)": "59408-5",
+        "Carbon dioxide": "20565-8",
         "Weight": "27113001",
         "Height": "50373000",
         #"Pulse Peripheral": "54718008",
@@ -499,17 +501,31 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         "Pulse": "8867-4",
         "Pulse Peripheral": "8867-4",
         "O2 Saturation (SO2)": "59408-5",
+        "Partial Pressure of Oxygen (PO2), Venous": "2705-2",
+        "Partial Pressure Carbon Dioxide (PCO2), Venous": "2021-4",
+        "HCO3, Venous": "14627-4",
+        "pH, Venous": "2746-6",
         "Temperature Oral": "8310-5",
         "Braden Scale for Predicting Pressure Ulcer Risk": "81636-3",
         "Numeric Pain Scale 0-10": "72514-3",
-        "FiO2 (Fraction of Inspired Oxygen)": "3150-0", # Need to validate this
+        "FiO2 (Fraction of Inspired Oxygen)": "3150-0",  # Need to validate this
         "Temperature Axillary": "8310-5",
-        "Temperature Tympanic": "8310-5"
+        "Temperature Tympanic": "8310-5",
+        "HCO3, Arterial": "1960-4",
+        "Partial Pressure of Oxygen (PO2), Arterial": "2703-7",
+        "Partial Pressure Carbon Dioxide (PaCO2), Arterial": "2019-8",
+        "Pulse Oximetry": "59408-5",
+        "Heart Rate Monitored": "8867-4",
+        "Heart Rate Pre Treatment": "8867-4",
+        "Heart Rate Post Treatment": "8867-4",
+        "Respiratory Rate, Pre Treatment Respiratory Therapy": "86290005",
+        "Respiratory Rate, Post Treatment Respiratory Therapy": "86290005"
     }
 
     clinical_event_name_snomed_code_mapper = CodeMapperDictClass(clinical_event_name_snomed_code_map, "result_name")
-    result_code_mapper = CascadeMapper(ChainMapper(FilterHasKeyValueMapper(["code"]), KeyTranslator({"code": "mapped_value"})),
-                                       ChainMapper(FilterHasKeyValueMapper(["result_name"]), clinical_event_name_snomed_code_mapper))
+    result_code_mapper = CascadeMapper(
+        ChainMapper(FilterHasKeyValueMapper(["result_name"]), clinical_event_name_snomed_code_mapper),
+        ChainMapper(FilterHasKeyValueMapper(["code"]), KeyTranslator({"code": "mapped_value"})))
 
     def func_result_code_type_mapper(input_dict):
 
@@ -522,6 +538,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                 if result_name in clinical_event_name_snomed_code_map:
                     return {"mapped_value": result_map["SNOMED"]}
 
+
         return {"i_exclude": 1}
 
     def func_i_exclude_type_mapper(input_dict):
@@ -530,7 +547,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         if "i_exclude" in result_dict:
             return {"i_exclude": 1}
         else:
-            if input_dict["numeric_result"]	in ("", "NULL") and input_dict["date_result"] in ("", "NULL"):
+            if input_dict["numeric_result"]	in ("", "NULL") and input_dict["date_result"] in ("", "NULL") and input_dict["result_indicator"] in ("", "NULL"):
                 return {"i_exclude": 1}
             else:
                 return {}
@@ -549,9 +566,10 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("patient_id", "s_person_id"),
         ("encounter_id", "s_encounter_id"),
         ("performed_dt_tm", "s_obtained_datetime"),
-        ("result_name", "s_type_name"),
-        (("code", "result_name"), result_code_mapper, {"mapped_value": "s_type_code"}),
-         (("code","result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
+        ("result_name", "s_name"),
+        (("code", "result_name"), result_code_mapper, {"mapped_value": "s_code"}),
+        (("code", "result_name"), code_type_mapper, {"mapped_value": "m_type_code_oid"}),
+        (("code", "result_name"), ChainMapper(code_type_mapper, CodeMapperDictClass(reverse_result_map)), {"mapped_value": "m_type_code_oid"}),
         ("result_indicator", ReplacementMapper({"NULL": "", "Within Range": "Within reference range"}),
          {"result_indicator": "m_result_text"}),
         ("result_indicator", "s_result_text"),
@@ -560,7 +578,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("range_high", "s_result_numeric_upper"),
         ("result_unit", "s_result_unit"),
         ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "m_result_unit"}), # TODO: Map to standard
-        (("code","result_name", "numeric_result", "date_result"), i_exclude_func_mapper, {"i_exclude": "i_exclude"})
+        (("code", "result_name", "numeric_result", "date_result", "result_indicator"), i_exclude_func_mapper, {"i_exclude": "i_exclude"})
     ]
 
     result_mapper_obj = generate_mapper_obj(hf_result_csv, HFResult(), source_result_csv, SourceResultObject(),

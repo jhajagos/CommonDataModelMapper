@@ -49,7 +49,7 @@ class SourceResultObject(PreparedSourceObject):
     """Result: labs and procedures"""
 
     def _fields(self):
-        return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_type_name", "s_type_code", "m_type_code_oid",
+        return ["s_person_id", "s_encounter_id", "s_obtained_datetime", "s_name", "s_code", "s_type_code", "m_type_code_oid",
                 "s_result_text", "m_result_text",
                 "s_result_numeric", "s_result_datetime", "s_result_code", "m_result_code_oid",
                 "s_result_unit", "s_result_unit_code", "m_result_unit_code_oid",
