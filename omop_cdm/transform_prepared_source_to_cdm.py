@@ -182,7 +182,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     #### MEASUREMENT and OBSERVATION dervived from 'source_observation.csv' ####
 
-    snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["s_type_code"]), snomed_code_mapper)
+    snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["s_code"]), snomed_code_mapper)
 
     def measurement_router_obj(input_dict):
         """Determine if the result contains a LOINC code"""
@@ -945,10 +945,10 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
                          ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date"}),
-                         ("s_type_name", "measurement_source_value"),
-                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_source_concept_id"}),
-                         ("s_type_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
-                         ("s_type_code", measurement_type_chained_mapper, {"CONCEPT_ID".lower(): "measurement_type_concept_id"}),
+                         ("s_name", "measurement_source_value"),
+                         ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_source_concept_id"}),
+                         ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
+                         ("s_code", measurement_type_chained_mapper, {"CONCEPT_ID".lower(): "measurement_type_concept_id"}),
                          (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
                             {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
                          (("s_result_code", "m_result_text"),
@@ -972,12 +972,12 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                      ("s_obtained_datetime", SplitDateTimeWithTZ(),
                                       {"date": "observation_date", "time": "observation_time"}),
                                      ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
-                                     ("s_type_code", "observation_source_value"),
-                                     ("s_type_code", measurement_code_mapper,
+                                     ("s_code", "observation_source_value"),
+                                     ("s_code", measurement_code_mapper,
                                       {"CONCEPT_ID".lower(): "observation_source_concept_id"}),
-                                     ("s_type_code", measurement_code_mapper,
+                                     ("s_code", measurement_code_mapper,
                                       {"CONCEPT_ID".lower(): "observation_concept_id"}),
-                                     ("s_type_code", measurement_type_chained_mapper,
+                                     ("s_code", measurement_type_chained_mapper,
                                       {"CONCEPT_ID".lower(): "observation_type_concept_id"}),
                                      (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
                                       {"s_result_numeric": "value_as_number",
