@@ -600,7 +600,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
         return input_dict
 
-
     medication_rules = [
         ("patient_id", "s_person_id"),
         ("encounter_id", "s_encounter_id"),

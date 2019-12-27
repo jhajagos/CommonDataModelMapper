@@ -907,7 +907,10 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
 def create_measurement_and_observation_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, snomed_code_mapper):
     """Generate rules for mapping PH_F_Result to Measurement"""
 
-    unit_measurement_mapper = snomed_code_mapper
+    ucum_json = os.path.join(json_map_directory, "concept_code_UCUM.json")
+    ucum_mapper = CodeMapperClassSqliteJSONClass(ucum_json, "s_result_unit")
+
+    unit_measurement_mapper = CascadeMapper(snomed_code_mapper, ucum_mapper) # Match on SNOMED ID first then try UCUM for the code
 
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CodeMapperClassSqliteJSONClass(loinc_json)
@@ -950,11 +953,11 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
                          ("s_code", measurement_type_chained_mapper, {"CONCEPT_ID".lower(): "measurement_type_concept_id"}),
                          (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
-                            {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
+                           {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
                          (("s_result_code", "m_result_text"),
                           value_as_concept_mapper, {"CONCEPT_ID".lower(): "value_as_concept_id"}),
                          ("s_result_unit", "unit_source_value"),
-                         ("s_result_unit_code", unit_measurement_mapper, {"CONCEPT_ID".lower(): "unit_concept_id"}),
+                         (("s_result_unit_code", "s_result_unit"), unit_measurement_mapper, {"CONCEPT_ID".lower(): "unit_concept_id"}),
                          (("s_result_numeric", "m_result_text", "s_result_datetime", "s_result_code"),
                             value_source_mapper, # Map datetime to unix time
                           {"s_result_numeric": "value_source_value",
