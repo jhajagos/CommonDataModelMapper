@@ -1,5 +1,5 @@
-import sys, os
-
+import sys
+import os
 
 try:
     from prepared_source_functions import build_name_lookup_csv, build_key_func_dict

@@ -915,7 +915,8 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
     loinc_json = os.path.join(json_map_directory, "LOINC_with_parent.json")
     loinc_mapper = CodeMapperClassSqliteJSONClass(loinc_json)
 
-    NumericMapperConvertDate = CascadeMapper(FloatMapper(), ChainMapper(DateTimeWithTZ("s_result_datetime"), MapDateTimeToUnixEpochSeconds()))
+    NumericMapperConvertDate = CascadeMapper(FloatMapper(), ChainMapper(DateTimeWithTZ("s_result_datetime"),
+                                                                        MapDateTimeToUnixEpochSeconds()))
 
     measurement_code_mapper = CascadeMapper(loinc_mapper, snomed_code_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
@@ -1223,7 +1224,8 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                                       {"drug_exposure_id": "drug_exposure_id"}),
                         ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                         ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
-                        ("s_drug_code", "drug_source_value"),
+                        (("s_drug_code", "s_drug_text"), ConcatenateMapper("|", "s_drug_code", "s_drug_text"),
+                         {"s_drug_code|s_drug_text": "drug_source_value"}),
                         ("s_route", "route_source_value"),
                         ("s_status", "stop_reason"),
                         ("m_route", route_mapper, {"mapped_value": "route_concept_id"}),

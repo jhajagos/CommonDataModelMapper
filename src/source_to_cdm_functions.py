@@ -172,7 +172,7 @@ class MapDateTimeToUnixEpochSeconds(MapperClass):
 
     def map(self, input_dict, field="datetime"):
 
-        if field in input_dict:
+        if field in input_dict and len(input_dict[field]) and input_dict[field] != "1900-01-01 00:00:00":
             date_value = input_dict[field]
 
             try:
@@ -206,7 +206,8 @@ class FloatMapper(MapperClass):
             try:
                 resulting_map[key] = float(input_dict[key])
             except(ValueError, TypeError):
-                pass
+                if input_dict[key] in ("NULL", "None", "null"):
+                    resulting_map[key] = ""
 
         return resulting_map
 

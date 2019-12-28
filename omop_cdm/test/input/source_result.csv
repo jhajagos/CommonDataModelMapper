@@ -4,3 +4,5 @@ s_person_id,s_encounter_id,s_obtained_datetime,s_name,s_code,s_type_code,m_type_
 101,10,2016-01-02 12:30,BMI,60621009,SNOMED,2.16.840.1.113883.6.96,Normal,22,,,,kg/sq. m,4245997,2.16.840.1.113883.6.96,20,30,
 101,10,2016-01-02 12:30,Date of last menstrual period,21840007,SNOMED,2.16.840.1.113883.6.96,,,2015-01-15,,,,,,
 101,10,2016-02-02 07:50:10,Temperature Oral,8310-5,LOINC,2.16.840.1.113883.6.1,Normal,98.1,,,,[degF],,,96.4,99.1,
+101,10,2016-02-02 07:51:10,Temperature Oral,8310-5,LOINC,2.16.840.1.113883.6.1,Normal,NULL,,,,[degF],,,96.4,99.1,
+101,10,2016-02-02 07:52:10,Temperature Oral,8310-5,LOINC,2.16.840.1.113883.6.1,Normal,Invalid,,,,[degF],,,96.4,99.1,

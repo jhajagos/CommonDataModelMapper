@@ -1,12 +1,10 @@
-import sys
-import os
-sys.path.insert(0, os.path.curdir)
 import unittest
 import json
-import transform_prepared_source_to_cdm as tpsc
 import csv
 import os
 import sys
+sys.path.insert(0, os.path.curdir)
+import transform_prepared_source_to_cdm as tpsc
 
 
 def open_csv_file(file_name, mode="r"):
@@ -82,14 +80,22 @@ class TestMapping(unittest.TestCase):
         self.assertTrue(len(result_measurement))
 
         first_measurement = result_measurement[0]
-        self.assertTrue(len(first_measurement["visit_occurrence_id"])) # Has a mapped visit_occurrence_id
+        self.assertTrue(len(first_measurement["visit_occurrence_id"]))  # Has a mapped visit_occurrence_id
         self.assertNotEqual("", first_measurement["measurement_datetime"])
 
         self.assertNotEqual("", first_measurement["value_as_number"])
 
         self.assertEqual("6.9", first_measurement["value_as_number"])
 
-        # TODO Create to test this does not appear as a number when the number is blank -2208988800.0;
+        third_measurement = result_measurement[2]
+        self.assertTrue(len(third_measurement["unit_concept_id"]))
+
+        # Test so a null value does not appear as a number when the number is blank -2208988800.0;
+        fourth_measurement = result_measurement[3]
+        self.assertEqual("", fourth_measurement["value_as_number"])
+
+        fifth_measurement = result_measurement[4]
+        self.assertEqual("", fifth_measurement["value_as_number"])
 
         result_observation = read_csv_file_as_dict("./test/output/observation_measurement_encounter_cdm.csv")
         self.assertTrue(len(result_observation))
