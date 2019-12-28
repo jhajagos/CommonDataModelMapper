@@ -1235,7 +1235,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("s_start_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
                         ("s_end_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                         ("s_quantity", "quantity"),
-                        ("s_dose_unit", "dose_unit_source_value"),
+                        ("s_dose_unit", ReplacementMapper({"NULL": ""}), "dose_unit_source_value"),
                         ("m_dose_unit", snomed_mapper, {"CONCEPT_ID".lower(): "dose_unit_concept_id"}),
                         (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), drug_source_concept_mapper,
                          {"CONCEPT_ID".lower(): "drug_source_concept_id"}),

@@ -577,7 +577,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("range_low", "s_result_numeric_lower"),
         ("range_high", "s_result_numeric_upper"),
         ("result_unit", "s_result_unit"),
-        ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "m_result_unit"}), # TODO: Map to standard
+        ("result_unit", ReplacementMapper({"NULL": ""}), {"result_unit": "m_result_unit"}),
         (("code", "result_name", "numeric_result", "date_result", "result_indicator"), i_exclude_func_mapper, {"i_exclude": "i_exclude"})
     ]
 
@@ -600,6 +600,14 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
         return input_dict
 
+    def func_i_0_ndc_exclude_func(input_dict):
+        if input_dict["ndc_code"] == "":
+            return {"i_exclude": "1"}
+        else:
+            return {}
+
+    i_exclude_0_ndc_func_mapper = PassThroughFunctionMapper(func_i_0_ndc_exclude_func)
+
     medication_rules = [
         ("patient_id", "s_person_id"),
         ("encounter_id", "s_encounter_id"),
@@ -618,7 +626,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("order_strength_units_unit_display", "s_dose_unit"),
         ("order_strength_units_unit_display", "m_dose_unit"),
         ("med_order_status_desc", "s_status"),
-        (":row_id", ConstantMapper({"m_drug_type": "HOSPITAL_PHARMACY"}), {"m_drug_type": "m_drug_type"})
+        (":row_id", ConstantMapper({"m_drug_type": "HOSPITAL_PHARMACY"}), {"m_drug_type": "m_drug_type"}),
+        ("ndc_code", i_exclude_0_ndc_func_mapper, {"i_exclude": "i_exclude"})
     ]
 
     hf_medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
