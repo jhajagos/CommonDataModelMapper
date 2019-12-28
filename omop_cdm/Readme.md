@@ -1,11 +1,12 @@
-## Mapping to OMOP CDM
+## Mapping to the OMOP CDM
 
-There is two step process to transform source CSV files into the OMOP/OHDSI 
+There is a two step process to transform source CSV files into the OMOP/OHDSI 
 common data model compatible CSV files. The first step is mapping the source file into the 
-prepared source file format. Examples of files in the prepared source format 
-can be seen in the `./test/input/` directory.
+prepared source file format. Examples files in the prepared source format 
+are in the `./test/input/` directory. More information about the OHDSI project 
+ can be found at: https://www.ohdsi.org//
 
-If files are formatted into prepared source then the script 
+Once source files are transformed into prepared source then the script 
 `transform_prepared_source_to_cdm.py` can be run to convert the input files 
 into output files.
 
@@ -15,11 +16,11 @@ The scripts in the project require Python 3.6 and the following libraries:
 
 ## Download Athena concept tables
 
-OHDSI makes available concept/vocabulary files. 
-The concept/vocabulary files need to be downloaded from: http://www.ohdsi.org/web/athena/
+To map data to the OHDSI format concept/vocabulary files are required. 
+The concept/vocabulary files can be downloaded at: http://www.ohdsi.org/web/athena/
 
 The Athena web tools allows the user to select the needed vocabularies. After the 
-request is submitted an email notification will be sent when the files are ready for download.
+request is submitted an email notification will be sent when the zip file is ready for download.
 If you are working with claims data you will need a license for CPT codes and run a separate
 process for including the CPT codes in the concept table.
 
@@ -32,7 +33,7 @@ java --add-modules java.xml.ws -jar cpt4.jar 5
 
 ## Create a JSON config file
 
-The first step is to create a JSON file which configures the directory location.
+The first step is to create a JSON file which configures the directory locations.
 ```json
 {
   "json_map_directory":   "/external/ohdsi/vocab_download_v5_{5C1C4C11-E4B6-6175-6463-74B6F51BCA07}/",
@@ -52,18 +53,18 @@ database.
 ## Generating vocabulary JSON lookup
 
 Before running the `./transform_prepared_source_to_cdm.py` vocabulary needs to generate JSON 
-look up files. This process will convert the CSV files into separate focused vocabularies.
+look up files. This process will convert the CSV files into a separate focused vocabularies.
 
 ```bash
 python ./utility_programs/generate_code_lookup_json.py -c hi_config.json
 ```
 
-## Generate RxNorm mappings
+## Generate RxNorm mappings to Multum
 
+If your source contains Multum codes a mapping to RxNorm needs to be generated.
 ```bash
 # Generate mappings
 python rxnorm_sourced_multum_mappings.py -c hi_config.json
-
 ```
 
 ## Mapping from source files to prepared_source
@@ -165,20 +166,20 @@ This file holds information about the period of time that data is collected abou
 
 * s_person_id -- Source identifier for patient or person
 * s_start_observation_datetime -- Start period of patient observation 
-* s_end_observation_datetime --  End period of patient observation
+* s_end_observation_datetime -- End period of patient observation
 
 ### source_encounter_coverage.csv
 
 This file holds information about how the encounter is covered by a payer.
 
 * s_person_id -- Source identifier for patient or person
-* s_encounter_id --  -- Source identifier for an encounter
+* s_encounter_id -- Source identifier for an encounter
 * s_start_payer_date -- in date format
 * s_end_payer_date -- in date format
 * s_payer_name -- the payer name
-* m_payer_name --  the mapped payer name
-* s_plan_name --  the plan name
-* m_plan_name --  the mapped plan name
+* m_payer_name -- the mapped payer name
+* s_plan_name -- the plan name
+* m_plan_name -- the mapped plan name
 
 ### source_condition.csv
 
@@ -261,4 +262,4 @@ This file holds all medications orders for a person and/or encounter
 * s_status -- Status of the medication order{Completed, Ordered, Canceled}
 * s_drug_type -- Source how the drug was delivered {Inpatient, Office}
 * m_drug_type -- Mapped how the drug was delivered
-* i_exclude
+* i_exclude -- exclude row from the mapper

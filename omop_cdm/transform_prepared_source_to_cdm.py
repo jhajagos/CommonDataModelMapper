@@ -486,13 +486,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                          {"CONCEPT_ID".lower(): "measurement_source_concept_id",
                                           "MAPPED_CONCEPT_ID".lower(): "measurement_concept_id"})]
 
-    # ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
-    #                                      CodeMapperClassSqliteJSONClass(icd9proc_json, "s_procedure_code"),
-    #                                      CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
-    #                                      CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
-    #                                      CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
-    #                                      ), ConstantMapper({"CONCEPT_ID".lower(): 0, "MAPPED_CONCEPT_ID": 0}))
-
     measurement_rules_proc_encounter_class = build_input_output_mapper(measurement_rules_proc_encounter)
 
     output_measurement_proc_encounter_csv = os.path.join(output_csv_directory, "measurement_proc_cdm.csv")
@@ -870,7 +863,7 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
         ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit",
                            "Outpatient": "Outpatient Visit", "Observation": "Emergency Room Visit",
                            "Recurring": "Outpatient Visit", "Preadmit": "Outpatient Visit", "": "Outpatient Visit"
-                           }), # Note: there are no observation type
+                           }),  # Note: there are no Observational status  type
         CoderMapperJSONClass(visit_concept_json))
 
     visit_concept_type_json = os.path.join(json_map_directory, "concept_name_Visit_Type.json")
@@ -1062,16 +1055,16 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
                                                   CascadeMapper(
                                                     ChainMapper(CodeMapperClassSqliteJSONClass(multum_gn_json, "s_drug_code"),
                                                                 KeyTranslator({"RXCUI": "RXNORM_ID"})),
-                                                    CodeMapperClassSqliteJSONClass(multum_drug_json, "s_drug_code")),  #1
-                                                  CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"),  #2
-                                                  KeyTranslator({"s_drug_code": "RXNORM_ID"}),  #3
-                                                  CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  #4
+                                                    CodeMapperClassSqliteJSONClass(multum_drug_json, "s_drug_code")),  # 1
+                                                  CodeMapperClassSqliteJSONClass(multum_drug_mmdc_json, "s_drug_code"),  # 2
+                                                  KeyTranslator({"s_drug_code": "RXNORM_ID"}),  # 3
+                                                  CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  # 4
                                                   ))
 
     else:
         drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
-                                                  KeyTranslator({"s_drug_code": "RXNORM_ID"}),  #0
-                                                  CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  #1
+                                                  KeyTranslator({"s_drug_code": "RXNORM_ID"}),  # 0
+                                                  CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  # 1
                                                   ))
 
     return drug_code_mapper
