@@ -16,7 +16,7 @@ def open_csv_file(file_name, mode="r"):
     if ver_info == 2:
         return open(file_name, mode=mode + "b")
     else:
-        return open(file_name, newline="", mode=mode)
+        return open(file_name, newline="", mode=mode, encoding="utf8")
 
 
 def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"):
