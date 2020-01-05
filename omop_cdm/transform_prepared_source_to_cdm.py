@@ -871,8 +871,10 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                                             CoderMapperJSONClass(visit_concept_type_json))
 
     place_of_service_json_name = os.path.join(json_map_directory, "concept_name_Place_of_Service.json")
-    place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
+    if not os.path.exists(place_of_service_json_name):
+        place_of_service_json_name = os.path.join(json_map_directory, "concept_name_CMS_Place_of_Service.json")
 
+    place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
     admit_discharge_source_mapper = CascadeMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
 
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
