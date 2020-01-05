@@ -59,10 +59,10 @@ def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out
                       ('normal_low', 'normal_range_low', 'range_low'),
                       ('result_value_num', 'numeric_result', 'numeric_result'),
                       ('result_value_dt_tm', None, "date_result"),
-                      ('result_unit','result_units_unit_display', 'result_unit'),
-                      ('normalcy_desc','result_indicator_desc', 'result_indicator')]
+                      ('result_unit', 'result_units_unit_display', 'result_unit'),
+                      ('normalcy_desc', 'result_indicator_desc', 'result_indicator')]
 
-    ce_field_map_dict ={}
+    ce_field_map_dict = {}
     for cross_map in cross_mappings:
         if cross_map[0] is not None:
             ce_field_map_dict[cross_map[0]] = cross_map[2]
@@ -397,7 +397,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     condition_rules = [("patient_id", "s_person_id"),
                        ("encounter_id", "s_encounter_id"),
-                       ("diagnosis_code","s_condition_code"),
+                       ("diagnosis_code", "s_condition_code"),
                        ("diagnosis_type", "s_condition_code_type"),
                        ("diagnosis_type", dx_code_oid_mapper, {"mapped_value": "m_condition_code_oid"}),
                        ("diagnosis_priority", "s_sequence_id"),
@@ -538,7 +538,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                 if result_name in clinical_event_name_snomed_code_map:
                     return {"mapped_value": result_map["SNOMED"]}
 
-
         return {"i_exclude": 1}
 
     def func_i_exclude_type_mapper(input_dict):
@@ -661,3 +660,4 @@ if __name__ == "__main__":
     }
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
+    # f = bz2.open("encounter_joined_to_export.csv.bz2", mode="rt", newline="", encoding="utf8")
