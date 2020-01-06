@@ -984,7 +984,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                      (("s_result_code", "s_result_text"),
                                       value_as_concept_mapper, {"CONCEPT_ID".lower(): "value_as_concept_id"}),
                                      ("s_result_unit", "unit_source_value"),
-                                     ("s_result_unit_code", unit_measurement_mapper,
+                                     (("s_result_unit_code", "s_result_unit"), unit_measurement_mapper,
                                       {"CONCEPT_ID".lower(): "unit_concept_id"}),
                                      (("s_result_numeric", "s_result_text", "s_result_datetime"), value_source_mapper,
                                       {"s_result_numeric": "value_as_string",
