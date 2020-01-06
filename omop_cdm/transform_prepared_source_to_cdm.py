@@ -839,8 +839,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [(("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
                                  {"CONCEPT_ID".lower(): "procedure_source_concept_id",
-                                  "MAPPED_CONCEPT_ID".lower(): "procedure_concept_id"},
-                                 ),
+                                  "MAPPED_CONCEPT_ID".lower(): "procedure_concept_id"}),
                                 (":row_id", row_map_offset("procedure_occurrence_id", procedure_id_start),
                                   {"procedure_occurrence_id": "procedure_occurrence_id"}),
                                  ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
