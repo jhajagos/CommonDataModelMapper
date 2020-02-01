@@ -144,6 +144,7 @@ def strip_t_and_z(input_dict):
             else:
                 new_string += character
 
+        new_string = new_string.strip()
         result_dict[key] = new_string
 
     return result_dict
@@ -339,7 +340,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("START", "s_start_medication_datetime"),
         ("STOP", "s_end_medication_datetime"),
         ("DISPENSES", "s_quantity"),
-        (":row_id", ConstantMapper({"drug_type": "DISPENSED"}), {"drug_type": "m_drug_type"})
+        (":row_id", ConstantMapper({"drug_type": "UNKNOWN"}), {"drug_type": "m_drug_type"})
     ]
 
     syn_medication_csv = os.path.join(input_csv_directory, file_name_dict["medications"])

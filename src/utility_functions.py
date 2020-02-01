@@ -62,13 +62,15 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                 for dict_row in dict_reader:
                     cleaned_dict = {}
                     for key in dict_row:
+
                         if len(dict_row[key]):
 
                             try:
                                 if "date" in key or "DATE" in key:
                                     if "-" in dict_row[key]:
                                         if " " in dict_row[key]:
-                                            cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d %H:%M:%S")
+                                            cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key],
+                                                                                                   "%Y-%m-%d %H:%M:%S")
                                         else:
                                             cleaned_dict[key.lower()] = datetime.datetime.strptime(dict_row[key], "%Y-%m-%d")
                                     else:
@@ -76,6 +78,7 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
                                 else:
                                     cleaned_dict[key.lower()] = dict_row[key]
                             except ValueError:
+
                                 cleaned_dict[key.lower()] = datetime.datetime(1900, 1, 1, 0, 0)
 
                     if lower_case_keys:

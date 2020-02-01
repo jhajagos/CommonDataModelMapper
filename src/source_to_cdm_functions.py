@@ -135,7 +135,7 @@ class SplitDateTimeWithTZ(MapperClass):
     def map(self, input_dict):
         datetime_value = input_dict[list(input_dict.keys())[0]]
 
-        if "T" in datetime_value: # Has a time zone embedded
+        if "T" in datetime_value:  # Has a time zone embedded
             datetime_local = convert_datetime_with_tz(datetime_value)
         else:
             datetime_local = convert_datetime(datetime_value)
@@ -164,6 +164,33 @@ class DateTimeWithTZ(MapperClass):
             datetime_local = convert_datetime_with_tz(datetime_value)
         else:
             datetime_local = convert_datetime(datetime_value)
+
+        return {"datetime": datetime_local}
+
+class DateTimeWithTZDebug(MapperClass):
+
+    def __init__(self, key=None):
+        self.key = key
+
+    def map(self, input_dict):
+
+        if self.key is None:
+            datetime_value = input_dict[list(input_dict.keys())[0]]
+        else:
+            if self.key in input_dict:
+                datetime_value = input_dict[self.key]
+            else:
+                return {}
+
+        print("'" + datetime_value + "'")
+
+        if "T" in datetime_value:
+            datetime_local = convert_datetime_with_tz(datetime_value)
+        else:
+            datetime_local = convert_datetime(datetime_value)
+
+        print(datetime_local)
+        raise RuntimeError
 
         return {"datetime": datetime_local}
 

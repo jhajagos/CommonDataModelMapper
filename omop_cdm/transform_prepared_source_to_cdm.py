@@ -28,6 +28,22 @@ import argparse
 logging.basicConfig(level=logging.INFO)
 
 
+def check_one_to_one_mapping(output_dict, domain):
+    if domain + "_source_concept_id" in output_dict:
+        if output_dict[domain + "_source_concept_id"] != 0:
+            if output_dict[domain + "_concept_id"] == 0:
+                output_dict[domain +"_concept_id"] = output_dict[domain + "_source_concept_id"]
+    return output_dict
+
+
+def condition_post_processing(output_dict):
+    output_dict = check_one_to_one_mapping(output_dict, "condition")
+    output_dict = check_one_to_one_mapping(output_dict, "procedure")
+    output_dict = check_one_to_one_mapping(output_dict, "observation")
+    output_dict = check_one_to_one_mapping(output_dict, "measurement")
+    return output_dict
+
+
 def procedure_post_processing(output_dict):
     """For concept_id"""
     fields = ["drug_concept_id", "drug_source_concept_id", "procedure_concept_id", "procedure_source_concept_id",
@@ -44,9 +60,9 @@ def procedure_post_processing(output_dict):
             elif output_dict[field] is None:
                 output_dict[field] = 0
 
-    if output_dict["procedure_source_concept_id"] != 0:
-        if output_dict["procedure_concept_id"] == 0:
-            output_dict["procedure_concept_id"] = output_dict["procedure_source_concept_id"]
+    output_dict = check_one_to_one_mapping(output_dict, "procedure")
+    output_dict = check_one_to_one_mapping(output_dict, "observation")
+    output_dict = check_one_to_one_mapping(output_dict, "measurement")
 
     return output_dict
 
@@ -248,15 +264,17 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     icd9cm_json = os.path.join(json_map_directory, "ICD9CM_with_parent.json")
     icd10cm_json = os.path.join(json_map_directory, "ICD10CM_with_parent.json")
 
-    def case_mapper_icd9_icd10(input_dict, field="m_condition_code_oid"):
+    def case_mapper_condition(input_dict, field="m_condition_code_oid"):
         """Map ICD9 and ICD10 to the CDM vocabularies"""
         coding_system_oid = input_dict[field]
         coding_version = condition_coding_system(coding_system_oid)
 
         if coding_version == "ICD9CM":
             return 0
-        else:
+        elif coding_version == "ICD10CM":
             return 1
+        elif coding_version == "SNOMED":
+            return 2
 
     # TODO: condition_type_concept_id
     condition_encounter_mapper = ChainMapper(ConstantMapper({"diagnosis_type_name": "Observation recorded from EHR"}),
@@ -283,9 +301,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         return input_dict
 
 
-    ICDMapper = ChainMapper(CaseMapper(case_mapper_icd9_icd10,
+    ConditionMapper = ChainMapper(CaseMapper(case_mapper_condition,
                             CodeMapperClassSqliteJSONClass(icd9cm_json, "s_condition_code"),
-                            CodeMapperClassSqliteJSONClass(icd10cm_json, "s_condition_code")), PassThroughFunctionMapper(clean_concept_ids))
+                            CodeMapperClassSqliteJSONClass(icd10cm_json, "s_condition_code"),
+                            CodeMapperClassSqliteJSONClass(snomed_code_json, "s_condition_code")),
+                            PassThroughFunctionMapper(clean_concept_ids))
 
     s_condition_type_dict = {"Admitting": "52870002", "Final": "89100005", "Preliminary": "148006"}
     condition_status_snomed_mapper = CodeMapperDictClass(s_condition_type_dict, "s_condition_type")
@@ -297,7 +317,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                           ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                           (("s_condition_code", "m_condition_code_oid"),
-                           ICDMapper,
+                           ConditionMapper,
                            {"CONCEPT_ID".lower(): "condition_source_concept_id", "MAPPED_CONCEPT_ID".lower(): "condition_concept_id"}),
                           ("s_condition_code", "condition_source_value"),
                           ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID".lower(): "condition_type_concept_id"}),
@@ -328,7 +348,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             ("s_start_condition_datetime", DateTimeWithTZ(),
                              {"datetime": "measurement_datetime"}),
                             ("s_condition_code", "measurement_source_value"),
-                            (("s_condition_code", "m_condition_code_oid"), ICDMapper,
+                            (("s_condition_code", "m_condition_code_oid"), ConditionMapper,
                              {"CONCEPT_ID".lower(): "measurement_source_concept_id",
                               "MAPPED_CONCEPT_ID".lower(): "measurement_concept_id"})]
 
@@ -358,7 +378,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             ("s_start_condition_datetime", DateTimeWithTZ(),
                              {"datetime": "observation_datetime"}),
                             ("s_condition_code", "observation_source_value"),
-                            (("s_condition_code", "m_condition_code_oid"), ICDMapper,
+                            (("s_condition_code", "m_condition_code_oid"), ConditionMapper,
                              {"CONCEPT_ID".lower(): "observation_source_concept_id",
                               "MAPPED_CONCEPT_ID".lower(): "observation_concept_id"}),
                             ("m_rank", condition_claim_type_map,
@@ -393,7 +413,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                     ("s_start_condition_datetime", DateTimeWithTZ(),
                                      {"datetime": "procedure_datetime"}),
                                     ("s_condition_code", "procedure_source_value"),
-                                    (("s_condition_code", "m_condition_code_oid"), ICDMapper,
+                                    (("s_condition_code", "m_condition_code_oid"), ConditionMapper,
                                      {"CONCEPT_ID".lower(): "procedure_source_concept_id",
                                       "MAPPED_CONCEPT_ID".lower(): "procedure_concept_id"})]
 
@@ -409,10 +429,13 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     def condition_router_obj(input_dict):
         """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["m_condition_code_oid"]
+
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+
             if input_dict["i_exclude"] != "1":
                 if coding_system_oid:
-                    result_dict = ICDMapper.map(input_dict)
+
+                    result_dict = ConditionMapper.map(input_dict)
 
                     if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict or "DOMAIN_ID".lower() in result_dict:
                         if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict:
@@ -444,7 +467,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     condition_runner_obj = RunMapperAgainstSingleInputRealization(hi_condition_csv_obj, in_out_map_obj,
                                                                   output_directory_obj,
-                                                                  condition_router_obj)
+                                                                  condition_router_obj,
+                                                                  post_map_func=condition_post_processing)
 
     condition_runner_obj.run()
 
@@ -960,7 +984,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
                          ("s_code", measurement_type_chained_mapper, {"CONCEPT_ID".lower(): "measurement_type_concept_id"}),
                          (("s_result_numeric", "s_result_datetime"), NumericMapperConvertDate,
-                           {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
+                          {"s_result_numeric": "value_as_number", "seconds_since_unix_epoch": "value_as_number"}),
                          (("s_result_code", "m_result_text"),
                           value_as_concept_mapper, {"CONCEPT_ID".lower(): "value_as_concept_id"}),
                          ("s_result_unit", "unit_source_value"),
@@ -970,7 +994,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                           {"s_result_numeric": "value_source_value",
                            "m_result_text": "value_source_value",
                            "s_result_datetime": "value_source_value",
-                            }),
+                          }),
                          ("s_result_numeric_lower", FloatMapper(), "range_low"),  # TODO: Some values contain non-numeric elements
                          ("s_result_numeric_upper", FloatMapper(), "range_high")]
 
