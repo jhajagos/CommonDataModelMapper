@@ -44,6 +44,10 @@ def procedure_post_processing(output_dict):
             elif output_dict[field] is None:
                 output_dict[field] = 0
 
+    if output_dict["procedure_source_concept_id"] != 0:
+        if output_dict["procedure_concept_id"] == 0:
+            output_dict["procedure_concept_id"] = output_dict["procedure_source_concept_id"]
+
     return output_dict
 
 
@@ -579,7 +583,8 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if "m_procedure_code_oid" in input_dict:
 
                 if procedure_coding_system(input_dict) in ("ICD9 Procedure Codes", "ICD10 Procedure Codes", "CPT Codes",
-                                                           "HCPCS"):
+                                                           "HCPCS", "SNOMED"):
+
                     result_dict = procedure_code_map.map(input_dict)
 
                     if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict or "DOMAIN_ID".lower() in result_dict:
@@ -804,6 +809,9 @@ def case_mapper_procedures(input_dict, field="m_procedure_code_oid"):
         return 2
     elif proc_code_oid == "HCPCS":
         return 3
+    elif proc_code_oid == "SNOMED":
+        return 4
+
 
 
 def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, procedure_id_start):
@@ -819,6 +827,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
     icd10proc_json = os.path.join(json_map_directory, "ICD10PCS_with_parent.json")
     cpt_json = os.path.join(json_map_directory, "CPT4_with_parent.json")
     hcpcs_json = os.path.join(json_map_directory, "HCPCS_with_parent.json")
+    snomed_json = os.path.join(json_map_directory, "concept_code_SNOMED.json")
     procedure_type_name_json = os.path.join(json_map_directory, "concept_name_Procedure_Type.json")
 
     procedure_type_map = \
@@ -829,12 +838,15 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
         )
 
     # TODO: Add SNOMED Codes to the Mapping
+
+
     ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
-                                     CodeMapperClassSqliteJSONClass(icd9proc_json, "s_procedure_code"),
-                                     CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
-                                     CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
-                                     CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
-                                     ), ConstantMapper({"CONCEPT_ID".lower(): 0, "MAPPED_CONCEPT_ID": 0}))
+                                                 CodeMapperClassSqliteJSONClass(icd9proc_json, "s_procedure_code"),
+                                                   CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
+                                                   CodeMapperClassSqliteJSONClass(cpt_json, "s_procedure_code"),
+                                                   CodeMapperClassSqliteJSONClass(hcpcs_json, "s_procedure_code"),
+                                                   CodeMapperClassSqliteJSONClass(snomed_json, "s_procedure_code"),
+                                                  ), ConstantMapper({"CONCEPT_ID".lower(): 0, "MAPPED_CONCEPT_ID": 0}))
 
     # Required: procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_type_concept_id
     procedure_rules_encounter = [(("s_procedure_code", "m_procedure_code_oid"), ProcedureCodeMapper,
@@ -1264,7 +1276,7 @@ def death_router_obj(input_dict):
 if __name__ == "__main__":
 
     arg_parse_obj = argparse.ArgumentParser()
-    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="hi_config.json")
+    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="syn_config.json")
     arg_obj = arg_parse_obj.parse_args()
 
     print("Reading config file '%s'" % arg_obj.config_file_name)
