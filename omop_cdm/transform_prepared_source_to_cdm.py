@@ -430,6 +430,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["m_condition_code_oid"]
 
+        if coding_system_oid == "null":
+            coding_system_oid = None
+
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
 
             if input_dict["i_exclude"] != "1":
