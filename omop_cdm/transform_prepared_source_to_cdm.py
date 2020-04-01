@@ -430,7 +430,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         """ICD9 / ICD10 CM contain codes which could either be a procedure, observation, or measurement"""
         coding_system_oid = input_dict["m_condition_code_oid"]
 
-        if coding_system_oid == "null":
+        if coding_system_oid == "null" or coding_system_oid == "":
+            coding_system_oid = None
+
+        if coding_system_oid not in ("2.16.840.1.113883.6.90", "2.16.840.1.113883.6.103", '2.16.840.1.113883.6.96'):
             coding_system_oid = None
 
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
@@ -438,7 +441,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
             if input_dict["i_exclude"] != "1":
                 if coding_system_oid:
 
-                    result_dict = ConditionMapper.map(input_dict)
+                    try:
+                        result_dict = ConditionMapper.map(input_dict)
+                    except TypeError:
+                        print(coding_system_oid, input_dict)
+                        raise
 
                     if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict or "DOMAIN_ID".lower() in result_dict:
                         if "MAPPED_CONCEPT_DOMAIN".lower() in result_dict:
@@ -1303,7 +1310,7 @@ def death_router_obj(input_dict):
 if __name__ == "__main__":
 
     arg_parse_obj = argparse.ArgumentParser()
-    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="syn_config.json")
+    arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="hi_config.json")
     arg_obj = arg_parse_obj.parse_args()
 
     print("Reading config file '%s'" % arg_obj.config_file_name)
@@ -1311,3 +1318,4 @@ if __name__ == "__main__":
         config_dict = json.load(f)
 
     main(config_dict["csv_input_directory"], config_dict["csv_output_directory"], config_dict["json_map_directory"])
+
