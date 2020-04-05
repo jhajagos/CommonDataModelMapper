@@ -146,7 +146,8 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
 
 def generate_db_dict(output_directory=None, load_pairs=None):
     if load_pairs is None:
-        load_pairs = [("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
+        load_pairs = [
+                     ("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
                       ("person", "person_cdm.csv"),
                       ("visit_occurrence", "visit_occurrence_cdm.csv"),
                       ("procedure_occurrence", "procedure_cdm.csv"),

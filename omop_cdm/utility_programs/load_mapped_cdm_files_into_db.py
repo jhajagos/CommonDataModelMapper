@@ -15,7 +15,7 @@ def main(output_directory, connection_string, schema):
 
     data_dict = generate_db_dict(output_directory)
 
-    load_csv_files_into_db(connection_string, data_dict,schema_ddl=None, indices_ddl=None,
+    load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indices_ddl=None,
                            i_print_update=10000, truncate=True, schema=schema, null_flag=True)
 
 
