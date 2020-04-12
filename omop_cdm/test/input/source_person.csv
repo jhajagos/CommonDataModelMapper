@@ -1,5 +1,5 @@
 s_person_id,s_gender,m_gender,s_birth_datetime,s_death_datetime,s_race,m_race,s_ethnicity,m_ethnicity,k_location
-100,M,MALE,2001-01-01,,.Caucasian,White,,Not Hispanic or Latino,
+100,M,MALE,2001-01-01,,.Caucasian,White,,Not Hispanic or Latino,555-555
 101,F,FEMALE,1935-01-01,2016-12-12,,,,Hispanic or Latino,
 102,F,FEMALE,1951-12-31,,.Black,Black or African American,,,
 201,,UNKNOWN,2016-05-30,,,,,,

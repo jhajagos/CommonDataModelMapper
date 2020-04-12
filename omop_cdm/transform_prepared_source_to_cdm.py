@@ -12,13 +12,13 @@ import sys
 
 try:
     from source_to_cdm_functions import *
-    from omop_cdm_classes_5_2 import *
+    from omop_cdm_classes_5_3 import *
     from prepared_source_classes import *
     from mapping_classes import *
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
     from source_to_cdm_functions import *
-    from omop_cdm_classes_5_2 import *
+    from omop_cdm_classes_5_3 import *
     from prepared_source_classes import *
     from mapping_classes import *
 
@@ -75,12 +75,43 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     in_out_map_obj = InputOutputMapperDirectory()
     output_directory_obj = OutputClassDirectory()
 
+    ### Location ###
+
+    input_location_csv = os.path.join(input_csv_directory, "source_location.csv")
+    output_location_csv = os.path.join(output_csv_directory, "location_cdm.csv")
+
+    def location_router_obj(input_dict):
+        return LocationObject()
+
+    # ["location_id", "address_1", "address_2", "city", "state", "zip", "county", "location_source_value"]
+    # k_location,s_address_1,s_address_2,s_city,s_state,s_zip,s_county
+    location_rules = [
+        (":row_id", "location_id"),
+        ("s_address_1", "address_1"),
+        ("s_address_2", "address_2"),
+        ("s_city", "city"),
+        ("s_zip", "zip"),
+        ("s_county", "county"),
+        ("k_location", "location_source_value")]
+
+    location_runner_obj = generate_mapper_obj(input_location_csv, SourceLocationObject(), output_location_csv,
+                                           LocationObject(), location_rules,
+                                           output_class_obj, in_out_map_obj, location_router_obj)
+
+    location_runner_obj.run()
+
+    location_json_file_name = create_json_map_from_csv_file(output_location_csv, "location_source_value",
+                                                             "location_id")
+
+    k_location_mapper = CoderMapperJSONClass(location_json_file_name, "k_location")
+
+
     #### Person ####
 
     input_person_csv = os.path.join(input_csv_directory, "source_person.csv")
     output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
 
-    person_rules = create_person_rules(json_map_directory)
+    person_rules = create_person_rules(json_map_directory, k_location_mapper)
 
     person_runner_obj = generate_mapper_obj(input_person_csv, SourcePersonObject(), output_person_csv, PersonObject(),
                                             person_rules,
@@ -683,7 +714,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
 #### RULES ####
 
-def create_person_rules(json_map_directory):
+def create_person_rules(json_map_directory, k_location_mapper):
     """Generate rules for mapping source_patient.csv"""
 
     gender_json = os.path.join(json_map_directory, "concept_name_Gender.json")
@@ -736,7 +767,9 @@ def create_person_rules(json_map_directory):
                      ("m_race", race_mapper, {"CONCEPT_ID".lower(): "race_source_concept_id"}),
                      ("s_ethnicity", "ethnicity_source_value"),
                      ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_concept_id"}),
-                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_source_concept_id"})]
+                     ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_source_concept_id"}),
+                     ("k_location", k_location_mapper, {"location_id": "location_id"})
+                     ]
 
     return patient_rules
 

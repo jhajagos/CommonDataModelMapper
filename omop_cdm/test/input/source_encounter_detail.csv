@@ -1,0 +1,5 @@
+s_person_id,s_encounter_id,s_start_datetime,s_end_datetime,k_care_site,s_visit_detail_type,m_visit_detail_type
+10,101,2016-01-01 05:53,2016-01-01 10:22,73f2c271b909b5b96f9887ecaa9ad6d6,Emergency,Emergency
+10,101,2016-01-01 10:22,2016-01-03 13:22,e83a806a18051ba04fd4ed6d2a3f7497,Inpatient,Inpatient
+10,101,2016-01-03 13:22,2016-01-03 16:55,63f2c271b909b5b96f9887ecaa9ad6d6,Inpatient,Inpatient
+10,101,2016-01-03 16:55,2016-01-15 11:00,e83a806a18051ba04fd4ed6d2a3f7497,Inpatient,Inpatient

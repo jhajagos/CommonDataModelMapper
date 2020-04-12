@@ -120,7 +120,7 @@ class TestMapping(unittest.TestCase):
 
         second_result_observation_dx = result_observation_dx[1]
 
-        self.assertEqual("4143050", second_result_observation_dx["observation_concept_id"])
+        self.assertEqual("4215685", second_result_observation_dx["observation_concept_id"])
 
         result_procedure = read_csv_file_as_dict("./test/output/procedure_cdm.csv")
         self.assertTrue(len(result_procedure))

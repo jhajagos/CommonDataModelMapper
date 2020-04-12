@@ -21,6 +21,13 @@ class PreparedSourceObject(InputClass):
         return []
 
 
+class SourceLocationObject(PreparedSourceObject):
+    """A location"""
+
+    def _fields(self):
+        return ["k_location", "s_address_1", "s_address_2", "s_city", "s_state", "s_zip", "s_county"]
+
+
 class SourcePersonObject(PreparedSourceObject):
     """A person"""
 
@@ -43,6 +50,14 @@ class SourceEncounterObject(PreparedSourceObject):
         return ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
                 "m_visit_type", "k_care_site", "s_discharge_to", "m_discharge_to",
                 "s_admitting_source", "m_admitting_source", "i_exclude"]
+
+
+class SourceEncounterDetailObject(PreparedSourceObject):
+    """An encounter or visit"""
+
+    def _fields(self):
+        return ["s_person_id", "s_encounter_id", "s_start_datetime","s_end_datetime", "k_care_site",
+                "s_visit_detail_type", "m_visit_detail_type", "i_exclude"]
 
 
 class SourceResultObject(PreparedSourceObject):
