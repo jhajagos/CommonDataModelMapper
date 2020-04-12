@@ -56,7 +56,7 @@ class SourceEncounterDetailObject(PreparedSourceObject):
     """An encounter or visit"""
 
     def _fields(self):
-        return ["s_person_id", "s_encounter_id", "s_start_datetime","s_end_datetime", "k_care_site",
+        return ["s_encounter_detail_id", "s_person_id", "s_encounter_id", "s_start_datetime","s_end_datetime", "k_care_site",
                 "s_visit_detail_type", "m_visit_detail_type", "i_exclude"]
 
 

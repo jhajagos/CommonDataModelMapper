@@ -206,9 +206,67 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     s_encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
 
-    # Visit ID Map
-    encounter_json_file_name = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value",
-                                                             "visit_occurrence_id")
+    encounter_class_mapper = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_concept_id")
+
+    ### Visit Detail
+
+    input_encounter_detail_csv = os.path.join(input_csv_directory, "source_encounter_detail.csv")
+    output_visit_detail_csv = os.path.join(output_csv_directory, "visit_detail_cdm.csv")
+
+    visit_concept_json = os.path.join(json_map_directory, "concept_name_Visit.json")
+    visit_concept_mapper = ChainMapper(
+        ReplacementMapper({"Inpatient": "Inpatient Visit", "Emergency": "Emergency Room Visit",
+                           "Outpatient": "Outpatient Visit", "Observation": "Emergency Room Visit",
+                           "Recurring": "Outpatient Visit", "Preadmit": "Outpatient Visit", "": "Outpatient Visit"
+                           }),  # Note: there are no Observational status  type
+        CoderMapperJSONClass(visit_concept_json))
+
+    visit_concept_type_json = os.path.join(json_map_directory, "concept_name_Visit_Type.json")
+    visit_concept_type_mapper = ChainMapper(ConstantMapper({"visit_concept_name": "Visit derived from EHR record"}),
+                                            CoderMapperJSONClass(visit_concept_type_json))
+
+    # s_encounter_detail_id, s_person_id, s_encounter_id, s_start_datetime, s_end_datetime, k_care_site,s_visit_detail_type,m_visit_detail_type
+
+    # ["visit_detail_id", "person_id", "visit_detail_concept_id", "visit_start_date",
+    #  "visit_start_datetime", "visit_end_date", "visit_end_datetime", "visit_type_concept_id",
+    #  "provider_id", "care_site_id", "admitting_source_concept_id", "discharge_to_concept_id",
+    #  "preceding_visit_detail_id", "visit_source_value", "visit_source_concept_id", "admitting_source_value",
+    #  "discharge_to_source_value", "visit_detail_parent_id", "visit_occurrence_id"]
+
+    visit_detail_rules = [
+        (":row_id", "visit_detail_id"),
+        ("s_encounter_detail_id", "visit_source_value"),
+        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
+        ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
+        ("s_start_datetime", SplitDateTimeWithTZ(),
+         {"date": "visit_start_date", "time": "visit_start_time"}),
+        ("s_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
+        ("s_end_datetime", SplitDateTimeWithTZ(),
+         {"date": "visit_end_date", "time": "visit_end_time"}),
+        ("s_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
+        ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"}),
+        (":row_id", visit_concept_type_mapper, "visit_type_concept_id"),
+        ("m_visit_detail_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0})),
+         {"CONCEPT_ID".lower(): "visit_source_concept_id"}),
+        (":row_id", ConstantMapper({"visit_type_concept_id": 0}), {"visit_type_concept_id": "visit_type_concept_id"})
+    ]
+
+    def visit_detail_router_obj(input_dict):
+        # print(input_dict)
+        # print(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]}))
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            if input_dict["i_exclude"] != '1':
+                return VisitDetailObject()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
+    visit_detail_runner_obj = generate_mapper_obj(input_encounter_detail_csv, SourceEncounterDetailObject(),
+                                                  output_visit_detail_csv,
+                                                  VisitDetailObject(), visit_detail_rules,
+                                                  output_class_obj, in_out_map_obj, visit_detail_router_obj)
+    visit_detail_runner_obj.run()
 
     #### Benefit Coverage Period ####
 
