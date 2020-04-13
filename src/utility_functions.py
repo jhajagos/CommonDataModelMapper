@@ -148,8 +148,10 @@ def generate_db_dict(output_directory=None, load_pairs=None):
     if load_pairs is None:
         load_pairs = [
                      ("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
+                      ("location", "location_cdm.csv"),
                       ("person", "person_cdm.csv"),
                       ("visit_occurrence", "visit_occurrence_cdm.csv"),
+                      ("visit_detail", "visit_detail_cdm.csv"),
                       ("procedure_occurrence", "procedure_cdm.csv"),
                       ("procedure_occurrence", "procedure_dx_cdm.csv"),
                       ("measurement", "measurement_encounter_cdm.csv"),
@@ -163,7 +165,10 @@ def generate_db_dict(output_directory=None, load_pairs=None):
                       ("observation", "observation_proc_cdm.csv"),
                       ("observation_period", "observation_period_cdm.csv"),
                       ("care_site", "care_site_cdm.csv"),
-                      ("payer_plan_period", "payer_plan_period_cdm.csv")]
+                      ("payer_plan_period", "payer_plan_period_cdm.csv"),
+
+
+        ]
 
     data_dict = {}
     for pair in load_pairs:
