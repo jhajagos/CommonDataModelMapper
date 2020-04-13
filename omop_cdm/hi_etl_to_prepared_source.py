@@ -10,11 +10,11 @@ try:
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
         PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
-        AddressLookup
+        AddressLookup, PHFEncounterLocation
 
     from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-        SourceProcedureObject, SourceMedicationObject, SourceLocationObject
+        SourceProcedureObject, SourceMedicationObject, SourceLocationObject, SourceEncounterDetailObject
 
     from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
@@ -29,11 +29,11 @@ except(ImportError):
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
         PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
-        AddressLookup
+        AddressLookup, PHFEncounterLocation
 
     from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-        SourceProcedureObject, SourceMedicationObject, SourceLocationObject
+        SourceProcedureObject, SourceMedicationObject, SourceLocationObject, SourceEncounterDetailObject
 
     from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
@@ -271,6 +271,32 @@ def main(input_csv_directory, output_csv_directory):
                                            encounter_rules, output_class_obj, in_out_map_obj)
 
     visit_runner_obj.run()
+
+    # Encounter Location
+
+    ph_f_encounter_location_csv = os.path.join(input_csv_directory, "PH_F_Encounter_Location.csv")
+    source_encounter_detail_csv = os.path.join(output_csv_directory, "source_encounter_detail.csv")
+
+    #s_encounter_detail_id,s_person_id,s_encounter_id,s_start_datetime,s_end_datetime,k_care_site,s_visit_detail_type,m_visit_detail_type,i_exclude
+    #encounter_id,empi_id,facility,facility_source_id,facility_timezone,building,building_source_id,building_timezone,nurse_unit,nurse_unit_source_id,nurse_unit_timezone,room,room_source_id,room_timezone,bed,bed_source_id,bed_timezone,service_delivery_location,service_delivery_location_source_id,service_delivery_location_timezone,begin_dt_tm,begin_date_id,end_dt_tm,end_date_id,source_type,source_id,source_version,source_description,service_provider_org_name,population_id,part_key,hash_value,begin_local_dt_tm,begin_local_date_id,end_local_date_id,end_local_dt_tm,service_provider_ministry_org_id,source_type_key,estimated_departure_dt_tm,estimated_departure_date_id,estimated_departure_local_dt_tm,estimated_departure_local_date_id,begin_date,begin_time_id,end_time_id,end_date,estimated_departure_time_id,estimated_departure_date,service_provider_org_id,classification_display
+    source_encounter_detail_rules = [
+        ("encounter_id", "s_encounter_id"),
+        ("encounter_id", "s_encounter_detail_id"),
+        ("empi_id", "s_person_id"),
+        ("begin_dt_tm", "s_start_datetime"),
+        ("end_dt_tm", "s_end_datetime"),
+        ("classification_display", "s_visit_detail_type"),
+        ("classification_display", "m_visit_detail_type"),
+        (("facility", "hospital_service_display"),
+        key_care_site_mapper, {"mapped_value": "k_care_site"})
+    ]
+
+    encounter_detail_runner_obj = generate_mapper_obj(ph_f_encounter_location_csv, PHFEncounterLocation(),
+                                                      source_encounter_detail_csv,
+                                                      SourceEncounterDetailObject(),
+                                                      source_encounter_detail_rules, output_class_obj, in_out_map_obj)
+
+    encounter_detail_runner_obj.run()
 
     # Benefit Coverage
 

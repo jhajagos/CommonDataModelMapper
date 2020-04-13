@@ -247,7 +247,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"}),
         (":row_id", visit_concept_type_mapper, "visit_type_concept_id"),
         ("m_visit_detail_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0})),
-         {"CONCEPT_ID".lower(): "visit_source_concept_id"}),
+         {"CONCEPT_ID".lower(): "visit_detail_concept_id"}),
         (":row_id", ConstantMapper({"visit_type_concept_id": 0}), {"visit_type_concept_id": "visit_type_concept_id"})
     ]
 

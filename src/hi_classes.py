@@ -59,3 +59,9 @@ class PHFEncounterBenefitCoverage(InputClass):
 class AddressLookup(InputClass):
     def fields(self):
         return []
+
+
+class PHFEncounterLocation(InputClass):
+    def fields(self):
+        return []
+
