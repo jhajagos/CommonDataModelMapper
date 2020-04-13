@@ -1,2 +1,2 @@
-k_location,s_address_1,s_address_2,s_city,s_state,s_zip,s_county
-555-555,1212 Main Street,Apt 25,Springfield,CT,05556,Spring County
+k_location,s_address_1,s_address_2,s_city,s_state,s_zip,s_county,s_location_name
+555-555,1212 Main Street,Apt 25,Springfield,CT,05556,Spring County,555-555,1212 Main Street|Apt 25|Springfield|CT|05556|Spring County

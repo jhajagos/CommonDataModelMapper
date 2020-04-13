@@ -9,11 +9,12 @@ try:
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
-        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
+        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
+        AddressLookup
 
     from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-        SourceProcedureObject, SourceMedicationObject
+        SourceProcedureObject, SourceMedicationObject, SourceLocationObject
 
     from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
@@ -27,11 +28,12 @@ except(ImportError):
         CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
-        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject
+        PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
+        AddressLookup
 
     from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-        SourceProcedureObject, SourceMedicationObject
+        SourceProcedureObject, SourceMedicationObject, SourceLocationObject
 
     from source_to_cdm_functions import generate_mapper_obj, create_json_map_from_csv_file
 
@@ -73,6 +75,43 @@ def main(input_csv_directory, output_csv_directory):
         else:
             return {}
 
+    md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
+    # md5_func = None
+
+    address_csv = os.path.join(input_csv_directory, "person_address.csv")
+    source_location_csv = os.path.join(input_csv_directory, "source_location.csv")
+
+    location_lookup_csv = os.path.join(input_csv_directory, "address_lookup.csv")
+
+    key_location_mapper = build_name_lookup_csv(address_csv, location_lookup_csv,
+                                                 ["address_line_1", "address_line_2", "city", "state_primary_display",
+                                                  "postal_cd", "county_display"],
+                                                 ["address_line_1", "address_line_2", "city", "state_primary_display",
+                                                  "postal_cd", "county_display"], hashing_func=md5_func)
+
+    key_address_name_mapper = FunctionMapper(
+        build_key_func_dict(["address_line_1", "address_line_2", "city", "state_primary_display",
+                                                  "postal_cd", "county_display"], separator="|"))
+
+    #k_location,s_address_1,s_address_2,s_city,s_state,s_zip,s_county,s_location_name
+    location_rules = [("key_name", "k_location"),
+                      (("address_line_1", "address_line_2", "city", "state_primary_display",
+                                                  "postal_cd", "county_display"),
+                        key_address_name_mapper,
+                        {"mapped_value": "s_location_name"}),
+                      ("address_line_1", "s_address_1"),
+                      ("address_line_2", "s_address_2"),
+                      ("city", "s_city"),
+                      ("postal_cd", "s_zip"),
+                      ("county_display", "s_county")
+                      ]
+
+    location_runner_obj = generate_mapper_obj(location_lookup_csv, AddressLookup(), source_location_csv,
+                                               SourceLocationObject(), location_rules,
+                                               output_class_obj, in_out_map_obj)
+
+    location_runner_obj.run()
+
     ph_f_person_rules = [("empi_id", "s_person_id"),
                          ("birth_date", "s_birth_datetime"),
                          ("gender_display", "s_gender"),
@@ -82,6 +121,9 @@ def main(input_csv_directory, output_csv_directory):
                          ("empi_id", person_ethnicity_code_mapper, {"description": "m_ethnicity"}),
                          ("empi_id", person_ethnicity_code_mapper, {"code": "s_ethnicity"}),
                          ("deceased_dt_tm", "s_death_datetime"),
+                         (("address_line_1", "address_line_2", "city", "state_primary_display",
+                                                  "postal_cd", "county_display"),
+                          key_location_mapper, {"mapped_value": "k_location"}),
                          ("birth_date", PassThroughFunctionMapper(has_date_func), {"i_exclude": "i_exclude"})
                          ]
 
@@ -95,19 +137,20 @@ def main(input_csv_directory, output_csv_directory):
     encounter_csv = os.path.join(input_csv_directory, "PH_F_Encounter.csv")
     care_site_csv = os.path.join(input_csv_directory, "hi_care_site.csv")
 
-    md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
-    # md5_func = None
+    facility_csv = os.path.join(input_csv_directory, "facility.csv")
 
-    key_care_site_mapper = build_name_lookup_csv(encounter_csv, care_site_csv,
-                                                 ["facility", "hospital_service_code", "hospital_service_display",
-                                                  "hospital_service_coding_system_id"],
+    if not os.path.exists(facility_csv):
+        facility_csv = encounter_csv
+
+    key_care_site_mapper = build_name_lookup_csv(facility_csv, care_site_csv,
+                                                 ["facility", "hospital_service_display"],
                                                  ["facility", "hospital_service_display"], hashing_func=md5_func)
 
     care_site_name_mapper = FunctionMapper(
         build_key_func_dict(["facility", "hospital_service_display"], separator=" - "))
 
     care_site_rules = [("key_name", "k_care_site"),
-                       (("hospital_service_display", "hospital_service_code", "facility"),
+                       (("hospital_service_display", "facility"),
                         care_site_name_mapper,
                         {"mapped_value": "s_care_site_name"})]
 

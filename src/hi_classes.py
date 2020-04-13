@@ -54,3 +54,8 @@ class HiCareSite(InputClass):
 class PHFEncounterBenefitCoverage(InputClass):
     def fields(self):
         return []
+
+
+class AddressLookup(InputClass):
+    def fields(self):
+        return []

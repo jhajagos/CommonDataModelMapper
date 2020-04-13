@@ -24,75 +24,41 @@ def build_key_func_dict(fields, hashing_func=None, separator="|"):
 
 
 def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names, key_fields, hashing_func=None):
-    """"""
+    """Build a table to lookup values"""
 
     lookup_dict = {}
     key_func = build_key_func_dict(key_fields, hashing_func=hashing_func)
 
-    if sys.version_info[0] == 2:
-        with open(input_csv_file_name, "rb") as f:
-            csv_dict = csv.DictReader(f)
+    with open(input_csv_file_name, "r", newline="", errors="replace") as f:
+        csv_dict = csv.DictReader(f)
 
-            for row_dict in csv_dict:
-                key_str = key_func(row_dict)
-                new_dict = {}
-                for field_name in field_names:
-                    new_dict[field_name] = row_dict[field_name]
+        for row_dict in csv_dict:
+            key_str = key_func(row_dict)
+            new_dict = {}
+            for field_name in field_names:
+                new_dict[field_name] = row_dict[field_name]
 
-                lookup_dict[key_str] = new_dict
-    else:
-        with open(input_csv_file_name, "r", newline="", errors="replace") as f:
-            csv_dict = csv.DictReader(f)
+            lookup_dict[key_str] = new_dict
 
-            for row_dict in csv_dict:
-                key_str = key_func(row_dict)
-                new_dict = {}
-                for field_name in field_names:
-                    new_dict[field_name] = row_dict[field_name]
+    with open(output_csv_file_name, "w", newline="", errors="replace") as fw:
+        csv_writer = csv.writer(fw)
 
-                lookup_dict[key_str] = new_dict
+        i = 0
+        for key_name in lookup_dict:
 
-    if sys.version_info[0] == 2:
-        with open(output_csv_file_name, "wb") as fw:
-            csv_writer = csv.writer(fw)
+            row_dict = lookup_dict[key_name]
+            if i == 0:
+                row_field_names = list(row_dict.keys())
+                header = ["key_name"] + row_field_names
 
-            i = 0
-            for key_name in lookup_dict:
+                csv_writer.writerow(header)
 
-                row_dict = lookup_dict[key_name]
-                if i == 0:
-                    row_field_names = row_dict.keys()
-                    header = ["key_name"] + row_field_names
+            if len(key_name):
+                row_to_write = [key_name]
+                for field_name in row_field_names:
+                    row_to_write += [row_dict[field_name]]
 
-                    csv_writer.writerow(header)
-
-                if len(key_name):
-                    row_to_write = [key_name]
-                    for field_name in row_field_names:
-                        row_to_write += [row_dict[field_name]]
-
-                    csv_writer.writerow(row_to_write)
-                i += 1
-    else:
-        with open(output_csv_file_name, "w", newline="", errors="replace") as fw:
-            csv_writer = csv.writer(fw)
-
-            i = 0
-            for key_name in lookup_dict:
-
-                row_dict = lookup_dict[key_name]
-                if i == 0:
-                    row_field_names = list(row_dict.keys())
-                    header = ["key_name"] + row_field_names
-
-                    csv_writer.writerow(header)
-
-                if len(key_name):
-                    row_to_write = [key_name]
-                    for field_name in row_field_names:
-                        row_to_write += [row_dict[field_name]]
-
-                    csv_writer.writerow(row_to_write)
+                csv_writer.writerow(row_to_write)
                 i += 1
 
     return FunctionMapper(key_func)

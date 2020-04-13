@@ -25,7 +25,7 @@ class SourceLocationObject(PreparedSourceObject):
     """A location"""
 
     def _fields(self):
-        return ["k_location", "s_address_1", "s_address_2", "s_city", "s_state", "s_zip", "s_county"]
+        return ["k_location", "s_address_1", "s_address_2", "s_city", "s_state", "s_zip", "s_county", "s_location_name"]
 
 
 class SourcePersonObject(PreparedSourceObject):
@@ -121,3 +121,4 @@ class SourceCareSiteObject(PreparedSourceObject):
 class SourceProviderObject(PreparedSourceObject):
     def _fields(self):
         return ["k_provider", "s_provider_name", "s_npi"]
+
