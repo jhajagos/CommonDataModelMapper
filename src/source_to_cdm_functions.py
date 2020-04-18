@@ -8,6 +8,8 @@ import logging
 import re
 import datetime
 import sys
+import pytz
+from dateutil.parser import parse
 
 
 class LeftMapperString(MapperClass):
@@ -51,22 +53,21 @@ class DateSplit(MapperClass):
         return {"year": int_year, "month": int_month, "day": int_day}
 
 
-def convert_datetime_with_tz(datetime_tz):
+def convert_datetime_with_tz(datetime_tz, time_zone="US/Eastern"):
     null_date = "1900-01-01 00:00:00"
     if datetime_tz == '':
         return null_date
 
-    dt_dts = datetime_tz[:-6]
-    dt_h_string = datetime_tz[-6:-3]
-    dt_h = int(dt_h_string)
-    dt_dts_tuple = time.strptime(dt_dts, "%Y-%m-%dT%H:%M:%S")
     try:
-        dt_dts_epoch = time.mktime(dt_dts_tuple) + dt_h * 60.0 * 60
+        parsed_datetime = parse(datetime_tz)
     except: # ValueError, time.OverflowError
         logging.error("Invalid date '%s'" % datetime_tz)
         return null_date
-    localized_datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dt_dts_epoch))
-    return localized_datetime
+
+    tz_obj = pytz.timezone(time_zone)
+    localized_datetime = parsed_datetime.astimezone(tz_obj)
+    localized_datetime_string = localized_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    return localized_datetime_string
 
 
 def convert_datetime(datetime_str):
@@ -166,6 +167,7 @@ class DateTimeWithTZ(MapperClass):
             datetime_local = convert_datetime(datetime_value)
 
         return {"datetime": datetime_local}
+
 
 class DateTimeWithTZDebug(MapperClass):
 

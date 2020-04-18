@@ -252,8 +252,8 @@ def main(input_csv_directory, output_csv_directory):
 
     encounter_rules = [("encounter_id", "s_encounter_id"),
                        ("empi_id", "s_person_id"),
-                       ("service_dt_tm", "s_visit_start_datetime"),
-                       ("discharge_dt_tm", "s_visit_end_datetime"),
+                       ("service_local_dt_tm", "s_visit_start_datetime"),
+                       ("discharge_local_dt_tm", "s_visit_end_datetime"),
                        ("classification_display", "s_visit_type"),
                        ("classification_display", "m_visit_type"),
                        (("facility", "hospital_service_display"),

@@ -7,6 +7,8 @@ Fields in the prepared source start either start with s_  for source or m_ mappe
 to a name part of the OHDSI vocabulary.
 """
 
+#TODO: Config needs to read timezone information
+
 import os
 import sys
 
@@ -289,7 +291,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                        )
     payer_plan_period_runner_obj.run()
 
-    #### MEASUREMENT and OBSERVATION dervived from 'source_observation.csv' ####
+    #### MEASUREMENT and OBSERVATION dervived from 'source_result.csv' ####
 
     snomed_code_result_mapper = ChainMapper(FilterHasKeyValueMapper(["s_code"]), snomed_code_mapper)
 
@@ -963,8 +965,6 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
         )
 
     # TODO: Add SNOMED Codes to the Mapping
-
-
     ProcedureCodeMapper = CascadeMapper(CaseMapper(case_mapper_procedures,
                                                  CodeMapperClassSqliteJSONClass(icd9proc_json, "s_procedure_code"),
                                                    CodeMapperClassSqliteJSONClass(icd10proc_json, "s_procedure_code"),
