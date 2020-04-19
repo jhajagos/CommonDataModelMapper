@@ -7,7 +7,7 @@ Fields in the prepared source start either start with s_  for source or m_ mappe
 to a name part of the OHDSI vocabulary.
 """
 
-#TODO: Config needs to read timezone information
+#TODO: Config needs to read timezone information right now defualt to US/Eastern
 
 import os
 import sys
