@@ -59,7 +59,7 @@ class TestMappers(unittest.TestCase):
     def test_filter_has_key_value_mapper(self):
 
         result_dict = FilterHasKeyValueMapper(["wwww", "2", "3"]).map({"1": "z", "2": "x", "3": "y"})
-        self.assertEquals({"2": "x"},result_dict)
+        self.assertEquals({"2": "x"}, result_dict)
 
     def test_concatenate_mapper(self):
 
@@ -115,6 +115,15 @@ class TestMappers(unittest.TestCase):
 
         r5 = HasNonEmptyValue().map({"field_name": 'nullx'})
         self.assertNotEqual({}, r5)
+
+    def test_left_string_mapper(self):
+
+        input_dict = {"zip": "65852-2222", "n": 10, "zip5": "65852"}
+        left_string_mapper = LeftStringMapper(maximum_string_length=5)
+
+        output_dict = left_string_mapper.map(input_dict)
+
+        self.assertEquals("65852", output_dict["zip"])
 
 
 class TestTranslators(unittest.TestCase):

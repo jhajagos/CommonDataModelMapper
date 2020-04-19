@@ -157,6 +157,7 @@ class CoderMapperStaticClass(CodeMapperClass):
 
 
 class CodeMapperDictClass(CodeMapperClass):
+    """Maps values to a code with a look-up dictionary"""
 
     def __init__(self, mapper_dict, field_name=None, key_to_map_to=None):
         self.mapper_dict = mapper_dict
@@ -225,8 +226,7 @@ class CoderMapperJSONClass(CodeMapperClass):
 
 
 class CodeMapperClassSqliteJSONClass(CodeMapperClass):
-
-    """For large JSON files we build a SQLite database and only store in memory what we access"""
+    """For large JSON files we build a SQLite database and cache in memory what we access"""
 
     def __init__(self, json_file_name, field_name=None):
         self.field_name = field_name
@@ -509,7 +509,7 @@ class ConstantMapper(MapperClass):
 
 
 class KeyTranslator(object):
-    """Translate keys in a dict"""
+    """Translate keys in a dict to a different key"""
 
     def __init__(self, translate_dict):
         self.translate_dict = translate_dict
@@ -562,6 +562,26 @@ class ConcatenateMapper(object):
             return {self.delimiter.join(self.fields): cat_string[:-1]}
         else:
             return {self.delimiter.join(self.fields): ""}
+
+
+class LeftStringMapper(MapperClass):
+    """Cuts strings over a certain length, similar to the left function"""
+
+    def __init__(self, maximum_string_length=1023):
+        self.maximum_string_length = maximum_string_length
+
+    def map(self, dict_to_map):
+
+        new_dict = {}
+        for key in dict_to_map:
+            key_value = dict_to_map[key]
+            if key_value.__class__ == "".__class__:
+                new_dict[key] = key_value[0:self.maximum_string_length]
+            else:
+                new_dict[key] = key_value
+
+        return new_dict
+
 
 
 class InputOutputMapperInstance(object):
