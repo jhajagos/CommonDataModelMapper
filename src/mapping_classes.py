@@ -489,6 +489,7 @@ class SingleMatchAddValueMapper(MapperClass):
         self.key_replace = key_replace
 
     def map(self, input_dict):
+
         if self.key_to_match in input_dict:
             value_to_test = input_dict[self.key_to_match]
             if value_to_test == self.value_to_match:
@@ -499,6 +500,26 @@ class SingleMatchAddValueMapper(MapperClass):
                 return input_dict
         else:
             return input_dict
+
+
+class SingleMatchOnlyValueMapper(SingleMatchAddValueMapper):
+    def map(self, input_dict):
+
+        dict_copy = {}
+        for k in input_dict:
+            dict_copy[k] = input_dict
+
+        if self.key_to_match in input_dict:
+            value_to_test = input_dict[self.key_to_match]
+            if value_to_test == self.value_to_match:
+                new_key, new_value = self.key_replace
+                dict_copy[new_key] = new_value
+                return dict_copy
+            else:
+                return {}
+        else:
+            return {}
+
 
 
 class ReplacementMapper(MapperClass):

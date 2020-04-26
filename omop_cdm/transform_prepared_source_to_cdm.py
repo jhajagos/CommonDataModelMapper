@@ -788,6 +788,9 @@ def create_person_rules(json_map_directory, k_location_mapper):
     race_json = os.path.join(json_map_directory, "concept_name_Race.json")
     race_json_mapper = CoderMapperJSONClass(race_json)
 
+    race_code_json = os.path.join(json_map_directory, "concept_code_Race.json")
+    race_code_mapper = CoderMapperJSONClass(race_code_json, "s_race")
+
     ethnicity_json = os.path.join(json_map_directory, "concept_name_Ethnicity.json")
     ethnicity_json_mapper = CoderMapperJSONClass(ethnicity_json)
 
@@ -807,12 +810,14 @@ def create_person_rules(json_map_directory, k_location_mapper):
         "Not Hispanic or Latino": "Not Hispanic or Latino"
     }
 
-    race_mapper = CascadeMapper(ChainMapper(
-                              FilterHasKeyValueMapper(["m_race"]), ReplacementMapper(race_map_dict),
-                              race_json_mapper),
-        ChainMapper(FilterHasKeyValueMapper(["m_race"]),
-                                SingleMatchAddValueMapper(("m_race", "Other"), ("concept_id", 8522))),
-                                ConstantMapper({"CONCEPT_ID".lower(): 0}))
+    race_mapper = CascadeMapper(
+        ChainMapper(FilterHasKeyValueMapper(["s_race"]), race_code_mapper),
+        ChainMapper(
+            SingleMatchOnlyValueMapper(("m_race", "Other"), ("concept_id", 8522))),
+        ChainMapper(
+            FilterHasKeyValueMapper(["m_race"]), ReplacementMapper(race_map_dict),
+                race_json_mapper),
+        ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     ethnicity_mapper = CascadeMapper(ChainMapper(
                               FilterHasKeyValueMapper(["m_ethnicity"]), ReplacementMapper(ethnicity_map_dict),
@@ -829,7 +834,7 @@ def create_person_rules(json_map_directory, k_location_mapper):
                      ("m_gender", gender_mapper, {"CONCEPT_ID".lower(): "gender_concept_id"}),
                      ("m_gender", gender_mapper, {"CONCEPT_ID".lower(): "gender_source_concept_id"}),
                      ("s_race", "race_source_value"),
-                     ("m_race", race_mapper, {"CONCEPT_ID".lower(): "race_concept_id"}),
+                     (("m_race", "s_race"), race_mapper, {"CONCEPT_ID".lower(): "race_concept_id"}),
                      ("m_race", race_mapper, {"CONCEPT_ID".lower(): "race_source_concept_id"}),
                      ("s_ethnicity", "ethnicity_source_value"),
                      ("m_ethnicity", ethnicity_mapper, {"CONCEPT_ID".lower(): "ethnicity_concept_id"}),
