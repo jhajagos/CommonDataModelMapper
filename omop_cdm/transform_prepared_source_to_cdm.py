@@ -780,7 +780,10 @@ def create_person_rules(json_map_directory, k_location_mapper):
     gender_json = os.path.join(json_map_directory, "concept_name_Gender.json")
     gender_json_mapper = CoderMapperJSONClass(gender_json)
     upper_case_mapper = TransformMapper(lambda x: x.upper())
-    gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper, gender_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
+    gender_mapper = CascadeMapper(ChainMapper(upper_case_mapper,
+                                              SingleMatchAddValueMapper(("m_gender", "M"), ("m_gender", "MALE")),
+                                              SingleMatchAddValueMapper(("m_gender", "F"), ("m_gender", "FEMALE")),
+                                              gender_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     race_json = os.path.join(json_map_directory, "concept_name_Race.json")
     race_json_mapper = CoderMapperJSONClass(race_json)
@@ -806,7 +809,10 @@ def create_person_rules(json_map_directory, k_location_mapper):
 
     race_mapper = CascadeMapper(ChainMapper(
                               FilterHasKeyValueMapper(["m_race"]), ReplacementMapper(race_map_dict),
-                              race_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
+                              race_json_mapper),
+        ChainMapper(FilterHasKeyValueMapper(["m_race"]),
+                                SingleMatchAddValueMapper(("m_race", "Other"), ("concept_id", 8522))),
+                                ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
     ethnicity_mapper = CascadeMapper(ChainMapper(
                               FilterHasKeyValueMapper(["m_ethnicity"]), ReplacementMapper(ethnicity_map_dict),

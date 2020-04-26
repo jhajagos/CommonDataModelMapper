@@ -476,12 +476,13 @@ def main(input_csv_directory, output_csv_directory):
 
 def build_json_person_attribute(person_attribute_filename, attribute_json_file_name, sequence_field_name,
                                 code_field_name, description_field_name,
-                                descriptions_to_ignore=["Other", "Patient data refused", "Unknown", "Patient Declined",
+                                descriptions_to_ignore=["Patient data refused", "Unknown", "Patient Declined",
                                                         "Ethnic group not given - patient refused", "Unknown racial group",
-                                                        "Unable to Obtain", "OTHER", "UNKNOWN", "Declined to Specify",
-                                                        "Other/Yes", "Unknown/Unreported", "Unknown/Yes"
+                                                        "Unable to Obtain", "UNKNOWN", "Declined to Specify",
+                                                         "Unknown/Unreported", "Unknown/Yes", "Not Answered"
                                                         ],
                                 output_directory="./"):
+    # Removed
     """Due to that a Person can have multiple records for ethnicity and race we need to create a lookup"""
 
     master_attribute_dict = {}
@@ -509,12 +510,20 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
                     master_attribute_dict[master_patient_id] = [record_attributes]
 
         final_attribute_dict = {}
+
         for master_patient_id in master_attribute_dict:
             attribute_records = master_attribute_dict[master_patient_id]
 
             attribute_records.sort(key=lambda x: int(x["sequence_id"]))
 
-            final_attribute_dict[master_patient_id] = attribute_records[0]
+            i = 0
+            for attribute_record in attribute_records:
+                if attribute_record["description"].upper() == 'OTHER':
+                    i += 1
+            if i == len(attribute_records):
+                i = i - 1
+
+            final_attribute_dict[master_patient_id] = attribute_records[i]
 
         full_attribute_json_file_name = os.path.join(output_directory, attribute_json_file_name)
 

@@ -479,6 +479,28 @@ class FilterHasKeyValueMapper(MapperClass):
         return {}
 
 
+class SingleMatchAddValueMapper(MapperClass):
+    """Match a key in the first position and then value and then eject a value"""
+
+    def __init__(self, pattern_match, key_replace):
+        key_to_match, value_to_match = pattern_match
+        self.key_to_match = key_to_match
+        self.value_to_match = value_to_match
+        self.key_replace = key_replace
+
+    def map(self, input_dict):
+        if self.key_to_match in input_dict:
+            value_to_test = input_dict[self.key_to_match]
+            if value_to_test == self.value_to_match:
+                new_key, new_value = self.key_replace
+                input_dict[new_key] = new_value
+                return input_dict
+            else:
+                return input_dict
+        else:
+            return input_dict
+
+
 class ReplacementMapper(MapperClass):
     """Translate a string by exact match"""
 
@@ -581,7 +603,6 @@ class LeftStringMapper(MapperClass):
                 new_dict[key] = key_value
 
         return new_dict
-
 
 
 class InputOutputMapperInstance(object):
