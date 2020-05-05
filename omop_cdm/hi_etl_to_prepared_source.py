@@ -102,6 +102,7 @@ def main(input_csv_directory, output_csv_directory):
                       ("address_line_1", "s_address_1"),
                       ("address_line_2", "s_address_2"),
                       ("city", "s_city"),
+                      ("state_primary_display", "s_state"),
                       ("postal_cd", "s_zip"),
                       ("county_display", "s_county")
                       ]

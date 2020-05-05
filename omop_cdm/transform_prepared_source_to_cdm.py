@@ -71,7 +71,6 @@ def procedure_post_processing(output_dict):
 
 def main(input_csv_directory, output_csv_directory, json_map_directory):
     # TODO: Add Provider
-    # TODO: Add Patient Location
 
     output_class_obj = OutputClassDirectory()
     in_out_map_obj = InputOutputMapperDirectory()
@@ -92,6 +91,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         ("s_address_1", "address_1"),
         ("s_address_2", "address_2"),
         ("s_city", "city"),
+        ("s_state", "state"),
         ("s_zip", "zip"),
         ("s_county", "county"),
         ("k_location", "location_source_value")]
@@ -106,7 +106,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                              "location_id")
 
     k_location_mapper = CoderMapperJSONClass(location_json_file_name, "k_location")
-
 
     #### Person ####
 
