@@ -805,6 +805,24 @@ def create_person_rules(json_map_directory, k_location_mapper):
                      }
 
     ethnicity_map_dict = {
+        "Colombian": "Hispanic or Latino",
+        "Cuban": "Hispanic or Latino",
+        "Dominican": "Hispanic or Latino",
+        "Ecuadorian": "Hispanic or Latino",
+        "Guatemalan": "Hispanic or Latino",
+        "Honduran": "Hispanic or Latino",
+        "Latin American": "Hispanic or Latino",
+        "Mexican": "Hispanic or Latino",
+        "Mexican American": "Hispanic or Latino",
+        "Mexicano": "Hispanic or Latino",
+        "Nicaraguan": "Hispanic or Latino",
+        "Paraguayan": "Hispanic or Latino",
+        "Peruvian": "Hispanic or Latino",
+        "Puerto Rican": "Hispanic or Latino",
+        "Salvadoran": "Hispanic or Latino",
+        "South American": "Hispanic or Latino",
+        "Uruguayan": "Hispanic or Latino",
+        "Venezuelan": "Hispanic or Latino",
         "Hispanic or Latino": "Hispanic or Latino",
         "Not Hispanic or Latino": "Not Hispanic or Latino"
     }
@@ -1294,7 +1312,8 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     else:
         rxnorm_str_bn_sbdf_mapper = CodeMapperDictClass({})
 
-    rxnorm_concept_mapper = CascadeMapper(ChainMapper(CascadeMapper(ChainMapper(rxnorm_rxcui_mapper,
+    rxnorm_concept_mapper = CascadeMapper(ChainMapper(CascadeMapper(
+                                                                                ChainMapper(rxnorm_rxcui_mapper,
                                                                                 ChainMapper(rxnorm_bn_sbdf_mapper,
                                                                                             KeyTranslator({"sbdf_rxcui": "RXNORM_ID"}))),
                                             ChainMapper(rxnorm_rxcui_mapper, ChainMapper(rxnorm_bn_in_mapper,
