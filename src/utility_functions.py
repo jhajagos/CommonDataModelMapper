@@ -165,9 +165,7 @@ def generate_db_dict(output_directory=None, load_pairs=None):
                       ("observation", "observation_proc_cdm.csv"),
                       ("observation_period", "observation_period_cdm.csv"),
                       ("care_site", "care_site_cdm.csv"),
-                      ("payer_plan_period", "payer_plan_period_cdm.csv"),
-
-
+                      ("payer_plan_period", "payer_plan_period_cdm.csv")
         ]
 
     data_dict = {}
