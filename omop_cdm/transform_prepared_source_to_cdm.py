@@ -1331,7 +1331,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     drug_type_mapper = ChainMapper(ReplacementMapper({"HOSPITAL_PHARMACY": "Inpatient administration",
                                                       "INPATIENT_FLOOR_STOCK": "Inpatient administration",
                                                       "RETAIL_PHARMACY": "Prescription dispensed in pharmacy",
-                                                      #"UNKNOWN": "Prescription dispensed in pharmacy",
+                                                      "UNKNOWN": "Inpatient administration",
                                                       "_NOT_VALUED": "Prescription written",
                                                       "OFFICE": "Physician administered drug (identified from EHR observation)"
                                                       },
