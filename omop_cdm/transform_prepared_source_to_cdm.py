@@ -256,8 +256,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         # print(input_dict)
         # print(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]}))
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
-            if input_dict["i_exclude"] != '1':
-                return VisitDetailObject()
+            if len(s_encounter_id_mapper.map({"s_encounter_id": input_dict["s_encounter_id"]})):
+                if input_dict["i_exclude"] != '1':
+                    return VisitDetailObject()
+                else:
+                    return NoOutputClass()
             else:
                 return NoOutputClass()
         else:
