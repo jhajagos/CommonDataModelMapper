@@ -19,12 +19,13 @@ truncate table {schema}.concept_synonym;
     
 truncate table {schema}.drug_strength;
 \\copy {schema}.drug_strength from {os.path.join(path_to_concept_files, "DRUG_STRENGTH.csv")}  WITH DELIMITER E'\\t' CSV HEADER QUOTE E'\\b';
+
+truncate table {schema}.concept_class;
+\\copy {schema}.concept_class from {os.path.join(path_to_concept_files, "CONCEPT_CLASS.csv")}  WITH DELIMITER E'\\t' CSV HEADER QUOTE E'\\b';
     
 truncate table {schema}.vocabulary;
 \\copy {schema}.vocabulary from {os.path.join(path_to_concept_files, "VOCABULARY.csv")}  WITH DELIMITER E'\\t' CSV HEADER QUOTE E'\\b';
     
-truncate table {schema}.concept_class;
-\\copy {schema}.concept_class from {os.path.join(path_to_concept_files, "CONCEPT_CLASS.csv")}  WITH DELIMITER E'\\t' CSV HEADER QUOTE E'\\b';
 """
 
     with open(psql_load_script, "w") as fw:
