@@ -113,10 +113,20 @@ def main(input_csv_directory, output_csv_directory):
 
     location_runner_obj.run()
 
+    def gender_function(input_dict):
+        if len(input_dict["gender_primary_display"]):
+            return {"gender": input_dict["gender_primary_display"]}
+        elif len(input_dict["gender_display"]):
+            return {"gender": input_dict["gender_display"]}
+        else:
+            return {"gender": ""}
+
+    gender_mapper = PassThroughFunctionMapper(gender_function)
+
     ph_f_person_rules = [("empi_id", "s_person_id"),
                          ("birth_date", "s_birth_datetime"),
-                         ("gender_display", "s_gender"),
-                         ("gender_display", "m_gender"),
+                         (("gender_display", "gender_primary_display"), gender_mapper, {"gender": "s_gender"}),
+                         (("gender_display", "gender_primary_display"), gender_mapper, {"gender": "m_gender"}),
                          ("empi_id", person_race_code_mapper, {"description": "m_race"}),
                          ("empi_id", person_race_code_mapper, {"code": "s_race"}),
                          ("empi_id", person_ethnicity_code_mapper, {"description": "m_ethnicity"}),
