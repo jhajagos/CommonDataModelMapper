@@ -112,7 +112,12 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     input_person_csv = os.path.join(input_csv_directory, "source_person.csv")
     output_person_csv = os.path.join(output_csv_directory, "person_cdm.csv")
 
-    person_rules = create_person_rules(json_map_directory, k_location_mapper)
+    if os.path.exists(output_person_csv + ".json"):
+        premapped_patients_json = output_person_csv + ".json"
+    else:
+        premapped_patients_json = None
+
+    person_rules = create_person_rules(json_map_directory, k_location_mapper, person_id_json_file_name=premapped_patients_json)
 
     person_runner_obj = generate_mapper_obj(input_person_csv, SourcePersonObject(), output_person_csv, PersonObject(),
                                             person_rules,
@@ -182,9 +187,16 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     snomed_code_json = os.path.join(json_map_directory, "concept_code_SNOMED.json")
     snomed_code_mapper = CodeMapperClassSqliteJSONClass(snomed_code_json)
 
-    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper)
     input_encounter_csv = os.path.join(input_csv_directory, "source_encounter.csv")
     output_visit_occurrence_csv = os.path.join(output_csv_directory, "visit_occurrence_cdm.csv")
+
+    if os.path.exists(output_visit_occurrence_csv + ".json"):
+        visit_id_json = output_visit_occurrence_csv + ".json"
+    else:
+        visit_id_json = None
+
+    visit_rules = create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper,
+                                     visit_id_json)
 
     def visit_router_obj(input_dict):
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
@@ -206,8 +218,6 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                              "visit_occurrence_id")
 
     s_encounter_id_mapper = CoderMapperJSONClass(encounter_json_file_name, "s_encounter_id")
-
-    encounter_class_mapper = create_json_map_from_csv_file(output_visit_occurrence_csv, "visit_source_value", "visit_concept_id")
 
     ### Visit Detail
 
@@ -776,7 +786,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
 #### RULES ####
 
-def create_person_rules(json_map_directory, k_location_mapper):
+def create_person_rules(json_map_directory, k_location_mapper, person_id_json_file_name):
     """Generate rules for mapping source_patient.csv"""
 
     gender_json = os.path.join(json_map_directory, "concept_name_Gender.json")
@@ -843,9 +853,27 @@ def create_person_rules(json_map_directory, k_location_mapper):
                               FilterHasKeyValueMapper(["m_ethnicity"]), ReplacementMapper(ethnicity_map_dict),
                               ethnicity_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
-    # TODO: Replace :row_id with starting seed that increments
+    if person_id_json_file_name is None:
+        patient_mapper = row_map_offset("person_id", 0)
+    else:
+        with open(person_id_json_file_name) as f:
+            person_id_dict = json.load(f)
+            maximum_patient_id = 1
+            for person_id in person_id_dict:
+                maximum_patient_id = max(maximum_patient_id, int(person_id_dict[person_id]["person_id"]))
+
+            def person_id_function(item_dict):
+                s_person_id = item_dict["s_person_id"]
+                if s_person_id in person_id_dict:
+                    return {"person_id": person_id_dict[s_person_id]["person_id"]}
+                else:
+                    return {"person_id": int(item_dict[":row_id"]) + maximum_patient_id + 1}
+
+            patient_mapper = PassThroughFunctionMapper(person_id_function)
+
+
     # Required person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id
-    patient_rules = [(":row_id", row_map_offset("person_id", 0), {"person_id": "person_id"}),
+    patient_rules = [((":row_id", "s_person_id"), patient_mapper, {"person_id": "person_id"}),
                      ("s_person_id", "person_source_value"),
                      ("s_birth_datetime", DateSplit(),
                       {"year": "year_of_birth", "month": "month_of_birth", "day": "day_of_birth"}),
@@ -1022,7 +1050,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
     return procedure_rules_encounter
 
 
-def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper):
+def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mapper, snomed_code_mapper, visit_occurrence_id_json_file_name):
     """Generate rules for mapping PH_F_Encounter to VisitOccurrence"""
 
     visit_concept_json = os.path.join(json_map_directory, "concept_name_Visit.json")
@@ -1044,10 +1072,28 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
     place_of_service_name_mapper = CoderMapperJSONClass(place_of_service_json_name)
     admit_discharge_source_mapper = CascadeMapper(place_of_service_name_mapper, snomed_code_mapper) # Checks POS then goes to a SNOMED code
 
+    if visit_occurrence_id_json_file_name is None:
+        visit_id_mapper = row_map_offset("visit_occurrence_id", 0)
+    else:
+        with open(visit_occurrence_id_json_file_name) as f:
+            visit_id_dict = json.load(f)
+            maximum_visit_occurrence_id = 1
+            for s_encounter_id in visit_id_dict:
+                maximum_visit_occurrence_id = max(maximum_visit_occurrence_id, int(visit_id_dict[s_encounter_id]["visit_occurrence_id"]))
+
+            def visit_id_function(item_dict):
+                s_encounter_id = item_dict["s_encounter_id"]
+                if s_encounter_id in visit_id_dict:
+                    return {"visit_occurrence_id": visit_id_dict[s_encounter_id]["visit_occurrence_id"]}
+                else:
+                    return {"visit_occurrence_id": int(item_dict[":row_id"]) + 1 + maximum_visit_occurrence_id}
+
+            visit_id_mapper = PassThroughFunctionMapper(visit_id_function)
+
     # Required: visit_occurrence_id, person_id, visit_concept_id, visit_start_date, visit_type_concept_id
     visit_rules = [("s_encounter_id", "visit_source_value"),
                    ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
-                   (":row_id", "visit_occurrence_id"),
+                   ((":row_id", "s_encounter_id"), visit_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                    ("m_visit_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0})),
                     {"CONCEPT_ID".lower(): "visit_concept_id"}),
                    (":row_id", visit_concept_type_mapper, {"CONCEPT_ID".lower(): "visit_type_concept_id"}),
