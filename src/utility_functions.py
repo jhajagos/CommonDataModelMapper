@@ -147,8 +147,25 @@ def load_csv_files_into_db(connection_string, data_dict, schema_ddl=None, indice
 def generate_db_dict(output_directory=None, load_pairs=None):
     if load_pairs is None:
         load_pairs = [
-                      ("drug_exposure", "drug_exposure_cdm.csv"),
-                      ("drug_exposure", "drug_exposure_proc_cdm.csv"),
+            ("condition_occurrence", "condition_occurrence_dx_cdm.csv"),
+            ("location", "location_cdm.csv"),
+            ("person", "person_cdm.csv"),
+            ("visit_occurrence", "visit_occurrence_cdm.csv"),
+            ("visit_detail", "visit_detail_cdm.csv"),
+            ("procedure_occurrence", "procedure_cdm.csv"),
+            ("procedure_occurrence", "procedure_dx_cdm.csv"),
+            ("measurement", "measurement_encounter_cdm.csv"),
+            ("measurement", "measurement_dx_cdm.csv"),
+            ("measurement", "measurement_proc_cdm.csv"),
+            ("drug_exposure", "drug_exposure_cdm.csv"),
+            ("drug_exposure", "drug_exposure_proc_cdm.csv"),
+            ("death", "death_cdm.csv"),
+            ("observation", "observation_dx_cdm.csv"),
+            ("observation", "observation_measurement_encounter_cdm.csv"),
+            ("observation", "observation_proc_cdm.csv"),
+            ("observation_period", "observation_period_cdm.csv"),
+            ("care_site", "care_site_cdm.csv"),
+            ("payer_plan_period", "payer_plan_period_cdm.csv")
         ]
 
     data_dict = {}
