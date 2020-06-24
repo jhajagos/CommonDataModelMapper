@@ -162,7 +162,7 @@ def generate_observation_period(encounter_csv_file_name, hf_period_observation_c
 def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory):
     """Create a patient CSV file from the encounter patient file"""
 
-    patient_fields = ["marital_status", "patient_id", "race", "gender", "patient_sk"]
+    patient_fields = ["marital_status", "patient_id", "race", "gender", "patient_sk", "death_datetime"]
     
     file_to_write = os.path.join(output_directory, "hf_patient.csv")
     file_to_read = patient_encounter_csv_file_name
@@ -173,7 +173,6 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
 
         result_dict = {}
         for row_dict in dict_reader:
-
             admit_dt_tm_txt = row_dict["admitted_dt_tm"]
             if not len(admit_dt_tm_txt):
                 admit_dt_tm_txt = row_dict["discharged_dt_tm"]
@@ -189,8 +188,17 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
             else:
                 year_of_birth = None
 
+            discharge_dt_tm_txt = row_dict["discharged_dt_tm"]
+            discharge_disposition_id = row_dict["discharge_disposition_id"]
+            if discharge_disposition_id in ["11", "19", "20", "21"]: # patient disposition is mortality
+                row_dict["death_datetime"] = discharge_dt_tm_txt
+                patient_died = True
+            else:
+                row_dict["death_datetime"] = ""
+                patient_died = False
+
             patient_id = row_dict["patient_id"]
-            
+
             patient_dict = {}
             for field in patient_fields:
                 patient_dict[field] = row_dict[field]
@@ -204,6 +212,16 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
                 if year_of_birth is not None and existing_year_of_birth is not None:
                     if year_of_birth < existing_year_of_birth:
                         result_dict[patient_id] = patient_dict
+
+                existing_patient_dict = result_dict[patient_id]
+                existing_death_datetime = existing_patient_dict["death_datetime"]
+                if len(existing_death_datetime):
+                    if patient_died:
+                        pass
+                    else:
+                        patient_dict["death_datetime"] = existing_death_datetime
+                        result_dict[patient_id] = patient_dict
+
 
         with open(file_to_write, "w", newline="") as fw:
             fields_to_write = patient_fields + ["year_of_birth"]
@@ -265,7 +283,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("race", "s_race"),
                         ("race", race_mapper, {"mapped_value": "m_race"}),
                         ("race", ethnicity_source_mapper, {"mapped_value": "s_ethnicity"}),
-                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"})
+                        ("race", ethnicity_mapper, {"mapped_value": "m_ethnicity"}),
+                        ("death_datetime", "s_death_datetime")
                         #,
                         #("year_of_birth", PassThroughFunctionMapper(no_year_of_birth), {"year_of_birth": "i_exclude"})
                         ]
