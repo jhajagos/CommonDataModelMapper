@@ -245,6 +245,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     patient_file_name = generate_patient_csv_file(encounter_patient_file_name, input_csv_directory)
 
+    with open(os.path.join(input_csv_directory, "source_location.csv"), "w") as fw:
+        fw.write("k_location,s_address_1,s_address_2,s_city,s_state,s_zip,s_county,s_location_name,i_exclude")
+
     file_name_dict["patient"] = patient_file_name
     print(file_name_dict)
 
@@ -381,6 +384,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                output_class_obj, in_out_map_obj)
 
     encounter_runner_obj.run()
+
+    with open(os.path.join(input_csv_directory, "source_encounter_detail.csv"), "w") as fw:
+        fw.write("s_encounter_detail_id,s_person_id,s_encounter_id,s_start_datetime,s_end_datetime,k_care_site,s_visit_detail_type,m_visit_detail_type,i_exclude")
 
     # Encounter plan or insurance coverage
 
