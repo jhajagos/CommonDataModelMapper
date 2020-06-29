@@ -15,6 +15,8 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
 
 from source_to_cdm_functions import generate_mapper_obj
 
+from utility_functions import generate_observation_period
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -85,54 +87,6 @@ class SynObservationPeriod(InputClass):
         return []
 
 
-def generate_observation_period(encounter_csv_file_name, syn_period_observation_csv_file_name,
-                                id_field_name, start_date_field_name, end_date_field_name):
-
-    with open(encounter_csv_file_name, newline="") as f:
-        dict_reader = csv.DictReader(f)
-        observation_period_dict = {}
-
-        for row_dict in dict_reader:
-
-            start_date_value = row_dict[start_date_field_name]
-            end_date_value = row_dict[end_date_field_name]
-
-            if len(end_date_value) == 0:
-                end_date_value = start_date_value
-
-            id_value = row_dict[id_field_name]
-
-            if id_value in observation_period_dict:
-                past_start_date_value, past_end_date_value = observation_period_dict[id_value]
-
-                if start_date_value < past_start_date_value:
-                    set_start_date_value = start_date_value
-                else:
-                    set_start_date_value = past_start_date_value
-
-                if end_date_value > past_end_date_value:
-                    set_end_date_value = end_date_value
-                else:
-                    set_end_date_value = past_end_date_value
-
-                observation_period_dict[id_value] = (set_start_date_value, set_end_date_value)
-
-            else:
-                observation_period_dict[id_value] = (start_date_value, end_date_value)
-
-    with open(syn_period_observation_csv_file_name, "w", newline="") as fw:
-        csv_writer = csv.writer(fw)
-
-        csv_writer.writerow([id_field_name, start_date_field_name, end_date_field_name])
-
-        for id_value in observation_period_dict:
-            start_date_value, end_date_value = observation_period_dict[id_value]
-            if start_date_value == "":
-                start_date_value = end_date_value
-            row_to_write = [id_value, start_date_value, end_date_value]
-            csv_writer.writerow(row_to_write)
-
-
 def strip_t_and_z(input_dict):
     result_dict = {}
     for key in input_dict:
@@ -148,6 +102,7 @@ def strip_t_and_z(input_dict):
         result_dict[key] = new_string
 
     return result_dict
+
 
 def main(input_csv_directory, output_csv_directory, file_name_dict):
 

@@ -7,7 +7,7 @@ Fields in the prepared source start either start with s_  for source or m_ mappe
 to a name part of the OHDSI vocabulary.
 """
 
-#TODO: Config needs to read timezone information right now defualt to US/Eastern
+#TODO: Config needs to read timezone information right now defualts to US/Eastern
 
 import os
 import sys
@@ -1478,7 +1478,7 @@ def death_router_obj(input_dict):
 
 if __name__ == "__main__":
 
-    arg_parse_obj = argparse.ArgumentParser()
+    arg_parse_obj = argparse.ArgumentParser(description="Transform prepared source to an OHDSI mapped CSV files")
     arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file", default="hi_config.json")
     arg_obj = arg_parse_obj.parse_args()
 
