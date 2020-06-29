@@ -194,8 +194,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                          ("RACE", "s_race"),
                          ("RACE", race_mapper, {"mapped_value": "m_race"}),
                          ("ETHNICITY", "s_ethnicity"),
-                         ("ETHNICITY", ethnicity_mapper, {"mapped_value": "m_ethnicity"})
-                        ]
+                         ("ETHNICITY", ethnicity_mapper, {"mapped_value": "m_ethnicity"})]
 
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
 
