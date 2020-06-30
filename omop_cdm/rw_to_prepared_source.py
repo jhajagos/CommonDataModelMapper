@@ -90,6 +90,27 @@ class PopulationCareSite(InputClass):
         return []
 
 
+class DuplicateExcludeMapper(MapperClass):
+    """Indicates that a row is a duplicate"""
+    def __init__(self, id_field):
+        self.id_field = id_field
+        self.id_dict = {"i_exclude": ""}
+
+    def map(self, input_dict):
+        if self.id_field in input_dict:
+            id_value = input_dict[self.id_field]
+
+            if id_value in self.id_dict:
+                return {"i_exclude": 1}
+
+            else:
+                self.id_dict[id_value] = 1
+                return {"i_exclude": ""}
+
+        else:
+            return {}
+
+
 def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     output_class_obj = OutputClassDirectory()
@@ -102,16 +123,19 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         cfw.writerow(sec_fields)
 
     input_patient_file_name = os.path.join(input_csv_directory, file_name_dict["demographic"])
-    # TODO: Add flag for duplicate patients
+
+    person_id_duplicate_mapper = DuplicateExcludeMapper("personid")
     population_patient_rules = [("personid", "s_person_id"),
-                         ("gender_code_text", "s_gender"),
-                         ("gender_code",  "m_gender"),
-                         ("birthdate", "s_birth_datetime"),
-                         ("dateofdeath", "s_death_datetime"),
-                         ("race_code_text", "s_race"),
-                         ("race_code",  "m_race"),
-                         ("ethnicity_code_text", "s_ethnicity"),
-                         ("ethnicity_code", "m_ethnicity")]
+                                ("gender_code_text", "s_gender"),
+                                ("gender_code",  "m_gender"),
+                                ("birthdate", "s_birth_datetime"),
+                                ("dateofdeath", "s_death_datetime"),
+                                ("race_code_text", "s_race"),
+                                ("race_code",  "m_race"),
+                                ("ethnicity_code_text", "s_ethnicity"),
+                                ("ethnicity_code", "m_ethnicity"),
+                                ("personid", person_id_duplicate_mapper, {"i_exclude": "i_exclude"})
+                                ]
 
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
 
@@ -123,7 +147,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     # Care site
     care_site_csv = os.path.join(input_csv_directory, "care_site.csv")
-
     md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
 
     key_care_site_mapper = build_name_lookup_csv(os.path.join(input_csv_directory, file_name_dict["encounter"]), care_site_csv,
@@ -132,7 +155,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     care_site_name_mapper = FunctionMapper(
         build_key_func_dict(["tenant", "hospitalservice_code_text"], separator=" -- "))
-
 
     care_site_rules = [("key_name", "k_care_site"),
                        (("tenant", "hospitalservice_code_text"),
@@ -151,7 +173,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     # Encounters
     # TODO: Add flag for duplicate encounters
     encounter_file_name = os.path.join(input_csv_directory, file_name_dict["encounter"])
-
+    encounter_id_duplicate_mapper = DuplicateExcludeMapper("encounterid")
     encounter_rules = [
         ("encounterid", "s_encounter_id"),
         ("personid", "s_person_id"),
@@ -163,7 +185,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("dischargedisposition_code", "m_discharge_to"),
         ("admissionsource_code_text", "s_admitting_source"),
         ("admissionsource_code", "m_admitting_source"),
-        (("tenant", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"})
+        (("tenant", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
+        ("encounterid", encounter_id_duplicate_mapper, {"i_exclude": "i_exclude"})
     ]
 
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
