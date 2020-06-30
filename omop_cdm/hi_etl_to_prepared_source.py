@@ -337,7 +337,6 @@ def main(input_csv_directory, output_csv_directory):
     encounter_benefit_runner_obj.run()
 
     ph_f_result_csv = os.path.join(input_csv_directory, "PH_F_Result.csv")
-
     source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
 
     result_rules = [("empi_id", "s_person_id"),

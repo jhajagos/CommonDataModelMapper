@@ -262,6 +262,88 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     procedure_mapper_obj.run()
 
+    def active_medications(input_dict):
+        if "status_code_text" in input_dict:
+            if input_dict["status_code_text"] not in ('Complete', 'Discontinued', 'Active', 'Suspended'):
+                return {"i_exclude": 1}
+            else:
+                return {}
+        else:
+            return {}
+
+    ["medicationid", "encounterid", "personid", "intendeddispenser", "startdate", "stopdate", "doseunit_code",
+     "doseunit_code_oid", "doseunit_code_text", "category_id", "category_code_oid", "category_code_text",
+     "frequency_id", "frequency_code_oid", "frequency_code_text", "status_code", "status_code_oid",
+     "status_code_text", "route_code", "route_code_oid", "route_code_text", "drug_code", "drug_code_oid",
+     "drug_code_text", "dosequantity", "source", "tenant"]
+
+    medication_rules = [("personid", "s_person_id"),
+                        ("encounterid", "s_encounter_id"),
+                        ("drug_code", "s_drug_code"),
+                        ("drug_code_oid", "m_drug_code_oid"),
+                        ("drug_code_text", "s_drug_text"),
+                        ("startdate", "s_start_medication_datetime"),
+                        ("stopdate", "s_end_medication_datetime"),
+                        ("route_code_text", "s_route"),
+                        ("route_code", "m_route"),
+                        ("dosequantity", "s_quantity"),
+                        ("doseunit_code_text", "s_dose_unit"),
+                        ("doseunit_code", "m_dose_unit"),
+                        ("intendeddispenser", "s_drug_type"),
+                        ("intendeddispenser", "m_drug_type"),
+                        ("status_code", "s_status"),
+                        ("status_code_text", PassThroughFunctionMapper(active_medications),
+                         {"i_exclude": "i_exclude"})
+                        ]
+
+    medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
+    source_medication_csv = os.path.join(output_csv_directory, "source_medication.csv")
+
+    medication_mapper_obj = generate_mapper_obj(medication_csv, PopulationMedication(), source_medication_csv,
+                                                SourceMedicationObject(), medication_rules,
+                                                output_class_obj, in_out_map_obj)
+
+    medication_mapper_obj.run()
+
+    result_csv = os.path.join(input_csv_directory, file_name_dict["result"])
+    source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
+
+    ["resultid", "encounterid", "personid", "result_code", "result_code_oid", "result_code_text",
+     "result_type", "servicedate", "value_text", "value_numeric", "value_numeric_modifier", "unit_code",
+     "unit_code_oid", "unit_code_text", "value_codified_code", "value_codified_code_oid",
+     "value_codified_code_text", "date", "interpretation_code", "interpretation_code_oid",
+     "interpretation_code_text", "specimen_type_code", "specimen_type_code_oid", "specimen_type_code_text",
+     "bodysite_code", "bodysite_code_oid", "bodysite_code_text", "specimen_collection_date",
+     "specimen_received_date", "measurementmethod_code", "measurementmethod_code_oid",
+     "measurementmethod_code_text", "recordertype", "issueddate", "tenant", "year"]
+
+    result_rules = [("personid", "s_person_id"),
+                    ("encounterid", "s_encounter_id"),
+                    ("servicedate", "s_obtained_datetime"),
+                    ("result_code_text", "s_name"),
+                    ("result_code", "s_code"),
+                    ("result_code_oid", "m_type_code_oid"),
+                    ("value_text", "s_result_text"),
+                    (("value_codified_code_text", "interpretation_code_text"),
+                     FilterHasKeyValueMapper(["value_codified_code_text", "interpretation_code_text"]),
+                     {"value_codified_code_text": "m_result_text", "interpretation_code_text": "m_result_text"}),
+                    ("value_numeric", "s_result_numeric"),
+                    ("date", "s_result_datetime"),
+                    ("value_codified_code", "s_result_code"),
+                    ("value_codified_code_oid", "m_result_code_oid"),
+                    ("unit_code", "s_result_unit"),
+                    ("unit_code", "s_result_unit_code"),
+                    ("unit_code_oid", "m_result_unit_code_oid")
+                    #("norm_unit_of_measure_code", "s_result_unit_code")
+                    #("norm_ref_range_low", "s_result_numeric_lower"),
+                    #("norm_ref_range_high", "s_result_numeric_upper")
+                    ]
+
+    result_mapper_obj = generate_mapper_obj(result_csv, PopulationResult(), source_result_csv, SourceResultObject(),
+                                            result_rules, output_class_obj, in_out_map_obj)
+
+    result_mapper_obj.run()
+
 
 if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser(description="Mapping Realworld CSV files to Prepared source format for OHDSI mapping")
@@ -280,7 +362,8 @@ if __name__ == "__main__":
         "condition": "population_condition.csv",
         "measurement": "population_measurement.csv",
         "medication": "population_medication.csv",
-        "procedure": "population_procedure.csv"
+        "procedure": "population_procedure.csv",
+        "result": "population_results_2020.csv"
     }
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
