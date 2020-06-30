@@ -29,6 +29,8 @@ try:
     from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, HFMedication
     from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
+    from utility_functions import generate_observation_period
+
 except(ImportError):
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
 
@@ -46,6 +48,8 @@ except(ImportError):
     from hf_classes import HFPatient, HFCareSite, HFEncounter, HFObservationPeriod, HFDiagnosis, HFProcedure, HFResult, \
         HFMedication
     from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
+
+    from utility_functions import generate_observation_period
 
 
 def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out_result_csv, overwrite=True, sample_size=None):
@@ -109,54 +113,6 @@ def merge_lab_and_clinical_events_cvs(clinical_event_csv, lab_procedure_csv, out
 
                         i += 1
                 t += 1
-
-
-def generate_observation_period(encounter_csv_file_name, hf_period_observation_csv_file_name,
-                                id_field_name, start_date_field_name, end_date_field_name):
-
-    with open(encounter_csv_file_name, newline="") as f:
-        dict_reader = csv.DictReader(f)
-        observation_period_dict = {}
-
-        for row_dict in dict_reader:
-
-            start_date_value = row_dict[start_date_field_name]
-            end_date_value = row_dict[end_date_field_name]
-
-            if len(end_date_value) == 0:
-                end_date_value = start_date_value
-
-            id_value = row_dict[id_field_name]
-
-            if id_value in observation_period_dict:
-                past_start_date_value, past_end_date_value = observation_period_dict[id_value]
-
-                if start_date_value < past_start_date_value:
-                    set_start_date_value = start_date_value
-                else:
-                    set_start_date_value = past_start_date_value
-
-                if end_date_value > past_end_date_value:
-                    set_end_date_value = end_date_value
-                else:
-                    set_end_date_value = past_end_date_value
-
-                observation_period_dict[id_value] = (set_start_date_value, set_end_date_value)
-
-            else:
-                observation_period_dict[id_value] = (start_date_value, end_date_value)
-
-    with open(hf_period_observation_csv_file_name, "w", newline="") as fw:
-        csv_writer = csv.writer(fw)
-
-        csv_writer.writerow([id_field_name, start_date_field_name, end_date_field_name])
-
-        for id_value in observation_period_dict:
-            start_date_value, end_date_value = observation_period_dict[id_value]
-            if start_date_value == "":
-                start_date_value = end_date_value
-            row_to_write = [id_value, start_date_value, end_date_value]
-            csv_writer.writerow(row_to_write)
 
 
 def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory):
@@ -342,7 +298,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     care_site_runner_obj.run()
 
     # Encounter
-
     ["s_encounter_id", "s_person_id", "s_visit_start_datetime", "s_visit_end_datetime", "s_visit_type",
      "m_visit_type", "k_care_site", "s_discharge_to", "m_discharge_to",
      "s_admitting_source", "m_admitting_source", "i_exclude"]
@@ -481,10 +436,10 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                        ("procedure_dt_tm", "s_start_procedure_datetime"),
                        ("procedure_code", "s_procedure_code"),
                        ("procedure_type", "s_procedure_code_type"),
-                       ("procedure_type", procedure_code_oid_mapper, {"mapped_value":"m_procedure_code_oid"}),
+                       ("procedure_type", procedure_code_oid_mapper, {"mapped_value": "m_procedure_code_oid"}),
                        #("", "s_rank"),
                        #("", "m_rank"),
-                       ("procedure_priority","s_sequence_id")
+                       ("procedure_priority", "s_sequence_id")
                        ]
 
     procedure_mapper_obj = generate_mapper_obj(hf_procedure_csv, HFProcedure(), source_procedure_csv,

@@ -3,6 +3,8 @@ import json
 import os
 import argparse
 import csv
+import hashlib
+
 from mapping_classes import InputClass
 
 from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
@@ -12,11 +14,12 @@ from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirector
 
 from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, SourceEncounterObject, \
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
-        SourceProcedureObject, SourceMedicationObject
+        SourceProcedureObject, SourceMedicationObject, SourceLocationObject, SourceEncounterDetailObject
 
 from source_to_cdm_functions import generate_mapper_obj
 from utility_functions import generate_observation_period
 
+from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
 
 logging.basicConfig(level=logging.INFO)
 
@@ -82,14 +85,25 @@ class PopulationObservationPeriod(InputClass):
         return []
 
 
+class PopulationCareSite(InputClass):
+    def fields(self):
+        return []
+
+
 def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     output_class_obj = OutputClassDirectory()
     in_out_map_obj = InputOutputMapperDirectory()
 
-    input_patient_file_name = os.path.join(input_csv_directory, file_name_dict["demographic"])
+    # TOOD: Add single digit zip code
+    sec_fields = SourceLocationObject().fields()
+    with open(os.path.join(output_csv_directory, "source_location.csv"), newline="", mode="w") as fw:
+        cfw = csv.writer(fw)
+        cfw.writerow(sec_fields)
 
-    syn_patient_rules = [("personid", "s_person_id"),
+    input_patient_file_name = os.path.join(input_csv_directory, file_name_dict["demographic"])
+    # TODO: Add flag for duplicate patients
+    population_patient_rules = [("personid", "s_person_id"),
                          ("gender_code_text", "s_gender"),
                          ("gender_code",  "m_gender"),
                          ("birthdate", "s_birth_datetime"),
@@ -102,35 +116,41 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
 
     source_person_runner_obj = generate_mapper_obj(input_patient_file_name, PopulationDemographics(), output_person_csv,
-                                                   SourcePersonObject(), syn_patient_rules,
+                                                   SourcePersonObject(), population_patient_rules,
                                                    output_class_obj, in_out_map_obj)
 
     source_person_runner_obj.run()  # Run the mapper
 
-    ### Encounters
+    # Care site
+    care_site_csv = os.path.join(input_csv_directory, "care_site.csv")
 
+    md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
+
+    key_care_site_mapper = build_name_lookup_csv(os.path.join(input_csv_directory, file_name_dict["encounter"]), care_site_csv,
+                                                 ["tenant", "hospitalservice_code_text"],
+                                                 ["tenant", "hospitalservice_code_text"], hashing_func=md5_func)
+
+    care_site_name_mapper = FunctionMapper(
+        build_key_func_dict(["tenant", "hospitalservice_code_text"], separator=" -- "))
+
+
+    care_site_rules = [("key_name", "k_care_site"),
+                       (("tenant", "hospitalservice_code_text"),
+                        care_site_name_mapper,
+                        {"mapped_value": "s_care_site_name"})]
+
+    source_care_site_csv = os.path.join(output_csv_directory, "source_care_site.csv")
+
+    care_site_runner_obj = generate_mapper_obj(care_site_csv, PopulationCareSite(), source_care_site_csv,
+                                               SourceCareSiteObject(), care_site_rules,
+                                               output_class_obj, in_out_map_obj)
+
+    care_site_runner_obj.run()
+
+
+    # Encounters
+    # TODO: Add flag for duplicate encounters
     encounter_file_name = os.path.join(input_csv_directory, file_name_dict["encounter"])
-
-    # encounter_type_map = {
-    #     "ambulatory": "Outpatient",
-    #     "emergency": "Emergency",
-    #     "inpatient": "Inpatient",
-    #     "outpatient": "Outpatient",
-    #     "urgentcare": "Outpatient",
-    #     "wellness": "Outpatient"
-    # }
-
-    # encounter_type_mapper = CodeMapperDictClass(encounter_type_map)
-
-    # return ["encounterid", "personid", "hospitalizationstartdate", "readmission", "dischargedate", "servicedate",
-    #         "financialclass_code", "financialclass_code_oid", "financialclass_code_text", "hospitalservice_code",
-    #         "hospitalservice_code_oid", "hospitalservice_code_text", "classfication_code", "classification_code_oid",
-    #         "classification_code_text", "type_code", "type_code_oid", "type_code_text", "dischargedisposition_code",
-    #         "dischargedisposition_code_oid", "dischargedisposition_code_text", "dischargetolocation_code",
-    #         "dischargetolocation_code_oid", "dischargetolocation_code_text", "admissionsource_code",
-    #         "admissionsource_code_oid", "admissionsource_code_text", "admissiontype_code", "admissiontype_code_oid",
-    #         "admissiontype_code_text", "status_code", "status_code_oid", "status_code_text", "estimatedarrivaldate",
-    #         "estimateddeparturedate", "actualarrivaldate", "source", "active", "tenant"]
 
     encounter_rules = [
         ("encounterid", "s_encounter_id"),
@@ -142,7 +162,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("dischargedisposition_code_text", "s_discharge_to"),
         ("dischargedisposition_code", "m_discharge_to"),
         ("admissionsource_code_text", "s_admitting_source"),
-        ("admissionsource_code", "m_admitting_source")
+        ("admissionsource_code", "m_admitting_source"),
+        (("tenant", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"})
     ]
 
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
@@ -172,18 +193,74 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                                  output_class_obj, in_out_map_obj)
     observation_runner_obj.run()
 
-    ### Holder for source_care_site
-    sc_fields = SourceCareSiteObject().fields()
-    with open(os.path.join(output_csv_directory, "source_care_site.csv"), newline="", mode="w") as fw:
-        cfw = csv.writer(fw)
-        cfw.writerow(sc_fields)
-
-    ### Holder for source encounter coverage
-    sec_fields = SourceEncounterCoverageObject().fields()
-    with open(os.path.join(output_csv_directory, "source_encounter_coverage.csv"), newline="", mode="w") as fw:
+    # Holder for source encounter coverage
+    sec_fields = SourceEncounterDetailObject().fields()
+    with open(os.path.join(output_csv_directory, "source_encounter_detail.csv"), newline="", mode="w") as fw:
         cfw = csv.writer(fw)
         cfw.writerow(sec_fields)
 
+    # Encounter plan or insurance coverage
+
+    source_encounter_coverage_csv = os.path.join(output_csv_directory, "source_encounter_coverage.csv")
+
+    encounter_coverage_rules = [("personid", "s_person_id"),
+                                ("encounterid", "s_encounter_id"),
+                                ("servicedate", "s_start_payer_date"),
+                                ("dischargedate", "s_end_payer_date"),
+                                ("financialclass_code_text", "s_payer_name"),
+                                ("financialclass_code_text", "m_payer_name"),
+                                ("financialclass_code_text", "s_plan_name"),
+                                ("financialclass_code_text", "m_plan_name")]
+
+    encounter_benefit_runner_obj = generate_mapper_obj(encounter_file_name,
+                                                       PopulationEncounter(),
+                                                       source_encounter_coverage_csv, SourceEncounterCoverageObject(),
+                                                       encounter_coverage_rules, output_class_obj, in_out_map_obj)
+
+    encounter_benefit_runner_obj.run()
+
+    def m_rank_func(input_dict):
+        if input_dict["billingrank"] == "PRIMARY":
+            return {"m_rank": "Primary"}
+        elif input_dict["billingrank"] == "SECONDARY":
+            return {"m_rank": "Secondary"}
+        else:
+            return {}
+
+    condition_rules = [("personid", "s_person_id"),
+                       ("encounterid", "s_encounter_id"),
+                       ("effectiveDate", "s_start_condition_datetime"),
+                       ("condition_code", "s_condition_code"),
+                       ("condition_code_oid", "m_condition_code_oid"),
+                       ("billingrank", PassThroughFunctionMapper(m_rank_func), {"m_rank": "m_rank"}),
+                       ("source", "s_condition_type"),
+                       ("presentonadmission_code", "s_present_on_admission_indicator")]
+
+    condition_csv = os.path.join(input_csv_directory, file_name_dict["condition"])
+    source_condition_csv = os.path.join(output_csv_directory, "source_condition.csv")
+    condition_mapper_obj = generate_mapper_obj(condition_csv, PopulationCondition(), source_condition_csv,
+                                               SourceConditionObject(),
+                                               condition_rules, output_class_obj, in_out_map_obj)
+
+    condition_mapper_obj.run()
+
+    procedure_csv = os.path.join(input_csv_directory, file_name_dict["procedure"])
+    source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
+
+    procedure_rules = [("personid", "s_person_id"),
+                       ("encounterid", "s_encounter_id"),
+                       ("servicestartdate", "s_start_procedure_datetime"),
+                       ("serviceenddate", "s_end_procedure_datetime"),
+                       ("procedure_code", "s_procedure_code"),
+                       ("procedure_code_oid", "s_procedure_code_type"),
+                       ("procedure_code_oid", "m_procedure_code_oid")
+                       ]
+
+    procedure_mapper_obj = generate_mapper_obj(procedure_csv, PopulationProcedure(), source_procedure_csv,
+                                               SourceProcedureObject(),
+                                               procedure_rules, output_class_obj, in_out_map_obj)
+
+    procedure_mapper_obj.run()
 
 
 if __name__ == "__main__":
@@ -202,8 +279,8 @@ if __name__ == "__main__":
         "encounter": "population_encounter.csv",
         "condition": "population_condition.csv",
         "measurement": "population_measurement.csv",
-        "medications": "population_medications.csv",
-        "procedures": "population_procedures.csv"
+        "medication": "population_medication.csv",
+        "procedure": "population_procedure.csv"
     }
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
