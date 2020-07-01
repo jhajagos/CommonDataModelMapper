@@ -92,7 +92,7 @@ def main(target_directory, connection_string, target_schema):
 
             print(f"Generating: {table_file_name}")
 
-            with open(table_file_name, "w", newline="", encoding="utf8", error="replace") as fw:
+            with open(table_file_name, "w", newline="", encoding="utf8", errors="replace") as fw:
                 csv_writer = csv.writer(fw)
                 csv_writer.writerow(header)
 
