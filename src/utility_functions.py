@@ -198,7 +198,7 @@ def generate_vocabulary_load(vocabulary_directory,  vocabularies=["CONCEPT",
 def generate_observation_period(encounter_csv_file_name, source_period_observation_csv_file_name,
                                 id_field_name, start_date_field_name, end_date_field_name):
 
-    with open(encounter_csv_file_name, newline="") as f:
+    with open(encounter_csv_file_name, newline="", encoding="utf8", errors="replace") as f:
         dict_reader = csv.DictReader(f)
         observation_period_dict = {}
 
