@@ -1462,7 +1462,10 @@ def person_router_obj(input_dict):
     if input_dict["i_exclude"] == "1":
         return NoOutputClass()
     else:
-        return PersonObject()
+        if len(input_dict["s_birth_datetime"]) > 0:
+            return PersonObject()
+        else:
+            return NoOutputClass()
 
 
 def death_router_obj(input_dict):
