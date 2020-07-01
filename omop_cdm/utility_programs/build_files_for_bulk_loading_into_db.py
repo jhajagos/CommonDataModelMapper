@@ -92,7 +92,7 @@ def main(target_directory, connection_string, target_schema):
 
             print(f"Generating: {table_file_name}")
 
-            with open(table_file_name, "w") as fw:
+            with open(table_file_name, "w", newline="", encoding="utf8", error="replace") as fw:
                 csv_writer = csv.writer(fw)
                 csv_writer.writerow(header)
 
@@ -101,7 +101,7 @@ def main(target_directory, connection_string, target_schema):
                     print(f"\tProcessing: {full_csv_file_name}")
 
                     i = 0
-                    with open(full_csv_file_name, "r") as f:
+                    with open(full_csv_file_name, "r", encoding="utf8", errors="replace") as f:
                         dict_reader = csv.DictReader(f)
                         for row_dict in dict_reader:
                             new_row = [''] * len(header)
