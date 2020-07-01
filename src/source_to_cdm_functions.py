@@ -115,7 +115,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
                 map_value = row_dict[lookup_value_field_name]
                 map_dict[map_key] = {lookup_value_field_name: map_value}
     else:
-        with open(csv_file_name, "r", newline="") as fc:
+        with open(csv_file_name, "r", newline="", encoding="utf8", errors="replace") as fc:
             dict_reader = csv.DictReader(fc)
             map_dict = {}
 
@@ -254,7 +254,7 @@ class row_map_offset(MapperClass):
 def get_largest_id_from_csv_file(csv_file_name, primary_key_field_name):
 
     max_value = 0
-    with open(csv_file_name, "rb") as f:
+    with open(csv_file_name, "r", newline="", encoding="utf8", errors="replace") as f:
         cdict = csv.DictReader(f)
         for row_dict in cdict:
             max_value = max(max_value, int(row_dict[primary_key_field_name]))
