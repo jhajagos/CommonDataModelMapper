@@ -4,6 +4,12 @@ import os
 import argparse
 import csv
 import hashlib
+import sys
+
+try:
+    from mapping_classes import InputClass
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.split(__file__)[0], os.path.pardir, "src")))
 
 from mapping_classes import InputClass
 
