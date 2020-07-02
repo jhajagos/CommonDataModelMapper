@@ -29,7 +29,7 @@ class DateSplit(MapperClass):
 
     def map(self, date_dict):
         key = list(date_dict.keys())[0]
-        date_string = date_dict[key]
+        date_string = date_dict[key][0:10]
 
         try:
             year, month, day = date_string.split("-")
