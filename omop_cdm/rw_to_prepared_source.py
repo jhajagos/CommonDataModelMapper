@@ -136,10 +136,10 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                 ("gender_code",  "m_gender"),
                                 ("birthdate", "s_birth_datetime"),
                                 ("dateofdeath", "s_death_datetime"),
-                                ("race_code_text", "s_race"),
-                                ("race_code",  "m_race"),
-                                ("ethnicity_code_text", "s_ethnicity"),
-                                ("ethnicity_code", "m_ethnicity"),
+                                ("race_code", "s_race"),
+                                ("race_code_text",  "m_race"),
+                                ("ethnicity_code", "s_ethnicity"),
+                                ("ethnicity_code_text", "m_ethnicity"),
                                 ("personid", person_id_duplicate_mapper, {"i_exclude": "i_exclude"})
                                 ]
 

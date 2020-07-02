@@ -806,6 +806,9 @@ def create_person_rules(json_map_directory, k_location_mapper, person_id_json_fi
     ethnicity_json = os.path.join(json_map_directory, "concept_name_Ethnicity.json")
     ethnicity_json_mapper = CoderMapperJSONClass(ethnicity_json)
 
+    ethnicity_code_json = os.path.join(json_map_directory, "concept_code_Ethnicity.json")
+    ethnicty_code_mapper = CoderMapperJSONClass(ethnicity_code_json, "s_json")
+
     race_map_dict = {"American Indian or Alaska native": "American Indian or Alaska Native",
                      "Asian or Pacific islander": "Asian",
                      "Black, not of hispanic origin": "Black",
@@ -849,7 +852,9 @@ def create_person_rules(json_map_directory, k_location_mapper, person_id_json_fi
                 race_json_mapper),
         ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
-    ethnicity_mapper = CascadeMapper(ChainMapper(
+    ethnicity_mapper = CascadeMapper(
+                              ChainMapper(FilterHasKeyValueMapper(["s_ethnicity"]), ethnicty_code_mapper),
+                              ChainMapper(
                               FilterHasKeyValueMapper(["m_ethnicity"]), ReplacementMapper(ethnicity_map_dict),
                               ethnicity_json_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
