@@ -15,3 +15,5 @@ alter table measurement alter column  measurement_source_value type varchar(1023
 alter table observation alter column value_as_string type varchar(1023);
 
 alter table visit_detail alter column visit_detail_source_value type varchar(1023);
+
+
