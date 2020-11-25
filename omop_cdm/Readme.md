@@ -181,6 +181,21 @@ This file holds information about how the encounter is covered by a payer.
 * s_plan_name -- the plan name
 * m_plan_name -- the mapped plan name
 
+### source_encounter_detail.csv
+
+This file holds care site details during an encounter where a patient was cared
+for.
+
+* s_encounter_detail_id -- Identifier for encounter details
+* s_person_id -- Source identifier for patient or person
+* s_encounter_id -- Source identifier for an encounter
+* s_start_datetime -- start datetime of the care site 
+* s_end_datetime -- end datetime of the care site
+* k_care_site -- key for the care site
+* s_visit_detail_type -- visit detail type
+* m_visit_detail_type
+* i_exclude
+
 ### source_condition.csv
 
 This file holds information about the recorded conditions for a person and/or encounter.

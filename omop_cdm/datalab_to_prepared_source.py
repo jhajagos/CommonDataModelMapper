@@ -177,7 +177,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
 
     # Encounters
-    # TODO: Add flag for duplicate encounters
     encounter_file_name = os.path.join(input_csv_directory, file_name_dict["encounter"])
     encounter_id_duplicate_mapper = DuplicateExcludeMapper("encounterid")
     encounter_rules = [
@@ -194,7 +193,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         (("tenant", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
         ("encounterid", encounter_id_duplicate_mapper, {"i_exclude": "i_exclude"})
     ]
-
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
 
     # Generate care site combination of tenant and hospitalservice_code_text
@@ -322,7 +320,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("intendeddispenser", "m_drug_type"),
                         ("status_code", "s_status"),
                         ("status_code_text", PassThroughFunctionMapper(active_medications),
-                         {"i_exclude": "i_exclude"})
+                        {"i_exclude": "i_exclude"})
                         ]
 
     medication_csv = os.path.join(input_csv_directory, file_name_dict["medication"])
@@ -362,10 +360,10 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                     ("value_codified_code_oid", "m_result_code_oid"),
                     ("unit_code", "s_result_unit"),
                     ("unit_code", "s_result_unit_code"),
-                    ("unit_code_oid", "m_result_unit_code_oid")
+                    ("unit_code_oid", "m_result_unit_code_oid"),
                     #("norm_unit_of_measure_code", "s_result_unit_code")
-                    #("norm_ref_range_low", "s_result_numeric_lower"),
-                    #("norm_ref_range_high", "s_result_numeric_upper")
+                    ("lower_limit", "s_result_numeric_lower"),
+                    ("upper_limit", "s_result_numeric_upper")
                     ]
 
     result_mapper_obj = generate_mapper_obj(result_csv, PopulationResult(), source_result_csv, SourceResultObject(),
