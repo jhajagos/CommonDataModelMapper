@@ -32,14 +32,14 @@ logging.basicConfig(level=logging.INFO)
 
 class PopulationDemographics(InputClass):
     def fields(self):
-        return ["empipersonid", "gender_code", "gender_code_oid", "gender_code_text", "birthsex_code", "birthsex_code_oid",
+        return ["empiPersonId", "gender_code", "gender_code_oid", "gender_code_text", "birthsex_code", "birthsex_code_oid",
                 "birthsex_code_text", "birthdate", "dateofdeath", "zip_code", "race_code", "race_code_oid", "race_code_text",
-                "ethnicity_code", "ethnicity_code_oid", "ethnicity_code_text", "active", "tenant"]
+                "ethnicity_code", "ethnicity_code_oid", "ethnicity_code_text", "active"]
 
 
 class PopulationEncounter(InputClass):
     def fields(self):
-        return ["encounterid", "empipersonid", "hospitalizationstartdate", "readmission", "dischargedate", "servicedate",
+        return ["encounterid", "empiPersonId", "hospitalizationstartdate", "readmission", "dischargedate", "servicedate",
                 "financialclass_code", "financialclass_code_oid", "financialclass_code_text", "hospitalservice_code",
                 "hospitalservice_code_oid", "hospitalservice_code_text", "classfication_code", "classification_code_oid",
                 "classification_code_text", "type_code", "type_code_oid", "type_code_text", "dischargedisposition_code",
@@ -47,43 +47,43 @@ class PopulationEncounter(InputClass):
                 "dischargetolocation_code_oid", "dischargetolocation_code_text", "admissionsource_code",
                 "admissionsource_code_oid", "admissionsource_code_text", "admissiontype_code", "admissiontype_code_oid",
                 "admissiontype_code_text", "status_code", "status_code_oid", "status_code_text", "estimatedarrivaldate",
-                "estimateddeparturedate", "actualarrivaldate", "source", "active", "tenant"]
+                "estimateddeparturedate", "actualarrivaldate", "source", "active"]
 
 
 class PopulationCondition(InputClass):
     def fields(self):
-        return ["conditionid", "empipersonid", "encounterid", "condition_code", "condition_code_oid", "condition_code_text",
+        return ["conditionid", "empiPersonId", "encounterid", "condition_code", "condition_code_oid", "condition_code_text",
                 "effectiveDate", "billingrank", "presentonadmission_code", "presentonadmission_code_oid",
                 "presentonadmission_text", "type_primary_code", "type_primary_code_oid", "type_primary_text",
-                "source", "tenant"]
+                "source"]
 
 
 class PopulationProcedure(InputClass):
     def fields(self):
-        return ["procedureid", "empipersonid", "encounterid", "procedure_code", "procedure_code_oid",
+        return ["procedureid", "empiPersonId", "encounterid", "procedure_code", "procedure_code_oid",
                 "procedure_code_display", "modifier_code", "modifier_oid", "modifier_text", "servicestartdate",
-                "serviceenddate", "status_code", "status_oid", "active", "tenant"]
+                "serviceenddate", "status_code", "status_oid", "active"]
 
 
 class PopulationMedication(InputClass):
     def fields(self):
-        return ["medicationid", "encounterid", "empipersonid", "intendeddispenser", "startdate", "stopdate", "doseunit_code",
+        return ["medicationid", "encounterid", "empiPersonId", "intendeddispenser", "startdate", "stopdate", "doseunit_code",
                 "doseunit_code_oid", "doseunit_code_text", "category_id", "category_code_oid", "category_code_text",
                 "frequency_id", "frequency_code_oid", "frequency_code_text", "status_code", "status_code_oid",
                 "status_code_text", "route_code", "route_code_oid", "route_code_text", "drug_code", "drug_code_oid",
-                "drug_code_text", "dosequantity", "source", "tenant"]
+                "drug_code_text", "dosequantity", "source"]
 
 
 class PopulationResult(InputClass):
     def fields(self):
-        return ["resultid", "encounterid", "empipersonid", "result_code", "result_code_oid", "result_code_text",
+        return ["resultid", "encounterid", "empiPersonId", "result_code", "result_code_oid", "result_code_text",
                 "result_type", "servicedate", "value_text", "value_numeric", "value_numeric_modifier", "unit_code",
                 "unit_code_oid", "unit_code_text", "value_codified_code", "value_codified_code_oid",
                 "value_codified_code_text", "date", "interpretation_code", "interpretation_code_oid",
                 "interpretation_code_text", "specimen_type_code", "specimen_type_code_oid", "specimen_type_code_text",
                 "bodysite_code", "bodysite_code_oid", "bodysite_code_text", "specimen_collection_date",
                 "specimen_received_date", "measurementmethod_code", "measurementmethod_code_oid",
-                "measurementmethod_code_text", "recordertype", "issueddate", "tenant", "year"]
+                "measurementmethod_code_text", "recordertype", "issueddate", "year"]
 
 
 class PopulationObservationPeriod(InputClass):
@@ -130,8 +130,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     input_patient_file_name = os.path.join(input_csv_directory, file_name_dict["demographic"])
 
-    person_id_duplicate_mapper = DuplicateExcludeMapper("empipersonid")
-    population_patient_rules = [("empipersonid", "s_person_id"),
+    person_id_duplicate_mapper = DuplicateExcludeMapper("empiPersonId")
+    population_patient_rules = [("empiPersonId", "s_person_id"),
                                 ("gender_code_text", "s_gender"),
                                 ("gender_code",  "m_gender"),
                                 ("birthdate", "s_birth_datetime"),
@@ -140,7 +140,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                 ("race_code_text",  "m_race"),
                                 ("ethnicity_code", "s_ethnicity"),
                                 ("ethnicity_code_text", "m_ethnicity"),
-                                ("empipersonid", person_id_duplicate_mapper, {"i_exclude": "i_exclude"})
+                                ("empiPersonId", person_id_duplicate_mapper, {"i_exclude": "i_exclude"})
                                 ]
 
     output_person_csv = os.path.join(output_csv_directory, "source_person.csv")
@@ -156,14 +156,14 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
 
     key_care_site_mapper = build_name_lookup_csv(os.path.join(input_csv_directory, file_name_dict["encounter"]), care_site_csv,
-                                                 ["tenant", "hospitalservice_code_text"],
-                                                 ["tenant", "hospitalservice_code_text"], hashing_func=md5_func)
+                                                 ["hospitalservice_code_text"],
+                                                 ["hospitalservice_code_text"], hashing_func=md5_func)
 
     care_site_name_mapper = FunctionMapper(
-        build_key_func_dict(["tenant", "hospitalservice_code_text"], separator=" -- "))
+        build_key_func_dict(["hospitalservice_code_text"], separator=" -- "))
 
     care_site_rules = [("key_name", "k_care_site"),
-                       (("tenant", "hospitalservice_code_text"),
+                       (("hospitalservice_code_text"),
                         care_site_name_mapper,
                         {"mapped_value": "s_care_site_name"})]
 
@@ -181,7 +181,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     encounter_id_duplicate_mapper = DuplicateExcludeMapper("encounterid")
     encounter_rules = [
         ("encounterid", "s_encounter_id"),
-        ("empipersonid", "s_person_id"),
+        ("empiPersonId", "s_person_id"),
         ("servicedate", "s_visit_start_datetime"),
         ("dischargedate", "s_visit_end_datetime"),
         ("type_code_text", "s_visit_type"),
@@ -190,7 +190,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("dischargedisposition_code", "m_discharge_to"),
         ("admissionsource_code_text", "s_admitting_source"),
         ("admissionsource_code", "m_admitting_source"),
-        (("tenant", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
+        (("hospitalservice_code_text", ), key_care_site_mapper, {"mapped_value": "k_care_site"}),
         ("encounterid", encounter_id_duplicate_mapper, {"i_exclude": "i_exclude"})
     ]
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
@@ -230,7 +230,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 
     source_encounter_coverage_csv = os.path.join(output_csv_directory, "source_encounter_coverage.csv")
 
-    encounter_coverage_rules = [("empipersonid", "s_person_id"),
+    encounter_coverage_rules = [("empiPersonId", "s_person_id"),
                                 ("encounterid", "s_encounter_id"),
                                 ("servicedate", "s_start_payer_date"),
                                 ("dischargedate", "s_end_payer_date"),
@@ -254,7 +254,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         else:
             return {}
 
-    condition_rules = [("empipersonid", "s_person_id"),
+    condition_rules = [("empiPersonId", "s_person_id"),
                        ("encounterid", "s_encounter_id"),
                        ("effectiveDate", "s_start_condition_datetime"),
                        ("condition_code", "s_condition_code"),
@@ -274,7 +274,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     procedure_csv = os.path.join(input_csv_directory, file_name_dict["procedure"])
     source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
 
-    procedure_rules = [("empipersonid", "s_person_id"),
+    procedure_rules = [("empiPersonId", "s_person_id"),
                        ("encounterid", "s_encounter_id"),
                        ("servicestartdate", "s_start_procedure_datetime"),
                        ("serviceenddate", "s_end_procedure_datetime"),
@@ -298,13 +298,13 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         else:
             return {}
 
-    ["medicationid", "encounterid", "empipersonid", "intendeddispenser", "startdate", "stopdate", "doseunit_code",
+    ["medicationid", "encounterid", "empiPersonId", "intendeddispenser", "startdate", "stopdate", "doseunit_code",
      "doseunit_code_oid", "doseunit_code_text", "category_id", "category_code_oid", "category_code_text",
      "frequency_id", "frequency_code_oid", "frequency_code_text", "status_code", "status_code_oid",
      "status_code_text", "route_code", "route_code_oid", "route_code_text", "drug_code", "drug_code_oid",
-     "drug_code_text", "dosequantity", "source", "tenant"]
+     "drug_code_text", "dosequantity", "source"]
 
-    medication_rules = [("empipersonid", "s_person_id"),
+    medication_rules = [("empiPersonId", "s_person_id"),
                         ("encounterid", "s_encounter_id"),
                         ("drug_code", "s_drug_code"),
                         ("drug_code_oid", "m_drug_code_oid"),
@@ -335,16 +335,16 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     result_csv = os.path.join(input_csv_directory, file_name_dict["result"])
     source_result_csv = os.path.join(output_csv_directory, "source_result.csv")
 
-    ["resultid", "encounterid", "empipersonid", "result_code", "result_code_oid", "result_code_text",
+    ["resultid", "encounterid", "empiPersonId", "result_code", "result_code_oid", "result_code_text",
      "result_type", "servicedate", "value_text", "value_numeric", "value_numeric_modifier", "unit_code",
      "unit_code_oid", "unit_code_text", "value_codified_code", "value_codified_code_oid",
      "value_codified_code_text", "date", "interpretation_code", "interpretation_code_oid",
      "interpretation_code_text", "specimen_type_code", "specimen_type_code_oid", "specimen_type_code_text",
      "bodysite_code", "bodysite_code_oid", "bodysite_code_text", "specimen_collection_date",
      "specimen_received_date", "measurementmethod_code", "measurementmethod_code_oid",
-     "measurementmethod_code_text", "recordertype", "issueddate", "tenant", "year"]
+     "measurementmethod_code_text", "recordertype", "issueddate", "year"]
 
-    result_rules = [("empipersonid", "s_person_id"),
+    result_rules = [("empiPersonId", "s_person_id"),
                     ("encounterid", "s_encounter_id"),
                     ("servicedate", "s_obtained_datetime"),
                     ("result_code_text", "s_name"),
@@ -354,7 +354,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                     (("value_codified_code_text", "interpretation_code_text"),
                      FilterHasKeyValueMapper(["value_codified_code_text", "interpretation_code_text"]),
                      {"value_codified_code_text": "m_result_text", "interpretation_code_text": "m_result_text"}),
-                    ("value_numeric", "s_result_numeric"),
+                    ("value_numeric", "s_result_numeric"), # write
                     ("date", "s_result_datetime"),
                     ("value_codified_code", "s_result_code"),
                     ("value_codified_code_oid", "m_result_code_oid"),
@@ -366,6 +366,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                     ("upper_limit", "s_result_numeric_upper")
                     ]
 
+
+
     result_mapper_obj = generate_mapper_obj(result_csv, PopulationResult(), source_result_csv, SourceResultObject(),
                                             result_rules, output_class_obj, in_out_map_obj)
 
@@ -375,7 +377,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
 if __name__ == "__main__":
     arg_parse_obj = argparse.ArgumentParser(description="Mapping Realworld CSV files to Prepared source format for OHDSI mapping")
     arg_parse_obj.add_argument("-c", "--config-file-name", dest="config_file_name", help="JSON config file",
-                               default="rw_config.json")
+                               default="sbm_config.json")
 
     arg_obj = arg_parse_obj.parse_args()
 
@@ -390,7 +392,7 @@ if __name__ == "__main__":
         "measurement": "population_measurement.csv",
         "medication": "population_medication.csv",
         "procedure": "population_procedure.csv",
-        "result": "population_results_2020.csv"
+        "result": "population_results.csv"
     }
 
     main(config_dict["csv_input_directory"], config_dict["csv_input_directory"], file_name_dict)
