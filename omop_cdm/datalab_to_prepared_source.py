@@ -156,14 +156,14 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
     md5_func = lambda x: hashlib.md5(x.encode("utf8")).hexdigest()
 
     key_care_site_mapper = build_name_lookup_csv(os.path.join(input_csv_directory, file_name_dict["encounter"]), care_site_csv,
-                                                 ["hospitalservice_code_text"],
-                                                 ["hospitalservice_code_text"], hashing_func=md5_func)
+                                                 ["facility_name", "hospitalservice_code_text"],
+                                                 ["facility_name", "hospitalservice_code_text"], hashing_func=md5_func)
 
     care_site_name_mapper = FunctionMapper(
-        build_key_func_dict(["hospitalservice_code_text"], separator=" -- "))
+        build_key_func_dict(["facility_name", "hospitalservice_code_text"], separator=" -- "))
 
     care_site_rules = [("key_name", "k_care_site"),
-                       (("hospitalservice_code_text"),
+                       (("facility_name", "hospitalservice_code_text"),
                         care_site_name_mapper,
                         {"mapped_value": "s_care_site_name"})]
 
@@ -190,7 +190,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("dischargedisposition_code", "m_discharge_to"),
         ("admissionsource_code_text", "s_admitting_source"),
         ("admissionsource_code", "m_admitting_source"),
-        (("hospitalservice_code_text", ), key_care_site_mapper, {"mapped_value": "k_care_site"}),
+        (("facility_name", "hospitalservice_code_text"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
         ("encounterid", encounter_id_duplicate_mapper, {"i_exclude": "i_exclude"})
     ]
     source_encounter_csv = os.path.join(output_csv_directory, "source_encounter.csv")
