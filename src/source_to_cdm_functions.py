@@ -54,7 +54,7 @@ class DateSplit(MapperClass):
 
 
 def convert_datetime_with_tz(datetime_tz, time_zone="US/Eastern"):
-    null_date = "1900-01-01 00:00:00"
+    null_date = ""
     if datetime_tz == '':
         return null_date
 
@@ -71,7 +71,7 @@ def convert_datetime_with_tz(datetime_tz, time_zone="US/Eastern"):
 
 
 def convert_datetime(datetime_str):
-    null_date = "1900-01-01 00:00:00"
+    null_date = ""
 
     re_odbc_date = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$")
     re_odbc_date_time_1 = re.compile(r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{2}$")
@@ -134,16 +134,25 @@ class SplitDateTimeWithTZ(MapperClass):
     """Split datetime into two parts and convert time to local time"""
 
     def map(self, input_dict):
-        datetime_value = input_dict[list(input_dict.keys())[0]]
+        if len(input_dict):
+            datetime_value = input_dict[list(input_dict.keys())[0]]
 
-        if "T" in datetime_value:  # Has a time zone embedded
-            datetime_local = convert_datetime_with_tz(datetime_value)
+            if "T" in datetime_value:  # Has a time zone embedded
+                datetime_local = convert_datetime_with_tz(datetime_value)
+            else:
+                datetime_local = convert_datetime(datetime_value)
+
+            if len(datetime_local):
+                date_part, time_part = datetime_local.split(" ")
+            else:
+                return {}
+
+            if len(date_part) < 10:
+                return {}
+            else:
+                return {"date": date_part, "time": time_part}
         else:
-            datetime_local = convert_datetime(datetime_value)
-
-        date_part, time_part = datetime_local.split(" ")
-
-        return {"date": date_part, "time": time_part}
+            return {}
 
 
 class DateTimeWithTZ(MapperClass):

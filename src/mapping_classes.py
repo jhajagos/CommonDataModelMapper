@@ -480,7 +480,7 @@ class FilterHasKeyValueMapper(MapperClass):
 
 
 class SingleMatchAddValueMapper(MapperClass):
-    """Match a key in the first position and then value and then eject a value"""
+    """Match a key in the first position and then value and then ejects a value"""
 
     def __init__(self, pattern_match, key_replace):
         key_to_match, value_to_match = pattern_match

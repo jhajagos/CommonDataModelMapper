@@ -254,7 +254,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         ("s_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
         ("s_end_datetime", SplitDateTimeWithTZ(),
          {"date": "visit_end_date", "time": "visit_end_time"}),
-        ("s_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
+        (("s_end_datetime",), DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
         ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"}),
         (":row_id", visit_concept_type_mapper, "visit_type_concept_id"),
         ("m_visit_detail_type", CascadeMapper(visit_concept_mapper, ConstantMapper({"CONCEPT_ID".lower(): 0})),
@@ -281,7 +281,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                                   VisitDetailObject(), visit_detail_rules,
                                                   output_class_obj, in_out_map_obj, visit_detail_router_obj)
     visit_detail_runner_obj.run()
-
+    # raise RuntimeError
     #### Benefit Coverage Period ####
 
     payer_plan_period_rules = create_payer_plan_period_rules(s_person_id_mapper)
@@ -426,7 +426,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                           ("m_rank", condition_type_concept_mapper, {"CONCEPT_ID".lower(): "condition_type_concept_id"}),
                           ("s_condition_type", condition_status_mapper, {"CONCEPT_ID".lower(): "condition_status_concept_id"}),
                           ("s_condition_type", "condition_status_source_value"),
-                          ("s_start_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_start_date"}),
+                          ("s_start_condition_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})), {"date": "condition_start_date"}),
                           ("s_start_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_start_datetime"}),
                           ("s_end_condition_datetime", SplitDateTimeWithTZ(), {"date": "condition_end_date"}),
                           ("s_end_condition_datetime", DateTimeWithTZ(), {"datetime": "condition_end_datetime"})
@@ -446,7 +446,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                             ("s_encounter_id", s_encounter_id_mapper,
                              {"visit_occurrence_id": "visit_occurrence_id"}),
-                            ("s_start_condition_datetime", SplitDateTimeWithTZ(),
+                            ("s_start_condition_datetime",  CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                              {"date": "measurement_date", "time": "measurement_time"}),
                             ("s_start_condition_datetime", DateTimeWithTZ(),
                              {"datetime": "measurement_datetime"}),
@@ -476,7 +476,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                             (("s_encounter_id",),
                              s_encounter_id_mapper,
                              {"visit_occurrence_id": "visit_occurrence_id"}),
-                            ("s_start_condition_datetime", SplitDateTimeWithTZ(),
+                            ("s_start_condition_datetime",  CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                              {"date": "observation_date", "time": "observation_time"}),
                             ("s_start_condition_datetime", DateTimeWithTZ(),
                              {"datetime": "observation_datetime"}),
@@ -511,7 +511,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                     ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                     ("s_encounter_id", s_encounter_id_mapper,
                                      {"visit_occurrence_id": "visit_occurrence_id"}),
-                                    ("s_start_condition_datetime", SplitDateTimeWithTZ(),
+                                    ("s_start_condition_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                                      {"date": "procedure_date"}),
                                     ("s_start_condition_datetime", DateTimeWithTZ(),
                                      {"datetime": "procedure_datetime"}),
@@ -618,7 +618,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                                          {"measurement_type_concept_id": "measurement_type_concept_id"}),
                                         ("s_encounter_id", s_encounter_id_mapper,
                                          {"visit_occurrence_id": "visit_occurrence_id"}),
-                                        ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                                        ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                                          {"date": "measurement_date", "time": "measurement_time"}),
                                         ("s_start_procedure_datetime", DateTimeWithTZ(),
                                          {"datetime": "measurement_datetime"}),
@@ -646,7 +646,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                               ("s_encounter_id",
                                s_encounter_id_mapper,
                                {"visit_occurrence_id": "visit_occurrence_id"}),
-                              ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                              ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                                {"date": "observation_date", "time": "observation_time"}),
                               ("s_procedure_code", "observation_source_value"),
                               ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
@@ -669,9 +669,9 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                        ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                        ("s_encounter_id", s_encounter_id_mapper,
                         {"visit_occurrence_id": "visit_occurrence_id"}),
-                       ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                       ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                         {"date": "drug_exposure_start_date"}),
-                       ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                       ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                         {"date": "drug_exposure_end_date"}),
                        ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
                        ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
@@ -697,7 +697,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
                          ("s_encounter_id",
                           s_encounter_id_mapper,
                           {"visit_occurrence_id": "visit_occurrence_id"}),
-                         ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                         ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                           {"date": "device_exposure_start_date"}),
                          ("s_start_procedure_datetime", DateTimeWithTZ(),
                           {"datetime": "device_exposure_start_datetime"}),
@@ -961,7 +961,10 @@ def create_payer_plan_period_rules(s_person_id_mapper):
         (":row_id", "payer_plan_period_id"),
         ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
         ("s_start_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_start_date"}),
-        ("s_end_payer_date", SplitDateTimeWithTZ(), {"date": "payer_plan_period_end_date"}),
+        (("s_start_payer_date", "s_end_payer_date"), CascadeMapper(
+             ChainMapper(FilterHasKeyValueMapper(["s_end_payer_date"]), SplitDateTimeWithTZ()),
+             ChainMapper(FilterHasKeyValueMapper(["s_start_payer_date"]), SplitDateTimeWithTZ())),
+        {"date": "payer_plan_period_end_date"}),
         ("m_payer_name", "plan_source_value"),
         ("m_plan_name", "plan_source_value")
     ]
@@ -1046,7 +1049,7 @@ def create_procedure_rules(json_map_directory, s_person_id_mapper, s_encounter_i
                                  ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                  ("s_encounter_id", s_encounter_id_mapper,
                                   {"visit_occurrence_id": "visit_occurrence_id"}),
-                                 ("s_start_procedure_datetime", SplitDateTimeWithTZ(),
+                                 ("s_start_procedure_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                                   {"date": "procedure_date"}),
                                  ("s_start_procedure_datetime", DateTimeWithTZ(), {"datetime": "procedure_datetime"}),
                                  ("s_procedure_code", "procedure_source_value"),
@@ -1105,8 +1108,9 @@ def create_visit_rules(json_map_directory, s_person_id_mapper, k_care_site_mappe
                    ("s_visit_start_datetime", SplitDateTimeWithTZ(),
                     {"date": "visit_start_date", "time": "visit_start_time"}),
                    ("s_visit_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
-                   ("s_visit_end_datetime", SplitDateTimeWithTZ(),
-                    {"date": "visit_end_date", "time": "visit_end_time"}),
+                   (("s_visit_end_datetime", "s_visit_start_datetime"), CascadeMapper(
+                        ChainMapper(FilterHasKeyValueMapper(["s_visit_end_datetime"]),  SplitDateTimeWithTZ()),
+                        ChainMapper(FilterHasKeyValueMapper(["s_visit_start_datetime"]), SplitDateTimeWithTZ())), {"date": "visit_end_date", "time": "visit_end_time"}),
                    ("s_visit_end_datetime", DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
                    ("s_admitting_source", "admitting_source_value"),
                    ("m_admitting_source", admit_discharge_source_mapper, {"CONCEPT_ID".lower(): "admitting_source_concept_id"}),
@@ -1161,7 +1165,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                          ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                          ("s_encounter_id", s_encounter_id_mapper, {"visit_occurrence_id": "visit_occurrence_id"}),
                          ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "measurement_datetime"}),
-                         ("s_obtained_datetime", SplitDateTimeWithTZ(), {"date": "measurement_date"}),
+                         ("s_obtained_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})), {"date": "measurement_date"}),
                          ("s_name", "measurement_source_value"),
                          ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_source_concept_id"}),
                          ("s_code", measurement_code_mapper,  {"CONCEPT_ID".lower(): "measurement_concept_id"}),
@@ -1186,7 +1190,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                                      ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                      ("s_encounter_id", s_encounter_id_mapper,
                                       {"visit_occurrence_id": "visit_occurrence_id"}),
-                                     ("s_obtained_datetime", SplitDateTimeWithTZ(),
+                                     ("s_obtained_datetime", CascadeMapper(SplitDateTimeWithTZ(), ConstantMapper({"date": "1900-01-01"})),
                                       {"date": "observation_date", "time": "observation_time"}),
                                      ("s_obtained_datetime", DateTimeWithTZ(), {"datetime": "observation_datetime"}),
                                      ("s_code", "observation_source_value"),
@@ -1445,7 +1449,10 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("m_route", route_mapper, {"mapped_value": "route_concept_id"}),
                         ("s_dose", "dose_source_value"),
                         ("s_start_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
-                        ("s_end_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_end_date"}),
+                        (("s_end_medication_datetime", "s_start_medication_datetime"),  CascadeMapper(
+                            ChainMapper(FilterHasKeyValueMapper(["s_end_medication_datetime"]),  SplitDateTimeWithTZ()),
+                            ChainMapper(FilterHasKeyValueMapper(["s_start_medication_datetime"]), SplitDateTimeWithTZ()))
+                         , {"date": "drug_exposure_end_date"}),
                         ("s_start_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_start_datetime"}),
                         ("s_end_medication_datetime", DateTimeWithTZ(), {"datetime": "drug_exposure_end_datetime"}),
                         ("s_quantity", "quantity"),
@@ -1475,7 +1482,9 @@ def person_router_obj(input_dict):
 
 def death_router_obj(input_dict):
     """Determines if a row_dict codes a death"""
-    if len(input_dict["s_death_datetime"]):
+    if input_dict["i_exclude"] == "1":
+        return NoOutputClass()
+    elif len(input_dict["s_death_datetime"]):
         if input_dict["s_death_datetime"] != "null":
             return DeathObject()
         else:
