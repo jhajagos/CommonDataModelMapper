@@ -521,7 +521,6 @@ class SingleMatchOnlyValueMapper(SingleMatchAddValueMapper):
             return {}
 
 
-
 class ReplacementMapper(MapperClass):
     """Translate a string by exact match"""
 

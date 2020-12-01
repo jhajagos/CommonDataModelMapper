@@ -241,6 +241,24 @@ class FloatMapper(MapperClass):
         return resulting_map
 
 
+class IntFloatMapper(MapperClass):
+    """Convert value to int or float"""
+
+    def map(self, input_dict):
+        resulting_map = {}
+        for key in input_dict:
+            try:
+                resulting_map[key] = int(input_dict[key])
+            except ValueError:
+
+                try:
+                    resulting_map[key] = float(input_dict[key])
+                except ValueError:
+                    resulting_map[key] = ""
+
+        return resulting_map
+
+
 class row_map_offset(MapperClass):
 
     def __init__(self, field_name, start_i=0):

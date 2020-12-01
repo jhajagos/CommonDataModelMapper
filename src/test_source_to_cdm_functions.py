@@ -13,6 +13,19 @@ class TestMappers(unittest.TestCase):
         self.assertEquals(2, dsm_result["day"])
 
 
+    def test_int_float_conversion(self):
+
+        values_to_convert = {"value_1": "HIGH", "value_2": "4", "value_3": "3.2"}
+
+        int_float_mapper = IntFloatMapper()
+
+        values_converted = int_float_mapper.map(values_to_convert)
+
+        self.assertEqual(values_converted["value_1"], "")
+        self.assertEqual(values_converted["value_2"], 4)
+        self.assertEqual(values_converted["value_3"], 3.2)
+
+
 class TestUtilityFunctions(unittest.TestCase):
 
     def test_convert_dt_with_tz(self):
@@ -56,6 +69,9 @@ class TestUtilityFunctions(unittest.TestCase):
         result_ts2 = MapDateTimeToUnixEpochSeconds().map(ts2)
 
         self.assertEqual(1392989585, result_ts2["seconds_since_unix_epoch"])
+
+
+
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ from prepared_source_classes import SourcePersonObject, SourceCareSiteObject, So
         SourceObservationPeriodObject, SourceEncounterCoverageObject, SourceResultObject, SourceConditionObject, \
         SourceProcedureObject, SourceMedicationObject, SourceLocationObject, SourceEncounterDetailObject
 
-from source_to_cdm_functions import generate_mapper_obj
+from source_to_cdm_functions import generate_mapper_obj, IntFloatMapper
 from utility_functions import generate_observation_period
 
 from prepared_source_functions import build_name_lookup_csv, build_key_func_dict
@@ -344,6 +344,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
      "specimen_received_date", "measurementmethod_code", "measurementmethod_code_oid",
      "measurementmethod_code_text", "recordertype", "issueddate", "year"]
 
+    def remove_equals(input):
+        return "".join(input["value_text"].split("="))
+
     result_rules = [("empiPersonId", "s_person_id"),
                     ("encounterid", "s_encounter_id"),
                     ("servicedate", "s_obtained_datetime"),
@@ -354,7 +357,9 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                     (("value_codified_code_text", "interpretation_code_text"),
                      FilterHasKeyValueMapper(["value_codified_code_text", "interpretation_code_text"]),
                      {"value_codified_code_text": "m_result_text", "interpretation_code_text": "m_result_text"}),
-                    ("value_numeric", "s_result_numeric"), # write
+                    (("value_numeric", "value_text"), CascadeMapper(FilterHasKeyValueMapper(["value_numeric"]),
+                                                                    ChainMapper(FunctionMapper(remove_equals, "value_text"), IntFloatMapper(), KeyTranslator({"value_text": "value_numeric"}))),
+                     {"value_numeric": "s_result_numeric"}),
                     ("date", "s_result_datetime"),
                     ("value_codified_code", "s_result_code"),
                     ("value_codified_code_oid", "m_result_code_oid"),
