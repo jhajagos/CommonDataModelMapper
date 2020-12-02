@@ -94,7 +94,10 @@ def convert_datetime(datetime_str):
             else:
                 return null_date
 
-        except(ValueError):
+        except ValueError:
+            return null_date
+
+        if localized_datetime < time.strptime("1900-01-01", "%Y-%m-%d"):
             return null_date
 
         return time.strftime('%Y-%m-%d %H:%M:%S', localized_datetime)
