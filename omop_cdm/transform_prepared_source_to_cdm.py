@@ -134,6 +134,22 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     death_rules = create_death_person_rules(json_map_directory, s_person_id_mapper)
 
+    def death_router_obj(input_dict):
+        """Determines if a row_dict codes a death"""
+
+        if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
+            if input_dict["i_exclude"] == "1":
+                return NoOutputClass()
+            elif len(input_dict["s_death_datetime"]):
+                if input_dict["s_death_datetime"] != "null":
+                    return DeathObject()
+                else:
+                    return NoOutputClass()
+            else:
+                return NoOutputClass()
+        else:
+            return NoOutputClass()
+
     output_death_csv = os.path.join(output_csv_directory, "death_cdm.csv")
     death_runner_obj = generate_mapper_obj(input_person_csv, SourcePersonObject(), output_death_csv, DeathObject(),
                                            death_rules, output_class_obj, in_out_map_obj, death_router_obj)
@@ -765,7 +781,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
             if input_dict["i_exclude"] != "1":
-                return DrugExposureObject()
+                if len(input_dict["s_start_medication_datetime"]) == 0:
+                    return NoOutputClass()
+                else:
+                    return DrugExposureObject()
             else:
                 return NoOutputClass()
         else:
@@ -1479,18 +1498,6 @@ def person_router_obj(input_dict):
         else:
             return NoOutputClass()
 
-
-def death_router_obj(input_dict):
-    """Determines if a row_dict codes a death"""
-    if input_dict["i_exclude"] == "1":
-        return NoOutputClass()
-    elif len(input_dict["s_death_datetime"]):
-        if input_dict["s_death_datetime"] != "null":
-            return DeathObject()
-        else:
-            return NoOutputClass()
-    else:
-        return NoOutputClass()
 
 
 if __name__ == "__main__":
