@@ -284,7 +284,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
             if len(s_encounter_id_mapper.map({"s_encounter_id": input_dict["s_encounter_id"]})):
                 if input_dict["i_exclude"] != '1':
-                    return VisitDetailObject()
+                    if len(input_dict['s_start_datetime']):
+                        return VisitDetailObject()
+                    else:
+                        return NoOutputClass()
                 else:
                     return NoOutputClass()
             else:
@@ -308,7 +311,10 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
 
     def payer_plan_period_router_obj(input_dict):
         if len(s_person_id_mapper.map({"s_person_id": input_dict["s_person_id"]})):
-            return PayerPlanPeriodObject()
+            if len(input_dict["s_start_payer_date"]):
+                return PayerPlanPeriodObject()
+            else:
+                return NoOutputClass()
         else:
             return NoOutputClass()
 
