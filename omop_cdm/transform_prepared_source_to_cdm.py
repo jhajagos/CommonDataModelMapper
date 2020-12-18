@@ -268,8 +268,11 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
         ("s_start_datetime", SplitDateTimeWithTZ(),
          {"date": "visit_start_date", "time": "visit_start_time"}),
         ("s_start_datetime", DateTimeWithTZ(), {"datetime": "visit_start_datetime"}),
-        ("s_end_datetime", SplitDateTimeWithTZ(),
-         {"date": "visit_end_date", "time": "visit_end_time"}),
+        (("s_end_datetime", "s_start_datetime"), CascadeMapper(
+                                 ChainMapper(FilterHasKeyValueMapper(["s_end_datetime"]), SplitDateTimeWithTZ()),
+                                 ChainMapper(FilterHasKeyValueMapper(["s_start_datetime"]),
+                                             SplitDateTimeWithTZ())),
+                              {"date": "visit_end_date", "time": "visit_end_time"}),
         (("s_end_datetime",), DateTimeWithTZ(), {"datetime": "visit_end_datetime"}),
         ("k_care_site", k_care_site_mapper, {"care_site_id": "care_site_id"}),
         (":row_id", visit_concept_type_mapper, "visit_type_concept_id"),
