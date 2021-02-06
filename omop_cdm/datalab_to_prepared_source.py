@@ -391,7 +391,7 @@ if __name__ == "__main__":
         config_dict = json.load(f)
 
     file_name_dict = {
-        "demographic": "population_demographics.csv",
+        "demographic": "population_demographics.consolidated.csv",
         "encounter": "population_encounter.csv",
         "condition": "population_condition.csv",
         "measurement": "population_measurement.csv",
