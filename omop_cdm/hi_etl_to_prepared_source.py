@@ -79,6 +79,8 @@ def main(input_csv_directory, output_csv_directory):
     # md5_func = None
 
     address_csv = os.path.join(input_csv_directory, "person_address.csv")
+
+    address_csv = os.path.join(input_csv_directory, "person_address.csv")
     source_location_csv = os.path.join(input_csv_directory, "source_location.csv")
 
     location_lookup_csv = os.path.join(input_csv_directory, "address_lookup.csv")

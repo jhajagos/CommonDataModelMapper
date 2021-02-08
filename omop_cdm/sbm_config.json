@@ -1,0 +1,8 @@
+{
+   "json_map_directory": "C:\\Users\\Janos Hajagos\\data\\ohdsi\\vocabulary\\51m\\",
+   "csv_input_directory":  "C:\\Users\\Janos Hajagos\\data\\aaa\\20210205\\input\\",
+   "csv_output_directory": "C:\\Users\\Janos Hajagos\\data\\aaa\\20210205\\output\\",
+   "connection_uri": "postgresql+psycopg2://jhajagos:rxB67x878MK!J@bmi-clinical-analytics-p1/bmi_clinical",
+   "schema": "aaa_imaging_study_pop_cdm",
+   "rxnorm_base_directory": "/root/ohdsi/rxnorm/rrf/"
+}
