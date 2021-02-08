@@ -30,7 +30,6 @@ except ImportError:
 
 def main(target_directory, connection_string, target_schema):
 
-
     csv_files_to_load = generate_db_dict()
 
     tables_to_load = []
