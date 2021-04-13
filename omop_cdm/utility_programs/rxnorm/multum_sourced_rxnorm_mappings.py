@@ -1,6 +1,5 @@
 import csv
 import json
-import os
 
 
 def main(csv_files_list, key_field="MULDRUG_ID"):
@@ -16,14 +15,3 @@ def main(csv_files_list, key_field="MULDRUG_ID"):
             with open(csv_file + "." + key_field + ".json", "w") as fw:
                 json.dump(keyed_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
-
-if __name__ == "__main__":
-    base_directory = "E:\\data\\rxnorm_multum\\"
-
-    base_names = ["rxnorm_multum", "rxnorm_multum_drug", "rxnorm_multum_mmdc"]
-
-    csv_files = []
-    for base_name in base_names:
-        csv_files += [os.path.join(base_directory, base_name + ".csv")]
-
-    main(csv_files)

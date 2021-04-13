@@ -1,6 +1,7 @@
 import os
 
-from .multum_sourced_rxnorm_mappings import main as convert_csv_to_json
+from multum_sourced_rxnorm_mappings import main as convert_csv_to_json
+
 
 def main(directory):
 
@@ -12,7 +13,7 @@ def main(directory):
 
 
 if __name__ == "__main__":
-    base_dir = "E:\\data\\rxnorm_in_sbdf\\"
+    base_dir = "./"
     main(base_dir)
 
 

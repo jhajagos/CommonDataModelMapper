@@ -246,7 +246,9 @@ class CodeMapperClassSqliteJSONClass(CodeMapperClass):
         connection_string = "sqlite:///" + self.db_file_name
         engine = sa.create_engine(connection_string)
         connection = engine.connect()
-        meta_data = sa.MetaData(connection, reflect=True)
+        meta_data = sa.MetaData(connection)
+        meta_data.reflect()
+
         return connection, meta_data
 
     def _build_sqlite_db(self):

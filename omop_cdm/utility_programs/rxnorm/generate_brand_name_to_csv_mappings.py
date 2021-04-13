@@ -4,7 +4,8 @@ import json
 import os
 import argparse
 
-def main(directory, connection_uri, schema=None, is_postgresql=True):
+
+def main(directory, connection_uri):
 
     engine = sa.create_engine(connection_uri)
 
@@ -64,26 +65,16 @@ def main(directory, connection_uri, schema=None, is_postgresql=True):
 
 if __name__ == "__main__":
 
-    arg_parser_obj = argparse.ArgumentParser(description="Generate brand name mappings")
-    arg_parser_obj.add_argument("-c", "--config-json-file-name", dest="config_json_file_name", default="rxnorm.json")
+    # arg_parser_obj = argparse.ArgumentParser(description="Generate brand name mappings")
+    # arg_parser_obj.add_argument("-c", "--config-json-file-name", dest="config_json_file_name", default="rxnorm.json")
+    #
+    # arg_obj = arg_parser_obj.parse_args()
+    # config_json_file_name = arg_obj.config_json_file_name
+    #
+    # with open(config_json_file_name, "r") as f:
+    #     config = json.load(f)
 
-    arg_obj = arg_parser_obj.parse_args()
-    config_json_file_name = arg_obj.config_json_file_name
+    destination_directory = "./"
+    connection_uri = """sqlite:///rxnorm.db3"""
 
-    with open(config_json_file_name, "r") as f:
-        config = json.load(f)
-
-    destination_directory = config["destination_directory"]
-    connection_uri = config["connection_uri"]
-
-    if "schema" in config:
-        schema = config["schema"]
-    else:
-        schema = None
-
-    if "is_postgresql" in config:
-        is_postgresql = config["is_postgresql"]
-    else:
-        is_postgresql = True
-
-    main(destination_directory, connection_uri, schema, is_postgresql)
+    main(destination_directory, connection_uri)
