@@ -109,9 +109,26 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
                     try:
                         mapped_concept_id = concept_rel_dict[concept_id]["CONCEPT_ID_2".lower()]
                     except TypeError:
+
+                        # Filter out OMOP Extension
+                        # If only OMOP Extension then include
+
                         multiple_concepts = concept_rel_dict[concept_id]
-                        multiple_concepts.sort(key=lambda x: x["VALID_END_DATE".lower()], reverse=True)
-                        mapped_concept_id = multiple_concepts[0]["CONCEPT_ID_2".lower()]
+                        omop_extensions = []
+                        everything_else = []
+                        for concept_rel in multiple_concepts:
+                            concept_id = concept_rel["concept_id_2"]
+                            vocabulary = concept_dict_vocabulary[concept_id]
+                            if vocabulary == "OMOP Extension":
+                                omop_extensions += [concept_rel]
+                            else:
+                                everything_else += [concept_rel]
+
+                        omop_extensions.sort(key=lambda x: x["VALID_END_DATE".lower()], reverse=True)
+                        everything_else.sort(key=lambda x: x["VALID_END_DATE".lower()], reverse=True)
+
+                        sorted_multiple_concepts = everything_else + omop_extensions
+                        mapped_concept_id = sorted_multiple_concepts[0]["CONCEPT_ID_2".lower()]
 
                     concept_dict["MAPPED_CONCEPT_ID".lower()] = mapped_concept_id
                     if mapped_concept_id in concept_dict_vocabulary:
