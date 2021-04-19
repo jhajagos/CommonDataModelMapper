@@ -1362,7 +1362,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
     drug_type_json = os.path.join(json_map_directory, "concept_name_Drug_Type.json")
     drug_type_code_mapper = CoderMapperJSONClass(drug_type_json)
 
-    rxnorm_code_mapper_json = os.path.join(json_map_directory, "concept_code_RxNorm.json")
+    rxnorm_code_mapper_json = os.path.join(json_map_directory, "RxNorm_with_parent.json")
     rxnorm_code_concept_mapper = CodeMapperClassSqliteJSONClass(rxnorm_code_mapper_json, "RXNORM_ID")
     drug_source_concept_mapper = CascadeMapper(ChainMapper(rxnorm_rxcui_mapper, rxnorm_code_concept_mapper),
                                                            rxnorm_rxcui_mapper,
@@ -1374,7 +1374,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                                               "select_tt_n_sbdf__ott___from___select_bn.csv.bn_rxcui.json")
 
     if os.path.exists(rxnorm_bn_in_mapper_json):
-        rxnorm_bn_in_mapper = CodeMapperClassSqliteJSONClass(rxnorm_bn_in_mapper_json,"RXNORM_ID")
+        rxnorm_bn_in_mapper = CodeMapperClassSqliteJSONClass(rxnorm_bn_in_mapper_json, "RXNORM_ID")
     else:
         rxnorm_bn_in_mapper = CodeMapperDictClass({})
 
