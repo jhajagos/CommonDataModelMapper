@@ -236,6 +236,7 @@ def main(rrf_directory, connection_string):
         metadata_obj = sa.MetaData(connection)
         metadata_obj.reflect()
 
+        load_rrf_table("RXNSAT", metadata_obj, connection, p_rrf_directory)
         load_rrf_table("RXNREL", metadata_obj, connection, p_rrf_directory)
         load_rrf_table("RXNCONSO", metadata_obj, connection, p_rrf_directory)
 

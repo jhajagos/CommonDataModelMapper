@@ -63,6 +63,34 @@ def main(directory, connection_uri):
         q2_df.to_csv(q2_df_csv_file_name, index=False)
 
 
+        q3 = """
+        select t.* from (
+                         select distinct r1.RXCUI,
+                                         r1.TTY,
+                                         r1.STR,
+                                         r2.RXCUI as IN_RXCUI,
+                                         r2.TTY   as IN_TTY,
+                                         r2.STR   as IN_STR
+                         from RXNCONSO r1
+                                  join RXNREL rr on r1.RXCUI = rr.RXCUI1
+                                  join RXNCONSO r2 on r2.RXCUI = rr.RXCUI2
+                         where r1.SAB = 'RXNORM'
+                           and r2.SAB = 'RXNORM'
+                           and r1.SUPPRESS = 'N'
+                           and r1.TTY = 'BN'
+                           and r2.TTY in ('IN')
+
+                     ) t
+    join RXNSAT rs on rs.rxcui = t.rxcui and rs.sab = 'RXNORM' and rs.atn = 'RXN_BN_CARDINALITY' and rs.ATV = 'single'
+order by cast(t.RXCUI as int), TTY, RXCUI
+        
+        """
+
+        q3_df = pd.read_sql(q3, connection)
+        q3_df_csv_file_name = os.path.join(directory, "select_bn_single_in.csv")
+        q3_df.to_csv(q3_df_csv_file_name, index=False)
+
+
 if __name__ == "__main__":
 
     # arg_parser_obj = argparse.ArgumentParser(description="Generate brand name mappings")
