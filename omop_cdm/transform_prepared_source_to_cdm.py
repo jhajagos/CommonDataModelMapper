@@ -370,7 +370,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     register_to_mapper_obj(input_result_csv, SourceResultObject(), output_observation_csv,
                            ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
 
-    #measurement_runner_obj.run()
+    measurement_runner_obj.run()
 
     #### CONDITION / DX ####
 
