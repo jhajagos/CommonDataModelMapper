@@ -370,7 +370,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     register_to_mapper_obj(input_result_csv, SourceResultObject(), output_observation_csv,
                            ObservationObject(), observation_measurement_rules, output_class_obj, in_out_map_obj)
 
-    measurement_runner_obj.run()
+    #measurement_runner_obj.run()
 
     #### CONDITION / DX ####
 
@@ -803,7 +803,7 @@ def main(input_csv_directory, output_csv_directory, json_map_directory):
     output_drug_exposure_csv = os.path.join(output_csv_directory, "drug_exposure_cdm.csv")
 
     medication_rules = create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper,
-                                               snomed_mapper, drug_row_offset)  # TODO: add drug_row_offset
+                                               snomed_mapper, snomed_code_mapper, drug_row_offset)
 
     drug_exposure_runner_obj = generate_mapper_obj(input_med_csv, SourceMedicationObject(), output_drug_exposure_csv,
                                                    DrugExposureObject(),
@@ -1183,7 +1183,7 @@ def create_measurement_and_observation_rules(json_map_directory, s_person_id_map
                            "Below low normal": "Low"
                            }), snomed_mapper)))
 
-    measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID"]),
+    measurement_type_chained_mapper = CascadeMapper(ChainMapper(loinc_mapper, FilterHasKeyValueMapper(["CONCEPT_CLASS_ID".lower()]),
                                                                  ReplacementMapper({"Lab Test": "Lab result"}),
                                                                  measurement_type_mapper), ConstantMapper({"CONCEPT_ID".lower(): 0}))
 
@@ -1302,6 +1302,8 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
     ndc_code_mapper_json = os.path.join(json_map_directory, "NDC_with_parent.json")
     if os.path.exists(multum_json) and os.path.exists(multum_drug_json) and os.path.exists(multum_drug_mmdc_json):
 
+        # MULTUM enabled mapper
+
         drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_with_full_multum_code,
                                                   CodeMapperClassSqliteJSONClass(multum_json, "s_drug_code"),  # 0
                                                   CascadeMapper(
@@ -1314,6 +1316,9 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
                                                   ))
 
     else:
+
+        # Non MULTUM enabled mapper
+
         drug_code_mapper = ChainMapper(CaseMapper(case_mapper_drug_code,
                                                   KeyTranslator({"s_drug_code": "RXNORM_ID"}),  # 0
                                                   CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  # 1
@@ -1348,7 +1353,7 @@ def generate_drug_name_alternative_mapper(json_map_directory):
     return generate_drug_name_mapper(json_map_directory, "s_drug_alternative_txt")
 
 
-def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, row_offset):
+def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_id_mapper, snomed_mapper, snomed_code_mapper, row_offset):
 
     # TODO: Increase mapping coverage of drugs - while likely need manual overrides
 
@@ -1424,6 +1429,51 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                                                      ),
                                    drug_type_code_mapper)
 
+    bn_to_standard_json = os.path.join(json_map_directory, "select_bn_single_in.csv.RXCUI.json")
+    bn_to_standard_mapper = CoderMapperJSONClass(bn_to_standard_json)
+
+    concept_id_rxnorm_json = os.path.join(json_map_directory, "concept_id_RxNorm.json")
+    concept_id_rxnorm_mapper = CodeMapperClassSqliteJSONClass(concept_id_rxnorm_json)
+
+    def make_drug_code_standard(input_dict):
+
+        if "concept_id" in input_dict:
+            if input_dict["concept_id"] is not None:
+                concept_dict = {"concept_id": input_dict["concept_id"]}
+                mapping_result = concept_id_rxnorm_mapper.map(concept_dict)
+            else:
+                return input_dict
+
+            if "standard_concept" in mapping_result and mapping_result["standard_concept"] == "S":  # Return concept_id that are already standardized
+                return concept_dict
+            else:
+
+                if "concept_class_id" in mapping_result:
+
+                    if mapping_result["concept_class_id"] == "Precise Ingredient":
+
+                        rxnorm_mapping_result = rxnorm_code_concept_mapper.map({"RXNORM_ID": mapping_result["concept_code"]})
+
+                        if "mapped_concept_id" in rxnorm_mapping_result:
+                            return {"concept_id": rxnorm_mapping_result["mapped_concept_id"]}
+                    elif mapping_result["concept_class_id"] == "Brand Name":
+
+                        bn_mapping_result = bn_to_standard_mapper.map({"concept_code": mapping_result["concept_code"]})
+
+                        if "IN_RXCUI" in bn_mapping_result:
+                            return rxnorm_code_concept_mapper.map({"RXNORM_ID": bn_mapping_result["IN_RXCUI"]})
+                        else:
+                            return input_dict
+                    else:
+                        return input_dict
+                else:
+                    return input_dict
+        else:
+            return input_dict
+
+
+    MakeStandardConceptDrugMapper = PassThroughFunctionMapper(make_drug_code_standard)
+
     # TODO: Rework this mapper not to be static code
     # Source: http://forums.ohdsi.org/t/route-standard-concepts-not-standard-anymore/1300/7
     routes_to_concept_id_dict = {
@@ -1461,9 +1511,9 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
         "Urethral": "4233974"
     }
 
-    route_mapper = ChainMapper(ReplacementMapper({"SubCutaneous": "Subcutaneous", "IV Push": "Intravenous",
+    route_mapper = CascadeMapper(snomed_code_mapper, ChainMapper(ReplacementMapper({"SubCutaneous": "Subcutaneous", "IV Push": "Intravenous",
                                                   "Continuous IV": "Intravenous", "IntraMuscular": "Intramuscular"}),
-                               CodeMapperDictClass(routes_to_concept_id_dict))
+                               CodeMapperDictClass(routes_to_concept_id_dict)))
 
     # Required # drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_type_concept_id
     medication_rules = [(":row_id", row_map_offset("drug_exposure_id", row_offset),
@@ -1474,7 +1524,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                          {"s_drug_code|s_drug_text": "drug_source_value"}),
                         ("s_route", "route_source_value"),
                         ("s_status", "stop_reason"),
-                        ("m_route", route_mapper, {"mapped_value": "route_concept_id"}),
+                        ("m_route", route_mapper, {"mapped_value": "route_concept_id", "concept_id": "route_concept_id"}),
                         ("s_dose", "dose_source_value"),
                         ("s_start_medication_datetime", SplitDateTimeWithTZ(), {"date": "drug_exposure_start_date"}),
                         (("s_end_medication_datetime", "s_start_medication_datetime"),  CascadeMapper(
@@ -1488,7 +1538,7 @@ def create_medication_rules(json_map_directory, s_person_id_mapper, s_encounter_
                         ("m_dose_unit", snomed_mapper, {"CONCEPT_ID".lower(): "dose_unit_concept_id"}),
                         (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), drug_source_concept_mapper,
                          {"CONCEPT_ID".lower(): "drug_source_concept_id"}),
-                        (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), rxnorm_concept_mapper,
+                        (("m_drug_code_oid", "s_drug_code", "s_drug_text", "s_drug_alternative_text"), ChainMapper(rxnorm_concept_mapper, MakeStandardConceptDrugMapper),
                          {"CONCEPT_ID".lower(): "drug_concept_id"}),  # TODO: Make sure map maps to standard concept
                         ("m_drug_type", drug_type_mapper, {"CONCEPT_ID".lower(): "drug_type_concept_id"})]
 
