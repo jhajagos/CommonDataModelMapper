@@ -44,7 +44,7 @@ def main(source_vocabulary_directory, output_json_directory=None, delimiter="\t"
     # Generate first pass of converting concepts into a JSON lookup file
     # Generate one for concept_name and one for concept_code
     for vocabulary in vocabularies:
-        fields_to_key_on = ["CONCEPT_CODE".lower(), "CONCEPT_NAME".lower()]
+        fields_to_key_on = ["CONCEPT_CODE".lower(), "CONCEPT_NAME".lower(), "CONCEPT_ID".lower()]
 
         if vocabulary is not None:
             vocabulary_name = "_".join(vocabulary.split(" "))
