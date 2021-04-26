@@ -947,7 +947,9 @@ def create_death_person_rules(json_map_directory, s_person_id_mapper):
                                                                          "concept_name_Death_Type.json")))
 
     # TODO: cause_concept_id, cause_source_value, cause_source_concept_id
-    # Valid Concepts for the cause_concept_id have domain_id='Condition'.
+    # Valid Concepts for the cause_concept_id have
+    # `
+    # domain_id='Condition'.
 
     # Required person_id, death_date, death_type_concept_id
     death_rules = [("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
