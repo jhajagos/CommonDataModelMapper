@@ -178,7 +178,6 @@ def generate_patient_csv_file(patient_encounter_csv_file_name, output_directory)
                         patient_dict["death_datetime"] = existing_death_datetime
                         result_dict[patient_id] = patient_dict
 
-
         with open(file_to_write, "w", newline="") as fw:
             fields_to_write = patient_fields + ["year_of_birth"]
             csv_writer = csv.writer(fw)
@@ -315,20 +314,19 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         return {"admitted_dt_tm": admitted_dt_tm_txt, "discharged_dt_tm": discharged_dt_tm_txt}
 
 
-
     encounter_rules = [
-        ("encounter_id", "s_encounter_id"),
-        ("patient_id", "s_person_id"),
-        (("admitted_dt_tm", "discharged_dt_tm"),  PassThroughFunctionMapper(admit_discharge_mapper),
-         {"admitted_dt_tm": "s_visit_start_datetime"}),
-        (("admitted_dt_tm", "discharged_dt_tm"), PassThroughFunctionMapper(admit_discharge_mapper),
-         {"discharged_dt_tm": "s_visit_end_datetime"}),
-        ("patient_type_desc", "s_visit_type"),
-        ("patient_type_desc", "m_visit_type"),
-        (("hospital_id", "caresetting_desc"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
-        ("dischg_disp_code_desc", "s_discharge_to"),
-        #("", "m_discharge_to"),
-        ("admission_source_code_desc", "s_admitting_source")
+            ("encounter_id", "s_encounter_id"),
+            ("patient_id", "s_person_id"),
+            (("admitted_dt_tm", "discharged_dt_tm"),  PassThroughFunctionMapper(admit_discharge_mapper),
+             {"admitted_dt_tm": "s_visit_start_datetime"}),
+            (("admitted_dt_tm", "discharged_dt_tm"), PassThroughFunctionMapper(admit_discharge_mapper),
+             {"discharged_dt_tm": "s_visit_end_datetime"}),
+            ("patient_type_desc", "s_visit_type"),
+            ("patient_type_desc", "m_visit_type"),
+            (("hospital_id", "caresetting_desc"), key_care_site_mapper, {"mapped_value": "k_care_site"}),
+            ("dischg_disp_code_desc", "s_discharge_to"),
+            #("", "m_discharge_to"),
+            ("admission_source_code_desc", "s_admitting_source")
         #("m_admitting_source")
     ]
 
@@ -420,13 +418,10 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         "CPT4": "2.16.840.1.113883.6.12",
         "HCPCS": "2.16.840.1.113883.6.285",
         "ICD9": "2.16.840.1.113883.6.104",
-        "ICD10-PCS": "2.16.840.1.113883.6.96"
+        "ICD10-PCS": "2.16.840.1.113883.6.4"
     }
 
     procedure_code_oid_mapper = CodeMapperDictClass(procedure_code_oid_map)
-
-    ["s_person_id", "s_encounter_id", "s_start_procedure_datetime", "s_end_procedure_datetime",
-     "s_procedure_code", "s_procedure_code_type", "m_procedure_code_oid", "s_sequence_id", "s_rank", "m_rank"]
 
     hf_procedure_csv = os.path.join(input_csv_directory, file_name_dict["procedure"])
     source_procedure_csv = os.path.join(output_csv_directory, "source_procedure.csv")
@@ -437,8 +432,6 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                        ("procedure_code", "s_procedure_code"),
                        ("procedure_type", "s_procedure_code_type"),
                        ("procedure_type", procedure_code_oid_mapper, {"mapped_value": "m_procedure_code_oid"}),
-                       #("", "s_rank"),
-                       #("", "m_rank"),
                        ("procedure_priority", "s_sequence_id")
                        ]
 
@@ -458,8 +451,8 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                                       os.path.join(input_csv_directory, file_name_dict["lab_procedure"]),
                                       hf_result_csv, overwrite=True, sample_size=None)
 
-    result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "2.16.840.1.113883.6.285"}
-    reverse_result_map = {"2.16.840.1.113883.6.1": "LOINC", "2.16.840.1.113883.6.285": "SNOMED"}
+    result_map = {"LOINC": "2.16.840.1.113883.6.1", "SNOMED": "22.16.840.1.113883.6.96"}
+    reverse_result_map = {"2.16.840.1.113883.6.1": "LOINC", "2.16.840.1.113883.6.96": "SNOMED"}
 
     # Expand and validate this list
     clinical_event_name_snomed_code_map = {
