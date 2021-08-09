@@ -601,7 +601,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
         ("dose_form_description", "m_dose"),
         ("route_description", "s_route"),
         ("route_description", "m_route"),
-        ("total_dispensed_doses","s_quantity"),
+        ("total_dispensed_doses", "s_quantity"),
         ("order_strength_units_unit_display", "s_dose_unit"),
         ("order_strength_units_unit_display", "m_dose_unit"),
         ("med_order_status_desc", "s_status"),
