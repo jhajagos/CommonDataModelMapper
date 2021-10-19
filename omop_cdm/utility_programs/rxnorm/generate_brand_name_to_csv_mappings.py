@@ -93,16 +93,18 @@ order by cast(t.RXCUI as int), TTY, RXCUI
 
 if __name__ == "__main__":
 
-    # arg_parser_obj = argparse.ArgumentParser(description="Generate brand name mappings")
-    # arg_parser_obj.add_argument("-c", "--config-json-file-name", dest="config_json_file_name", default="rxnorm.json")
-    #
-    # arg_obj = arg_parser_obj.parse_args()
-    # config_json_file_name = arg_obj.config_json_file_name
-    #
-    # with open(config_json_file_name, "r") as f:
-    #     config = json.load(f)
+    arg_parser_obj = argparse.ArgumentParser(description="Generate brand name mappings")
+    arg_parser_obj.add_argument("-c", "--config-json-file-name", dest="config_json_file_name", default="./rxnorm.json")
+    arg_parser_obj.add_argument("-f", "--path-to-sqlite-file-name", dest="path_to_sqlite_file_name",
+                               default="./rxnorm.db3")
 
-    destination_directory = "./"
-    connection_uri = """sqlite:///rxnorm.db3"""
+    arg_obj = arg_parser_obj.parse_args()
+    config_json_file_name = arg_obj.config_json_file_name
+
+    with open(config_json_file_name, "r") as f:
+         config = json.load(f)
+
+    destination_directory = config["json_map_directory"]
+    connection_uri = "sqlite:///" + arg_obj.path_to_sqlite_file_name
 
     main(destination_directory, connection_uri)

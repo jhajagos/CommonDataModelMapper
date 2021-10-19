@@ -57,7 +57,7 @@ def main(rrf_file_name, sab, tty, lookup_field, output_directory, field_layout=R
 if __name__ == "__main__":
 
     arg_obj = argparse.ArgumentParser(description="Subset RxNorm RRF files for MMSL file")
-    arg_obj.add_argument("-c", dest="config_file_name", help="JSON config file")
+    arg_obj.add_argument("-c", dest="config_file_name", help="JSON config file", default="./rxnorm.json")
 
     arg_parse_obj = arg_obj.parse_args()
 

@@ -1,10 +1,9 @@
-
 import sqlalchemy as sa
 import csv
 import sqlparse
 import pathlib
 import os
-
+import argparse
 
 CREATE_DATABASE_SQL = """
 
@@ -247,9 +246,16 @@ def main(rrf_directory, connection_string):
 
 if __name__ == "__main__":
 
-    if os.path.exists("./rxnorm.db3"):
-        os.remove("./rxnorm.db3")
+    arg_parse_obj = argparse.ArgumentParser(description="Loads raw RxNorm text files into a SQLite database")
+    arg_parse_obj.add_argument("-d", "--rxnorm-rrf-directory", dest="rxnorm_rrf_directory", required=True)
+    arg_parse_obj.add_argument("-f", "--path-to-sqlite-file-name", dest="path_to_sqlite_file_name",
+                               default="./rxnorm.db3")
 
-    main("C:\\users\\janos hajagos\\data\\rxnorm\\RxNorm_full_04052021\\rrf\\", "sqlite:///rxnorm.db3")
+    arg_obj = arg_parse_obj.parse_args()
+
+    if os.path.exists(arg_obj.path_to_sqlite_file_name):
+        os.remove(arg_obj.path_to_sqlite_file_name)
+
+    main(arg_obj.rxnorm_rrf_directory, "sqlite:///" + arg_obj.path_to_sqlite_file_name)
 
 
