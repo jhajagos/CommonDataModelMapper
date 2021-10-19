@@ -67,7 +67,7 @@ if __name__ == "__main__":
     rxnorm_base_directory = config["rxnorm_base_directory"]
     json_map_directory = config["json_map_directory"]
 
-    rxnorm_rrf_directory = os.path.join(rxnorm_base_directory, "rrf")
+    rxnorm_rrf_directory = os.path.join(rxnorm_base_directory)
 
     main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "BN", "CODE", json_map_directory)
     main(os.path.join(rxnorm_rrf_directory, "RXNCONSO.RRF"), "MMSL", "GN", "CODE", json_map_directory)
