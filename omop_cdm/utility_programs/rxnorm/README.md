@@ -38,13 +38,13 @@ This will generate a set of CSV files. Once the CSV files
 is generated we need to concert the files to a JSON mapping file.
 
 ```bash
-python create_brand_name_to_standard_mapping.py -c ./rxnorm.json -f ./rxnorm.db3
+python create_brand_name_to_standard_mapping.py -c ./rxnorm.json
 ```
 
 ### Build mappings extracted from Millennium Raw Tables
 
 We rely on the mappings from Cerner Millennium raw tables
-for RxNorm mappings for code categories not in the standard
+for RxNorm mappings for codes that are not in the standard
 RxNorm source. This requires generating and exporting tables
 from HealtheIntent using the workflow [RXNorm Multum](
 https://sbmcin.analytics.healtheintent.com/workflows/22061#data-sets-container
@@ -63,7 +63,7 @@ python3 ./multum_sourced_rxnorm_mappings.py -f /data/rxnorm/healtheintent/
 python3 ./rxnorm_sourced_multum_mappings.py -c ./rxnorm.json
 ```
 
-#### Upload files to Vocab
+### Upload files to Vocab
 
 The following files should have been generated
 
