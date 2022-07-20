@@ -1385,6 +1385,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("intendeddispenser", "s_drug_type"),
                         ("intendeddispenser", "m_drug_type"),
                         ("status_code", "s_status"),
+                        ("detailLine", "s_detail"),
                         (("status_code_text", "detailLine"), PassThroughFunctionMapper(active_medications),
                         {"i_exclude": "i_exclude"})
                         ]

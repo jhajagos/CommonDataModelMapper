@@ -99,6 +99,7 @@ class SourceMedicationObject(PreparedSourceObject):
                 "s_route", "m_route",
                 "s_quantity",
                 "s_dose", "m_dose",
+                "s_detail",
                 "s_dose_unit", "m_dose_unit",
                 "s_status",
                 "s_drug_type", "m_drug_type",
