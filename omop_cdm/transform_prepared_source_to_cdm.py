@@ -1252,7 +1252,7 @@ def drug_code_coding_system(input_dict, field="m_drug_code_oid"):
 
     if coding_system_oid == "2.16.840.1.113883.6.311":
         return "Multum Main Drug Code (MMDC)"
-    elif coding_system_oid == "2.16.840.1.113883.6.312": # | MMSL - Multum drug synonym MMDC | BN - Fully specified drug brand name that can not be prescribed
+    elif coding_system_oid == "2.16.840.1.113883.6.312": # | MMSL - Multum drug synonym MMDC | BN - Fully specified drug brand name that cannot be prescribed
         return "Multum drug synonym"
     elif coding_system_oid == "2.16.840.1.113883.6.314": # MMSL - GN - d04373 -- Generic drug name
         return "Multum drug identifier (dNUM)"
@@ -1296,8 +1296,8 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
 
     """Maps drug concepts to RxNorm CUIs"""
 
-    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json")
-    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.MULDRUG_ID.json")
+    multum_json = os.path.join(json_map_directory, "rxnorm_multum.csv.MULDRUG_ID.json") # 0
+    multum_gn_json = os.path.join(json_map_directory, "RxNorm_MMSL_GN.json") # 1
     multum_drug_json = os.path.join(json_map_directory, "rxnorm_multum_drug.csv.MULDRUG_ID.json")
     multum_drug_mmdc_json = os.path.join(json_map_directory, "rxnorm_multum_mmdc.csv.MULDRUG_ID.json")
 
@@ -1316,7 +1316,6 @@ def generate_rxcui_drug_code_mapper(json_map_directory):
                                                   KeyTranslator({"s_drug_code": "RXNORM_ID"}),  # 3
                                                   CodeMapperClassSqliteJSONClass(ndc_code_mapper_json, "s_drug_code")  # 4
                                                   ))
-
     else:
 
         # Non MULTUM enabled mapper

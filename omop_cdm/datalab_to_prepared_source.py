@@ -73,7 +73,7 @@ class PopulationMedication(InputClass):
                 "doseunit_code_oid", "doseunit_code_text", "category_id", "category_code_oid", "category_code_text",
                 "frequency_id", "frequency_code_oid", "frequency_code_text", "status_code", "status_code_oid",
                 "status_code_text", "route_code", "route_code_oid", "route_code_text", "drug_code", "drug_code_oid",
-                "drug_code_text", "dosequantity", "source"]
+                "drug_code_text", "dosequantity", "source", "detailLine"]
 
 
 class PopulationResult(InputClass):
@@ -1354,7 +1354,13 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
             if input_dict["status_code_text"] not in ('Complete', 'Discontinued', 'Active', 'Suspended'):
                 return {"i_exclude": 1}
             else:
-                return {}
+                if "detailLine" in input_dict:
+                    if " PRN" in input_dict["detailLine"]:
+                        return {"i_exclude": 1}
+                    else:
+                        return {}
+                else:
+                    return {}
         else:
             return {}
 
@@ -1379,7 +1385,7 @@ def main(input_csv_directory, output_csv_directory, file_name_dict):
                         ("intendeddispenser", "s_drug_type"),
                         ("intendeddispenser", "m_drug_type"),
                         ("status_code", "s_status"),
-                        ("status_code_text", PassThroughFunctionMapper(active_medications),
+                        (("status_code_text", "detailLine"), PassThroughFunctionMapper(active_medications),
                         {"i_exclude": "i_exclude"})
                         ]
 
