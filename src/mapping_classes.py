@@ -10,6 +10,17 @@ import os
 import sqlalchemy as sa
 import sys
 
+import csv
+
+class CaseInsensitiveDictReader(csv.DictReader):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fieldnames = [x.lower() for x in self.fieldnames]
+
+    def __next__(self):
+        row = super().__next__()
+        return {k.lower(): v for k, v in row.items()}
+
 
 class InputClass(object):
     """Superclass representing the abstract input source"""
@@ -56,7 +67,7 @@ class InputClassCSVRealization(InputClassRealization):
         else:
 
             f = open(csv_file_name, newline='', encoding="utf-8")
-        self.csv_dict = csv.DictReader(f)
+        self.csv_dict = CaseInsensitiveDictReader(f)
 
         self.i = 1
 

@@ -972,8 +972,6 @@ def create_observation_period_rules(json_map_directory, s_person_id_mapper):
                                 ("s_person_id", s_person_id_mapper, {"person_id": "person_id"}),
                                 ("s_start_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_start_date"}),
-                                #("s_start_observation_datetime", DateTimeWithTZ(),
-                                #  {"datetime": "observation_period_start_datetime"}),
                                 ("s_end_observation_datetime", SplitDateTimeWithTZ(),
                                  {"date": "observation_period_end_date"}),
                                 # ("s_end_observation_datetime", DateTimeWithTZ(),
