@@ -6,7 +6,7 @@ try:
 
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CaseInsensitiveDictReader
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
         PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
@@ -500,7 +500,7 @@ def build_json_person_attribute(person_attribute_filename, attribute_json_file_n
     master_attribute_dict = {}
     with open(person_attribute_filename, "r", newline="") as f:
 
-        csv_dict_reader = csv.DictReader(f)
+        csv_dict_reader = CaseInsensitiveDictReader(f)
 
         for row_dict in csv_dict_reader:
             master_patient_id = row_dict["empi_id"]
