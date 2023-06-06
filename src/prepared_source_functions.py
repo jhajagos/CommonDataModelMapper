@@ -2,6 +2,7 @@ import csv
 from mapping_classes import FunctionMapper
 import sys
 
+from mapping_classes import CaseInsensitiveDictReader
 
 def build_key_func_dict(fields, hashing_func=None, separator="|"):
     if fields.__class__ not in ([].__class__, ().__class__):
@@ -30,7 +31,7 @@ def build_name_lookup_csv(input_csv_file_name, output_csv_file_name, field_names
     key_func = build_key_func_dict(key_fields, hashing_func=hashing_func)
 
     with open(input_csv_file_name, "r", newline="", errors="replace") as f:
-        csv_dict = csv.DictReader(f)
+        csv_dict = CaseInsensitiveDictReader(f)
 
         for row_dict in csv_dict:
             key_str = key_func(row_dict)
