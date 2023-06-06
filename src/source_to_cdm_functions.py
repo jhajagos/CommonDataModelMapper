@@ -1,5 +1,5 @@
 from mapping_classes import MapperClass, InputClassCSVRealization, OutputClassCSVRealization, \
-    build_input_output_mapper, RunMapperAgainstSingleInputRealization
+    build_input_output_mapper, RunMapperAgainstSingleInputRealization, CaseInsensitiveDictReader
 import time
 import csv
 import os
@@ -110,7 +110,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
 
     if sys.version_info[0] == 2:
         with open(csv_file_name, "rb") as fc:
-            dict_reader = csv.DictReader(fc)
+            dict_reader = CaseInsensitiveDictReader(fc)
             map_dict = {}
 
             for row_dict in dict_reader:
@@ -119,7 +119,7 @@ def create_json_map_from_csv_file(csv_file_name, lookup_field_name, lookup_value
                 map_dict[map_key] = {lookup_value_field_name: map_value}
     else:
         with open(csv_file_name, "r", newline="", encoding="utf8", errors="replace") as fc:
-            dict_reader = csv.DictReader(fc)
+            dict_reader = CaseInsensitiveDictReader(fc)
             map_dict = {}
 
             for row_dict in dict_reader:
@@ -285,7 +285,7 @@ def get_largest_id_from_csv_file(csv_file_name, primary_key_field_name):
 
     max_value = 0
     with open(csv_file_name, "r", newline="", encoding="utf8", errors="replace") as f:
-        cdict = csv.DictReader(f)
+        cdict = CaseInsensitiveDictReader(f)
         for row_dict in cdict:
             max_value = max(max_value, int(row_dict[primary_key_field_name]))
 
