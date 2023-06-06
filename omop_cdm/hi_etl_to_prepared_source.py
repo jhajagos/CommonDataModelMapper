@@ -25,7 +25,7 @@ except(ImportError):
 
     from mapping_classes import OutputClassCSVRealization, InputOutputMapperDirectory, OutputClassDirectory, \
         CoderMapperJSONClass, TransformMapper, FunctionMapper, FilterHasKeyValueMapper, ChainMapper, CascadeKeyMapper, \
-        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass
+        CascadeMapper, KeyTranslator, PassThroughFunctionMapper, CodeMapperDictClass, CaseInsensitiveDictReader
 
     from hi_classes import PHDPersonObject, PHFEncounterObject, HiCareSite, EmpIdObservationPeriod, \
         PHFEncounterBenefitCoverage, PHFResultObject, PHFConditionObject, PHFProcedureObject, PHFMedicationObject, \
